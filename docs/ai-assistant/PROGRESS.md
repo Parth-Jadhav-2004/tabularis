@@ -2,12 +2,14 @@
 
 How to resume: read [README.md](./README.md) (decisions + milestone order), find the current milestone below, open its `M*.md`, continue from the first unchecked step. Update this file at the end of every session.
 
+Keep detailed security reviews and audit findings outside the repository. This log records implementation progress and validation only.
+
 ## Status
 
 | Milestone | Status | Branch / PR | Notes |
 |---|---|---|---|
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
-| M2 Secure store | in progress | `feat/ai-assistant-provider-layer` | Encrypted conversations and command API verified; blobs next. |
+| M2 Secure store | in review | `feat/ai-assistant-provider-layer` | Implementation and automated checks complete. Native keychain/platform validation remains pending. |
 | M3 Tool registry | not started | | |
 | M4 Chat panel | not started | | |
 | M5 Conversations | not started | | |
@@ -20,7 +22,7 @@ How to resume: read [README.md](./README.md) (decisions + milestone order), find
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M2, secure storage. M1 live-provider smoke checks remain pending in [M1-provider-layer.md](./M1-provider-layer.md).
+**Current focus:** M2 native validation; next implementation is M3. M1 live-provider smoke checks remain pending in [M1-provider-layer.md](./M1-provider-layer.md).
 
 ## Open questions
 
@@ -41,6 +43,12 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: M2 validation and private MCP diagnostics completed
+- Added a metadata-only MCP logger: dependency/driver diagnostics never format message arguments or dynamic targets, preventing debug SQL/parameter leakage. Installation failure aborts MCP startup instead of falling back to ordinary logging.
+- Three logger regressions pass, including a sensitive argument whose formatting would panic. Final full Rust suite: 1,795 passed / 11 ignored; full frontend suite: 6,089 passed. Production cargo check, typecheck, scoped ESLint, theme-token lint and scoped formatting pass.
+- Detailed review notes are maintained privately outside the repository.
+- M2 implementation is ready for review on the common integration branch. Signed/dev macOS MCP keychain access and Windows/Linux permissions/keychain checks remain unchecked; no real user key/history was migrated or reset during development. Next implementation: M3 shared tools and safety policy.
+
 ### 2026-10-15: M2 confirmed recovery controls and path guards completed
 - Added Settings > AI deletion/reset actions with separate explicit confirmations, busy/error handling, and translations in all 11 locales. Reset requires backend confirmation, cancels active chat runs, clears AI artifacts/key/cache and preserves the watched approval directory.
 - Added managed-path preflight and symlink guards for activity/approval writes, migration and reset. Named encrypted staging files are identifiable and removed by recovery after crashes.
@@ -48,7 +56,7 @@ Newest first. Keep each entry short: what was done, what is next, anything surpr
 - GC and overwrite operations stop on unknown future blocks; a late save validates the current connection under the AI storage lock so deleted connections' histories cannot be recreated.
 - Validation: full Rust suite 1,792 passed / 11 ignored; full frontend suite 6,089 passed; typecheck, scoped ESLint and theme-token lint pass. Production cargo check passes (one pre-existing sandbox dead-code warning).
 - Added regression tests for symlink redirection, reset preflight/staging cleanup, unknown-block retention, delayed saves and cancellation, plus four confirmation UI tests.
-- Final security review remains in progress, including debug diagnostic paths. Native signed/dev and other-platform keychain verification is still pending; no real user key or history was reset.
+- Native signed/dev and other-platform keychain verification is still pending; no real user key or history was reset.
 
 ### 2026-10-15: M2 startup migration completed
 - GUI migration runs on the blocking pool before starting approval consumers/GC; standalone MCP migrates and verifies key availability before handling requests.
@@ -63,7 +71,6 @@ Newest first. Keep each entry short: what was done, what is next, anything surpr
 - Activity reads skip/count corrupted lines without logging their contents. Rotation and clear operations share the cross-process lock with reset/migration.
 - Removed complete MCP request/response logging and content-bearing JSON parse errors from stderr.
 - Validation: 133 existing AI-related tests and six new artifact/security tests pass; the additional activity/rotation regression run passes 76 tests.
-- Ran GitNexus PDG security explain on encryption, key lifecycle, approvals and storage paths: no findings reported; this does not prove safety (callback/property flows are not modeled). Manual source review continues.
 - Next: verified, idempotent startup migration before GUI/MCP consumers, followed by Settings controls and final security review.
 
 ### 2026-10-15: M2 connection deletion hooks completed

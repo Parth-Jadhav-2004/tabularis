@@ -6,12 +6,12 @@
 
 A single encryption layer for every AI artifact on disk, and the conversation store built on top of it. Nothing AI-related is ever written in plain text.
 
-## Current state
+## Baseline before M2
 
 - `aes-gcm = "0.10"` is already a dependency, used with a password-derived key in `src-tauri/src/export_crypto/mod.rs`.
 - `src-tauri/src/keychain_utils.rs`: `SERVICE_NAME = "tabularis"`, entries like `<id>:db`, `<id>:ssh`; AI keys via `set_ai_key` / `get_ai_key`. Reads go through an in-memory credential cache to avoid repeated macOS prompts.
 - `persistence::write_private_file(path, contents)` writes with mode 0600.
-- Plaintext AI files today:
+- Existing plaintext AI files:
   - `<config>/ai_activity.jsonl` + `.1`–`.5` (`ai_activity.rs`: `append_event_in`, `rotate_if_needed_in`, `read_events_in`, `read_sessions_in`, `clear_in`)
   - `<config>/.mcp_session_state.json` (`load_session_state_in`, `save_session_state_in`, client hint)
   - `<config>/pending_approvals/{id}.pending.json` / `{id}.decision.json` (`ai_approval.rs`, `ai_approval_watcher.rs`)
@@ -111,7 +111,16 @@ pub struct Conversation {
 
 - The Activity panel, the approval modal and the MCP server work as before, on top of sealed files.
 - Conversations can be saved, listed, loaded and deleted through commands (no UI yet).
-- No AI-related plaintext remains in the config directory after first start.
+- After a successful migration, managed legacy AI artifacts contain no plaintext. Migration failures preserve the affected originals, are reported, and never enable a plaintext write fallback.
+
+## Implementation and review notes
+
+- Implementation is complete; native checks above remain pending. Detailed review notes are maintained privately outside the repository.
+- Commands loading, renaming or deleting one conversation require both `connectionId` and conversation ID. Runtime saves validate that the persisted connection still exists under the storage lock.
+- Conversation writes are capped at 16 MiB (warning above 2 MiB); blob writes at 20 MiB. Blobs authenticate MIME and bytes together. GC protects recent uploads and aborts on unreadable or unknown future conversation content.
+- Cross-process transactions serialize file/index updates and key lifecycle. A global lock protects the shared keychain account across configured storage roots; a per-root fingerprint detects reset for processes using that root. Tests use directory-scoped memory keychains only.
+- Reset requires `confirmed: true`, cancels active chat runs, clears managed AI artifacts/key/cache and emits `ai-chat://storage-cleared`. Conversation deletion emits the same event with a different reason for M4 consumers. The watched approval directory is preserved.
+- MCP diagnostics emit static module/level metadata only. Normal GUI diagnostics are unchanged; future in-app tools must also keep sensitive arguments out of ordinary application logs.
 
 ## Good first issue candidates
 

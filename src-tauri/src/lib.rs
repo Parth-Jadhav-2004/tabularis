@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod ai_chat;
+pub mod ai_logger;
 pub mod secure_store;
 pub mod ai_activity;
 #[cfg(test)]
@@ -197,10 +198,12 @@ pub fn run() {
     let args = cli::parse();
 
     if args.mcp {
-        // Initialize the logger so plugin-loading and driver RPC errors (which
-        // use the `log` crate) are visible. The custom logger writes to stderr
-        // only, leaving the stdout JSON-RPC stream clean.
-        init_logger(create_log_buffer(1000), args.log_level());
+        // Keep diagnostic metadata, never driver SQL, parameters or RPC bodies.
+        // Abort if privacy-safe logging cannot be installed; no fallback logger.
+        if let Err(error) = ai_logger::init(args.log_level()) {
+            eprintln!("[MCP] {}", error);
+            return;
+        }
         let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
         rt.block_on(mcp::run_mcp_server());
         return;
