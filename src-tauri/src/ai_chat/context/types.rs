@@ -23,6 +23,7 @@ pub struct EditorContext<'a> {
 }
 
 pub struct ContextInput<'a> {
+    pub notebook: Option<super::notebook::NotebookContext<'a>>,
     pub mode: ChatMode,
     pub language: &'a str,
     pub connection: Option<ConnectionContext<'a>>,
@@ -52,6 +53,7 @@ pub struct SavedQueryContexts {
 
 #[derive(Clone, Copy, Debug)]
 pub struct ContextBudgets {
+    pub notebook: usize,
     pub connection: usize,
     pub instructions: usize,
     pub detailed_tables: usize,
@@ -63,6 +65,7 @@ pub struct ContextBudgets {
 impl Default for ContextBudgets {
     fn default() -> Self {
         Self {
+            notebook: super::notebook::NOTEBOOK_BUDGET,
             connection: 512,
             instructions: 2_000,
             detailed_tables: 24_000,
@@ -76,6 +79,7 @@ impl Default for ContextBudgets {
 impl ContextBudgets {
     pub fn total(&self) -> usize {
         self.connection
+            .saturating_add(self.notebook)
             .saturating_add(self.instructions)
             .saturating_add(self.detailed_tables)
             .saturating_add(self.schema_overview)

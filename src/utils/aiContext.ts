@@ -2,7 +2,8 @@ import type { AiContextOptions, AiContextScope, AiContextSelection, AiContextTab
 import type { AiContextItemRef } from "../types/aiChat";
 
 export function defaultAiContextSelection(): AiContextSelection {
-  return { connection: true, instructions: true, schema: true, query: true, selection: true, cursor_statement: true, error: false };
+  return { connection: true, instructions: true, schema: true, query: true, selection: true, cursor_statement: true, error: false,
+    notebook: true, notebook_results: false };
 }
 
 export function createAiContextOptions(snapshot: AiEditorSnapshot, include: AiContextSelection, language: string, tables?: AiContextTables): AiContextOptions {
@@ -56,7 +57,8 @@ export function aiContextTableCount(item: AiContextItemRef): number | null {
 }
 
 export function aiContextLabelKey(kind: string): string {
-  return ["connection", "instructions", "schema", "query", "selection", "cursor_statement", "error", "gaps", "table", "view", "saved_query"].includes(kind)
+  return ["connection", "instructions", "schema", "query", "selection", "cursor_statement", "error", "gaps", "table", "view", "saved_query",
+    "notebook", "notebook_outline", "notebook_cell", "notebook_errors", "notebook_results"].includes(kind)
     ? `aiChat.context.kinds.${kind}` : "aiChat.context.kinds.other";
 }
 

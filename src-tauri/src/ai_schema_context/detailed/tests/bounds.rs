@@ -58,6 +58,7 @@ async fn real_metadata_flows_from_query_selection_to_a_bounded_prompt() {
     let detailed =
         load_detailed_from_driver(&driver, &params, None, &catalog, &references.tables, 20).await;
     let input = ContextInput {
+        notebook: None,
         saved_queries: None,
 
         mode: ChatMode::Ask,

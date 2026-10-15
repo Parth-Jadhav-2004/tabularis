@@ -6,6 +6,7 @@ mod spec;
 use spec::context_error;
 pub use spec::ContextSpec;
 
+use super::context::notebook::NotebookContext;
 use super::context::{
     build_context, BuiltContext, ConnectionContext, ContextBudgets, ContextInput, EditorContext,
     SavedQueryContexts,
@@ -139,16 +140,23 @@ async fn resolve_with_driver(
     } else {
         None
     };
+    let notebook = spec
+        .include
+        .notebook
+        .then_some(spec.notebook.as_ref())
+        .flatten();
+    let notebook_sql = notebook.map(|snapshot| snapshot.reference_sql(schema));
     let query = spec
         .include
         .query
         .then_some(spec.editor.query.as_deref())
         .flatten();
+    let reference_query = notebook_sql.as_deref().or(query);
     let selected = if let Some(catalog) = &catalog {
         selection::selected_objects(
             spec,
             catalog,
-            query
+            reference_query
                 .or_else(|| {
                     spec.include
                         .selection
@@ -186,6 +194,11 @@ async fn resolve_with_driver(
     };
     Ok(build_context(
         &ContextInput {
+            notebook: notebook.map(|snapshot| NotebookContext {
+                snapshot,
+                include_errors: spec.include.error,
+                include_results: spec.include.notebook_results,
+            }),
             mode: ChatMode::Ask,
             language: &spec.language,
             connection: spec.include.connection.then_some(ConnectionContext {
@@ -205,7 +218,7 @@ async fn resolve_with_driver(
             },
             detailed: detailed.as_deref(),
             editor: EditorContext {
-                query,
+                query: reference_query,
                 selection: spec
                     .include
                     .selection

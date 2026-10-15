@@ -2781,7 +2781,12 @@
         "gaps": "缺失的元数据",
         "other": "上下文",
         "view": "视图",
-        "saved_query": "已保存查询"
+        "saved_query": "已保存查询",
+        "notebook": "笔记本",
+        "notebook_outline": "笔记本大纲",
+        "notebook_cell": "笔记本单元格",
+        "notebook_errors": "笔记本错误",
+        "notebook_results": "包含结果"
       },
       "refreshPreview": "刷新上下文预览",
       "tableCount": "表数量：{{count}}",
@@ -2803,7 +2808,8 @@
       "references": "视图和已保存查询",
       "viewDetail": "视图详情：{{name}}",
       "savedQuery": "已保存查询：{{name}}",
-      "viewCount": "视图数量：{{count}}"
+      "viewCount": "视图数量：{{count}}",
+      "notebookResultsDescription": "发送当前及引用单元格的列名、行数和最多 5 行结果。每条消息默认关闭。"
     },
     "commands": {
       "title": "命令",

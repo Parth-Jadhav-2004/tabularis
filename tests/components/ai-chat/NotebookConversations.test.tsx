@@ -153,9 +153,61 @@ describe("notebook-bound chat UI", () => {
     act(() => { f.store.requestEntry("root", f.initialTarget, "explain", { snapshot: { query: "SELECT fresh_entry" } }); });
     await waitFor(() => expect(f.transport.send).toHaveBeenCalledOnce());
     expect(f.transport.send.mock.calls[0][0].messages[0].blocks).toEqual([{ type: "text", text: "Restored notebook chat" }]);
-    expect(f.transport.send.mock.calls[0][2]).toMatchObject({ command: "explain", editor: { query: "SELECT fresh_entry" } });
+    expect(f.transport.send.mock.calls[0][2]).toMatchObject({ command: "explain", editor: { query: null },
+      notebook: { focused: { content: "SELECT fresh_entry" } } });
     f.emit({ type: "done", finish: "stop" });
     await waitFor(() => expect(f.transport.save).toHaveBeenCalledOnce());
     expect(f.transport.save.mock.calls[0][0].target).toEqual({ type: "notebook", notebook_id: "one" });
+  });
+
+  it("previews notebook context and reads the current cells again when sending", async () => {
+    const f = setup([], "one");
+    await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook" })).toBeEnabled());
+    await waitFor(() => expect(vi.mocked(invoke).mock.calls.some(([command, args]) => command === "ai_chat_preview_context"
+      && (args as { context?: { notebook?: { id: string } } })?.context?.notebook?.id === "one")).toBe(true));
+    expect(screen.queryByRole("button", { name: "aiChat.context.kinds.query" })).not.toBeInTheDocument();
+    const readState = vi.mocked(f.initialTarget.notebook!.readState!);
+    const original = readState();
+    readState.mockReturnValue({ ...original, title: "Fresh title", cells: [{ id: "sql", type: "sql", content: "SELECT fresh_snapshot" }] });
+    fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "Explain this notebook" } });
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.send" }));
+    await waitFor(() => expect(f.transport.send).toHaveBeenCalledOnce());
+    expect(f.transport.send.mock.calls[0][2]).toMatchObject({ notebook: { title: "Fresh title", focused: { content: "SELECT fresh_snapshot" }, results: [] } });
+  });
+
+  it("sends results only after explicit inclusion and resets that choice for the next message", async () => {
+    const f = setup([], "one");
+    await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook_results" })).toBeEnabled());
+    const readState = vi.mocked(f.initialTarget.notebook!.readState!);
+    const original = readState();
+    readState.mockReturnValue({ ...original, cells: [{ ...original.cells[0], result: { columns: ["value"], rows: [["private-result-marker"]], affected_rows: 0 } }] });
+    const chip = screen.getByRole("button", { name: "aiChat.context.kinds.notebook_results" });
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(chip);
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "Summarize these results" } });
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.send" }));
+    await waitFor(() => expect(f.transport.send).toHaveBeenCalledOnce());
+    expect(f.transport.send.mock.calls[0][2]?.notebook?.results[0].rows).toEqual([["private-result-marker"]]);
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    f.emit({ type: "done", finish: "stop" });
+    await waitFor(() => expect(f.transport.save).toHaveBeenCalledOnce());
+    expect(JSON.stringify(f.transport.save.mock.calls)).not.toContain("private-result-marker");
+    fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "Another question" } });
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.send" }));
+    await waitFor(() => expect(f.transport.send).toHaveBeenCalledTimes(2));
+    expect(f.transport.send.mock.calls[1][2]?.notebook?.results).toEqual([]);
+  });
+
+  it("removes the entire notebook layer and disables result inclusion with it", async () => {
+    const f = setup([], "one");
+    await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook" })).toBeEnabled());
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.context.kinds.notebook" }));
+    expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook_results" })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "General SQL question" } });
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.send" }));
+    await waitFor(() => expect(f.transport.send).toHaveBeenCalledOnce());
+    expect(f.transport.send.mock.calls[0][2]?.notebook).toBeUndefined();
+    expect(f.transport.send.mock.calls[0][2]?.editor.query).toBeNull();
   });
 });

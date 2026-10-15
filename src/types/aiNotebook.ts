@@ -1,4 +1,5 @@
 import type { NotebookCell, NotebookParam, RunAllResult } from "./notebook";
+export type { AiNotebookSnapshot } from "./aiNotebookSnapshot";
 
 // Local, read-only source for the bounded snapshot built at send time.
 // Reading this state does not include it in an IPC request or conversation.

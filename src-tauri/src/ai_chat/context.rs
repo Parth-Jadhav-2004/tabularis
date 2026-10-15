@@ -1,6 +1,7 @@
 //! Pure prompt construction. IPC resolution, caching and message persistence
-//! belong to the chat orchestration; this module never reads credentials or rows.
+//! belong to the chat orchestration; this module never reads credentials or databases.
 mod budget;
+pub mod notebook;
 pub mod references;
 mod types;
 
@@ -198,6 +199,7 @@ fn layers(input: &ContextInput<'_>) -> Vec<Vec<Part>> {
             ),
         ]
         .into_iter()
+        .filter(|(kind, _, _)| input.notebook.is_none() || *kind == "selection")
         .filter_map(|(kind, label, text)| {
             text.filter(|text| !text.is_empty())
                 .map(|text| Part::new(kind, kind, label, text.into()))
@@ -260,6 +262,9 @@ pub fn build_context(input: &ContextInput<'_>, budgets: ContextBudgets) -> Built
         }
         carry = remaining;
     }
+    if let Some(notebook) = input.notebook {
+        truncated |= notebook::append(notebook, &mut context, &mut items, budgets.notebook);
+    }
     let language = if !input.language.is_empty()
         && input.language.len() <= 32
         && input
@@ -276,6 +281,10 @@ pub fn build_context(input: &ContextInput<'_>, budgets: ContextBudgets) -> Built
         ChatMode::Agent => "Agent mode: every write requires explicit approval for the exact SQL and target. Do not execute statements without an available approved tool.",
     };
     let mut system = format!("{BASE_RULES}\nReply in {language}.\n{mode_rules}");
+    if input.notebook.is_some() {
+        system.push('\n');
+        system.push_str(notebook::NOTEBOOK_RULES);
+    }
     if input
         .connection
         .is_some_and(|connection| connection.readonly)

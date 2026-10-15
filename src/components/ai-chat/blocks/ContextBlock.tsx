@@ -13,7 +13,7 @@ export function ContextBlock({ items }: { items: AiContextItemRef[] }) {
         const viewCount = aiContextViewCount(item);
         return <li key={`${item.kind}:${item.id}:${index}`} className="break-words">
           <span>{t(aiContextLabelKey(item.kind))}</span>
-          {["table", "view", "saved_query", "connection"].includes(item.kind) && <> · {item.label}</>}
+          {["table", "view", "saved_query", "connection", "notebook", "notebook_cell"].includes(item.kind) && <> · {item.label}</>}
           {count !== null && <> · {t("aiChat.context.tableCount", { count })}</>}
           {viewCount !== null && viewCount > 0 && <> · {t("aiChat.context.viewCount", { count: viewCount })}</>}
           {size !== null && <> · {t("aiChat.context.characters", { count: size })}</>}

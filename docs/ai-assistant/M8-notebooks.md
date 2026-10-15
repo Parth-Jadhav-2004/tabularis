@@ -106,7 +106,7 @@ Added to the slash command registry (M7), only shown in notebook context:
 
 - [x] `ChatTarget` on `Conversation` + "This notebook" filter + reopen behaviour.
 - [x] Expose the active notebook state to the AI provider (a read-only selector from `NotebookView` state; avoid copying cells on every keystroke: snapshot at send time).
-- [ ] Notebook context layer in `context.rs` (the frontend sends a `NotebookSnapshot`: outline + focused/neighbour/mentioned cells + errors + optional results).
+- [x] Notebook context layer in `context.rs` (the frontend sends a `NotebookSnapshot`: outline + focused/neighbour/mentioned cells + errors + optional results).
 - [ ] `#` cell picker + chips + clickable cell references in answers.
 - [ ] Notebook actions on SQL/markdown/chart blocks (cell insert/replace via the bridge from M7).
 - [ ] `tabularis-notebook` envelope: parser, validation, review card, apply with the stale-content check.
@@ -117,7 +117,10 @@ Added to the slash command registry (M7), only shown in notebook context:
 
 - Conversation persistence already supports notebook targets. Creation, restoration and in-memory draft/transcript caches now use the connection and target together; legacy null targets remain editor conversations. Loading another notebook's chat from history preserves its binding and disables sends/SQL actions until the matching target is active or a new conversation is created.
 - History defaults to **This notebook** in notebook tabs. Notebook metadata supplies titles and confirms deletion; failed metadata reads do not imply deletion. Deleted notebooks retain their conversations and display **Notebook no longer available**. These labels are translated in all 11 locales; later M8 controls still need translations.
-- The bridge exposes a local, read-only `readState()` source with title, cells, parameters, focused cell and latest Run All result. It reads current arrays without copying them on each edit. Empty and Markdown-only notebooks retain their own target; SQL actions are disabled without a focused SQL cell. The bounded notebook snapshot, results opt-in and Rust context layer are the next step: this source is not yet serialized or sent to providers.
+- The bridge exposes a local, read-only `readState()` source with title, cells, parameters, focused cell and latest Run All result. It reads current arrays without copying them on each edit. Empty and Markdown-only notebooks retain their own target; SQL actions are disabled without a focused SQL cell.
+- Preview and send now capture a fresh, bounded `NotebookSnapshot`. Rust validates section sizes and the total packet, renders separate untrusted-data envelopes within the notebook's 36k-character allocation, and replaces full-query/cursor context with the notebook layer while retaining explicit editor selections. Header/parameters, outline, focused cell, neighbours, mentioned cells, errors and results have independent caps; previews and encrypted message summaries retain names, indexes, sizes and truncation, never cell contents, parameter values or rows.
+- Notebook and Include results chips control each message. Results remain off by default, reset after sending and include only the focused/mentioned cells (up to five rows, 40 columns and 200 characters per value, sharing a 6k-character allocation). Errors use the existing opt-in Error chip, including `/fix` defaults. Entry-point snapshots preserve the exact failed/selected SQL. Parameter instructions document both `@name` and `${name}` syntax and verbatim substitution.
+- Focused and mentioned SQL feeds the detailed-schema resolver; cells with a different schema override do not select metadata from the current scope. The snapshot already supports mentioned IDs; the `#` picker and mention-choice state are the next step, followed by reviewed cell actions and notebook commands. New context labels and result descriptions are translated in all 11 locales; later M8 controls still need translations.
 
 ## Tests
 

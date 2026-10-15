@@ -2773,7 +2773,12 @@
         "gaps": "Metadatos faltantes",
         "other": "Contexto",
         "view": "Vista",
-        "saved_query": "Consulta guardada"
+        "saved_query": "Consulta guardada",
+        "notebook": "Notebook",
+        "notebook_outline": "Estructura del notebook",
+        "notebook_cell": "Celdas del notebook",
+        "notebook_errors": "Errores del notebook",
+        "notebook_results": "Incluir resultados"
       },
       "refreshPreview": "Actualizar vista previa del contexto",
       "tableCount": "Tablas: {{count}}",
@@ -2795,7 +2800,8 @@
       "references": "Vistas y consultas guardadas",
       "viewDetail": "Detalles de vista: {{name}}",
       "savedQuery": "Consulta guardada: {{name}}",
-      "viewCount": "Vistas: {{count}}"
+      "viewCount": "Vistas: {{count}}",
+      "notebookResultsDescription": "Envía los nombres de columnas, el número de filas y hasta 5 filas de resultados de las celdas activas y referenciadas. Desactivado por defecto en cada mensaje."
     },
     "commands": {
       "title": "Comandos",

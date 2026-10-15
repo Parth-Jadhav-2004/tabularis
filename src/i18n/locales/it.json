@@ -2850,7 +2850,12 @@
         "gaps": "Metadati mancanti",
         "other": "Contesto",
         "view": "Vista",
-        "saved_query": "Query salvata"
+        "saved_query": "Query salvata",
+        "notebook": "Notebook",
+        "notebook_outline": "Struttura del notebook",
+        "notebook_cell": "Celle del notebook",
+        "notebook_errors": "Errori del notebook",
+        "notebook_results": "Includi risultati"
       },
       "refreshPreview": "Aggiorna anteprima contesto",
       "tableCount": "Tabelle: {{count}}",
@@ -2872,7 +2877,8 @@
       "references": "Viste e query salvate",
       "viewDetail": "Dettagli vista: {{name}}",
       "savedQuery": "Query salvata: {{name}}",
-      "viewCount": "Viste: {{count}}"
+      "viewCount": "Viste: {{count}}",
+      "notebookResultsDescription": "Invia nomi delle colonne, conteggi e fino a 5 righe dei risultati delle celle attive e citate. Disattivato per ogni nuovo messaggio."
     },
     "commands": {
       "title": "Comandi",

@@ -15,14 +15,14 @@ Keep detailed security reviews and audit findings outside the repository. This l
 | M5 Conversations | in review | `feat/ai-assistant-provider-layer` | History lifecycle, generated titles, prompt editor and Markdown/notebook exports implemented. Automated and in-memory visual checks pass; native persistence/provider/export smoke validation pending. |
 | M6 Context | in review | `feat/ai-assistant-provider-layer` | Schema cache, Rust-resolved sends/previews, typed mentions, scoped drops, encrypted summaries and per-connection instructions implemented. Visual/native/live-provider validation pending. |
 | M7 Editor integration | in review | `feat/ai-assistant-provider-layer` | Slash commands, prompt customization, sidebar migration, cell targets, Fix with AI and context-menu/palette entry points implemented; old modals removed. Automated checks pass; visual/native/provider validation pending. |
-| M8 Notebooks | in progress | `feat/ai-assistant-provider-layer` | Notebook-bound conversations, default history filter, reopening and local read-only state bridge implemented. Bounded notebook context and reviewed cell actions pending. |
+| M8 Notebooks | in progress | `feat/ai-assistant-provider-layer` | Notebook-bound conversations, state bridge and bounded Rust notebook context implemented, with removable context/results chips. Cell references, reviewed cell actions and notebook commands pending. |
 | M9 Agent mode | not started | | |
 | M10 Multimodal | not started | | |
 | M11 Extras | not started | | |
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M8 notebook conversations and the local state bridge are implemented. Next: bounded notebook snapshots and the Rust context layer, followed by cell references, reviewed cell actions and commands. M7 visual/native/provider checks, M6 mixed-mention/instructions visual and native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
+**Current focus:** M8 bounded notebook snapshots and the Rust context layer are implemented. Next: `#` cell picker/chips and clickable references, followed by reviewed cell actions, the multi-cell envelope and notebook commands. M8 visual/native/provider checks, M7 visual/native/provider checks, M6 mixed-mention/instructions visual and native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
 
 ## Open questions
 
@@ -42,6 +42,15 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M8 bounded notebook context and results opt-in
+- Added fresh notebook snapshots for previews and sends, replacing full editor-query/cursor context while preserving explicit selections and exact entry-point failure SQL. Snapshots include title, stop-on-error, bounded parameters, outline, focused/neighbour/mentioned cells and optional errors/results; cells are not copied on each keystroke. Empty and Markdown notebooks remain valid. Mentioned-ID support is ready for the next step's picker.
+- Rust validates snapshot shape, section limits and a 256 KiB packet cap, then renders notebook data in separate untrusted-data envelopes within 36k characters. Independent budgets preserve space for focused cells, errors and results when the outline is large. Focused/mentioned SQL selects detailed metadata only in the matching schema; parameter guidance covers both `@name` and `${name}` with verbatim substitution. Preview/history metadata contains names/indexes, sizes and truncation, never SQL, parameter values, errors or rows.
+- Added Notebook and Include results chips. Results require explicit opt-in for every message, cover only focused/mentioned cells, and share a 6k-character cap (five rows, 40 columns, 200 characters per value). Removing Notebook also disables results. Errors reuse the opt-in Error chip and `/fix` defaults. Added context labels/descriptions in all 11 locales.
+- Validation: 11 new frontend regressions and 11 new Rust regressions. Complete Vitest suite: 6,354 passed (416 files); complete Cargo suite: 1,923 passed / 221 ignored, run serially. Production frontend build/cargo check, application/scoped-test typechecks, repository ESLint with local worktrees/cache excluded, scoped-test ESLint, theme-token/contrast checks, AI-chat locale key parity, scoped Rust formatting and diff checks pass.
+- Visual/native/live-provider validation remains pending: computer-use inventory exposes no enabled browser automation surface. Tests use in-memory chat fixtures and disposable SQLite databases; no real provider, saved notebook/history or OS keychain was used.
+- Pre-edit GitNexus impact: CRITICAL for shared context defaults (10 direct callers, 14 process groups), HIGH for the shared builder/validator (one/two direct callers, resolver flows) and optional context interfaces (16–17 direct dependents); remaining UI helpers are LOW or have unresolved graph boundaries checked against source references. Rebuilt GitNexus with PDG retained. Final disposable-index `detect_changes` covers 33 files, 96 symbols and 47 indexed flows (CRITICAL). The broad frontend report includes name-based matches to local `text`/`value` helpers; the source diff is confined to notebook context, chat controls and shared context defaults. The real staging area is unchanged; no commit or push was made.
+- M8 remains in progress; its third implementation step is checked. Next: `#` cell picker/chips and clickable answer references, then reviewed cell actions, multi-cell proposals and notebook commands.
 
 ### 2026-10-15: M8 notebook conversations and state bridge
 - Published the completed M6–M7 changes as `417e1395` on `feat/ai-assistant-provider-layer`, without a co-author trailer.

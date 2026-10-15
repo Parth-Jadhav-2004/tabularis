@@ -18,7 +18,8 @@ import { ChatComposer } from "./ChatComposer";
 import { ModelPicker } from "./ModelPicker";
 import { ConversationList } from "./ConversationList";
 import { ContextChips } from "./ContextChips";
-import { changeAiContextMention, changeAiContextTable, createAiContextOptions, defaultAiContextSelection, sameAiContextScope } from "../../utils/aiContext";
+import { changeAiContextMention, changeAiContextTable, defaultAiContextSelection, sameAiContextScope } from "../../utils/aiContext";
+import { createAiTargetContextOptions } from "../../utils/aiNotebookSnapshot";
 import { aiContextCatalogTables, aiContextDroppedTable, aiContextMentionItems } from "../../utils/aiContextMentions";
 import { useAiContextPreview } from "../../hooks/useAiContextPreview";
 import { dragState } from "../../utils/dragState";
@@ -50,6 +51,7 @@ export function AiChatPanel() {
   const connectionId = target?.connectionId ?? database?.activeConnectionId ?? null;
   const fallback = defaultAiChatModel(models.choices, settings, null);
   const notebookId = target?.notebook?.id;
+  const notebookState = target?.notebook?.readState?.();
   const resumeOptions = useMemo(() => ({ choices: models.choices, fallback,
     target: notebookId ? { type: "notebook" as const, notebook_id: notebookId } : { type: "editor" as const },
   }), [models.choices, fallback, notebookId]);
@@ -85,7 +87,7 @@ export function AiChatPanel() {
   const tables = useMemo(() => sameAiContextScope(chat.contextTables, scope) && chat.contextTables
     ? chat.contextTables : { tables: [], excluded_tables: [] }, [chat.contextTables, scope]);
   const getContext = useCallback(() => scope && !localCommand ? { ...scope,
-    ...createAiContextOptions(target?.readContext?.() ?? {}, chat.contextInclude, i18n.resolvedLanguage ?? "en", tables),
+    ...createAiTargetContextOptions(target, chat.contextInclude, i18n.resolvedLanguage ?? "en", tables),
     ...(command ? { command } : {}),
   } : null, [scope, target, chat.contextInclude, i18n.resolvedLanguage, tables, command, localCommand]);
   const preview = useAiContextPreview(getContext, contextEnabled && !historyOpen && !localCommand);
@@ -152,7 +154,7 @@ export function AiChatPanel() {
       setCommandError(false);
       setFocusRequest((value) => value + 1);
       if (entry.command && entry.command !== "generate") void chat.send(`/${entry.command}`, { editorTarget: aiEditorTargetKey(target, activeScopeId), context: {
-        ...createAiContextOptions(entry.snapshot, include, i18n.resolvedLanguage ?? "en", { tables: entry.tables ?? [], excluded_tables: [] }),
+        ...createAiTargetContextOptions(target, include, i18n.resolvedLanguage ?? "en", { tables: entry.tables ?? [], excluded_tables: [] }, entry.snapshot),
         command: entry.command,
       } });
     });
@@ -225,8 +227,10 @@ export function AiChatPanel() {
       </p>}
     </div>
     <ContextChips include={chat.contextInclude} onChange={chat.setContextInclude}
+      notebook={!!target?.notebook?.readState}
       hasInstructions={!!database?.connections.find((connection) => connection.id === connectionId)?.ai_instructions?.trim()}
-      hasError={!!target?.hasError} disabled={!contextEnabled} tables={tables} onTable={onTable}
+      hasError={!!target?.hasError || !!notebookState?.runAllResult?.errors.length
+        || !!notebookState?.cells.some((cell) => cell.error)} disabled={!contextEnabled} tables={tables} onTable={onTable}
       onMention={onMention}
       preview={preview.preview} loading={preview.loading} error={preview.error} onRefresh={() => void preview.refresh()} />
     <ChatComposer draft={chat.draft} onDraft={onDraft} onSend={send} onStop={() => void chat.stop()}

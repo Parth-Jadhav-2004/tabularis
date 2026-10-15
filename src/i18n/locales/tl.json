@@ -2861,7 +2861,12 @@
         "gaps": "Nawawalang metadata",
         "other": "Konteksto",
         "view": "View",
-        "saved_query": "Naka-save na query"
+        "saved_query": "Naka-save na query",
+        "notebook": "Notebook",
+        "notebook_outline": "Balangkas ng notebook",
+        "notebook_cell": "Mga cell ng notebook",
+        "notebook_errors": "Mga error ng notebook",
+        "notebook_results": "Isama ang mga resulta"
       },
       "refreshPreview": "I-refresh ang preview ng konteksto",
       "tableCount": "Mga talahanayan: {{count}}",
@@ -2883,7 +2888,8 @@
       "references": "Mga view at naka-save na query",
       "viewDetail": "Mga detalye ng view: {{name}}",
       "savedQuery": "Naka-save na query: {{name}}",
-      "viewCount": "Mga view: {{count}}"
+      "viewCount": "Mga view: {{count}}",
+      "notebookResultsDescription": "Ipadala ang mga pangalan ng column, bilang ng row at hanggang 5 row ng resulta mula sa aktibo at tinukoy na mga cell. Naka-off bilang default sa bawat mensahe."
     },
     "commands": {
       "title": "Mga command",

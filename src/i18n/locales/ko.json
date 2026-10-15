@@ -2791,7 +2791,12 @@
         "gaps": "누락된 메타데이터",
         "other": "컨텍스트",
         "view": "뷰",
-        "saved_query": "저장된 쿼리"
+        "saved_query": "저장된 쿼리",
+        "notebook": "노트북",
+        "notebook_outline": "노트북 개요",
+        "notebook_cell": "노트북 셀",
+        "notebook_errors": "노트북 오류",
+        "notebook_results": "결과 포함"
       },
       "refreshPreview": "컨텍스트 미리보기 새로 고침",
       "tableCount": "테이블: {{count}}개",
@@ -2813,7 +2818,8 @@
       "references": "뷰 및 저장된 쿼리",
       "viewDetail": "뷰 세부 정보: {{name}}",
       "savedQuery": "저장된 쿼리: {{name}}",
-      "viewCount": "뷰: {{count}}개"
+      "viewCount": "뷰: {{count}}개",
+      "notebookResultsDescription": "현재 셀과 참조된 셀의 열 이름, 행 수 및 최대 5개 결과 행을 전송합니다. 메시지마다 기본적으로 꺼져 있습니다."
     },
     "commands": {
       "title": "명령어",

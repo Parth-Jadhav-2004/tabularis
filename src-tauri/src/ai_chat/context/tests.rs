@@ -6,6 +6,7 @@ use crate::models::{ForeignKey, Index, TableColumn, TableInfo};
 
 fn input() -> ContextInput<'static> {
     ContextInput {
+        notebook: None,
         saved_queries: None,
 
         mode: ChatMode::Ask,
@@ -168,6 +169,7 @@ fn all_layers_keep_order_and_include_detailed_metadata() {
 #[test]
 fn unused_allocations_flow_forward_and_never_overdraw_later_layers() {
     let budgets = ContextBudgets {
+        notebook: 0,
         connection: 100,
         instructions: 100,
         detailed_tables: 100,
@@ -230,6 +232,7 @@ fn every_small_budget_respects_complete_envelopes_and_unicode_boundaries() {
     let result = build_context(
         &input,
         ContextBudgets {
+            notebook: 0,
             connection: 0,
             instructions: 0,
             detailed_tables: 0,
@@ -282,6 +285,7 @@ fn schema_truncation_and_incomplete_schema_rule_always_agree() {
     let result = build_context(
         &input,
         ContextBudgets {
+            notebook: 0,
             connection: 0,
             instructions: 0,
             detailed_tables: 0,
@@ -380,6 +384,7 @@ fn saved_queries_share_editor_budget_are_untrusted_and_only_expose_metadata_in_p
     input.saved_queries = Some(&saved);
     input.editor.query = Some("SELECT 'private-editor-marker';");
     let budgets = ContextBudgets {
+        notebook: 0,
         connection: 0,
         instructions: 0,
         detailed_tables: 0,

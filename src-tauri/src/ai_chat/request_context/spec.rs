@@ -11,6 +11,8 @@ pub(crate) struct ContextSelection {
     pub selection: bool,
     pub cursor_statement: bool,
     pub error: bool,
+    pub notebook: bool,
+    pub notebook_results: bool,
 }
 
 impl Default for ContextSelection {
@@ -23,6 +25,8 @@ impl Default for ContextSelection {
             selection: true,
             cursor_statement: true,
             error: false,
+            notebook: true,
+            notebook_results: false,
         }
     }
 }
@@ -38,6 +42,8 @@ pub(crate) struct EditorSnapshot {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ContextSpec {
+    #[serde(default)]
+    pub notebook: Option<super::super::context::notebook::NotebookSnapshot>,
     #[serde(default)]
     pub command: Option<super::super::slash::ChatCommand>,
     pub connection_id: String,
@@ -70,6 +76,10 @@ impl ContextSpec {
     pub(super) fn validate(&self) -> Result<(), ProviderError> {
         let valid_name = |name: &str| !name.is_empty() && name.len() <= 512 && !name.contains('\0');
         if !valid_name(&self.connection_id)
+            || self
+                .notebook
+                .as_ref()
+                .is_some_and(|snapshot| !snapshot.validate())
             || self
                 .database
                 .as_deref()

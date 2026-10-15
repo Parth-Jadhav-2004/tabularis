@@ -2918,7 +2918,12 @@
         "gaps": "Métadonnées manquantes",
         "other": "Contexte",
         "view": "Vue",
-        "saved_query": "Requête enregistrée"
+        "saved_query": "Requête enregistrée",
+        "notebook": "Notebook",
+        "notebook_outline": "Structure du notebook",
+        "notebook_cell": "Cellules du notebook",
+        "notebook_errors": "Erreurs du notebook",
+        "notebook_results": "Inclure les résultats"
       },
       "refreshPreview": "Actualiser l’aperçu du contexte",
       "tableCount": "Tables : {{count}}",
@@ -2940,7 +2945,8 @@
       "references": "Vues et requêtes enregistrées",
       "viewDetail": "Détails de la vue : {{name}}",
       "savedQuery": "Requête enregistrée : {{name}}",
-      "viewCount": "Vues : {{count}}"
+      "viewCount": "Vues : {{count}}",
+      "notebookResultsDescription": "Envoyer les noms des colonnes, le nombre de lignes et jusqu’à 5 lignes de résultats des cellules actives et citées. Désactivé par défaut pour chaque message."
     },
     "commands": {
       "title": "Commandes",

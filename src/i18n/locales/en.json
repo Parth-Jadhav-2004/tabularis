@@ -2927,7 +2927,12 @@
         "gaps": "Missing metadata",
         "other": "Context",
         "view": "View",
-        "saved_query": "Saved query"
+        "saved_query": "Saved query",
+        "notebook": "Notebook",
+        "notebook_outline": "Notebook outline",
+        "notebook_cell": "Notebook cells",
+        "notebook_errors": "Notebook errors",
+        "notebook_results": "Include results"
       },
       "refreshPreview": "Refresh context preview",
       "tableCount": "Tables: {{count}}",
@@ -2949,7 +2954,8 @@
       "references": "Views and saved queries",
       "viewDetail": "View details: {{name}}",
       "savedQuery": "Saved query: {{name}}",
-      "viewCount": "Views: {{count}}"
+      "viewCount": "Views: {{count}}",
+      "notebookResultsDescription": "Send column names, row counts and up to 5 result rows from the focused and referenced cells. Off by default for each message."
     },
     "commands": {
       "title": "Commands",

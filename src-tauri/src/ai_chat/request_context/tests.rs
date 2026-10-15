@@ -10,6 +10,107 @@ fn spec() -> ContextSpec {
     serde_json::from_value(serde_json::json!({ "connection_id":"fixture", "database":null, "schema":null, "language":"it", "editor":{"query":"SELECT * FROM users"} })).unwrap()
 }
 
+fn notebook_spec() -> ContextSpec {
+    let mut selected = spec();
+    selected.editor.query = Some("private-excluded-editor-marker".into());
+    selected.notebook = Some(serde_json::from_value(serde_json::json!({
+        "id":"notebook", "title":"Revenue", "cell_count":2, "stop_on_error":true, "params":[],
+        "outline":[{"id":"focused", "index":1, "type":"sql", "name":null, "schema":null,
+            "content":"SELECT * FROM users", "truncated":false}],
+        "focused":{"id":"focused", "index":1, "type":"sql", "name":null, "schema":null,
+            "content":"SELECT * FROM users", "truncated":false},
+        "neighbours":[], "mentioned":[{"id":"mentioned", "index":2, "type":"sql", "name":null, "schema":null,
+            "content":"SELECT * FROM missing", "truncated":false}],
+        "errors":[], "results":[{"cell_id":"focused", "columns":["name"], "row_count":1,
+            "rows":[["private-result-marker"]], "truncated":false}], "truncated":false,
+    })).unwrap());
+    selected
+}
+
+#[tokio::test]
+async fn notebook_context_resolves_focused_and_mentioned_tables_and_persists_only_metadata() {
+    let (_directory, params, driver) = fixture().await;
+    let selected = notebook_spec();
+    let built = resolve_with_driver(
+        &selected,
+        &params,
+        &driver,
+        false,
+        &SchemaCache::default(),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    assert!(built
+        .items
+        .iter()
+        .any(|item| item.kind == "table" && item.id == "users"));
+    assert!(built
+        .system
+        .contains("Table \"missing\" referenced but not found"));
+    assert!(!built.system.contains("private-result-marker"));
+    assert!(!built.system.contains("private-excluded-editor-marker"));
+    assert!(built.items.iter().any(|item| item.kind == "notebook"));
+    let mut request = request();
+    apply(&mut request, built).unwrap();
+    let user = serde_json::to_string(&request.messages.last().unwrap()).unwrap();
+    assert!(!user.contains("SELECT"));
+    assert!(!user.contains("private-"));
+    assert!(user.contains("notebook"));
+}
+
+#[tokio::test]
+async fn notebook_removal_and_result_choices_are_enforced_in_rust() {
+    let (_directory, params, driver) = fixture().await;
+    let mut selected = notebook_spec();
+    selected.include.notebook_results = true;
+    let built = resolve_with_driver(
+        &selected,
+        &params,
+        &driver,
+        false,
+        &SchemaCache::default(),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    assert!(built.system.contains("private-result-marker"));
+    selected.include.notebook = false;
+    selected.editor = Default::default();
+    let built = resolve_with_driver(
+        &selected,
+        &params,
+        &driver,
+        false,
+        &SchemaCache::default(),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    assert!(built
+        .items
+        .iter()
+        .all(|item| !item.kind.starts_with("notebook")));
+    assert!(!built.system.contains("private-result-marker"));
+    assert!(!built.system.contains("SELECT * FROM users"));
+}
+
+#[test]
+fn notebook_requests_keep_legacy_defaults_and_reject_invalid_snapshots() {
+    let old = spec();
+    assert!(old.include.notebook);
+    assert!(!old.include.notebook_results);
+    let mut selected = notebook_spec();
+    assert!(selected.validate().is_ok());
+    selected.notebook.as_mut().unwrap().results[0]
+        .rows
+        .push(vec!["界".repeat(201)]);
+    assert!(selected.validate().is_err());
+}
+
 async fn fixture() -> (tempfile::TempDir, ConnectionParams, SqliteDriver) {
     let directory = tempfile::tempdir().unwrap();
     let path = directory.path().join("context.sqlite");

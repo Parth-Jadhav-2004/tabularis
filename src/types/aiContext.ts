@@ -6,6 +6,8 @@ export interface AiContextSelection {
   selection: boolean;
   cursor_statement: boolean;
   error: boolean;
+  notebook?: boolean;
+  notebook_results?: boolean;
 }
 
 export interface AiEditorSnapshot {
@@ -16,6 +18,7 @@ export interface AiEditorSnapshot {
 }
 
 export interface AiContextOptions {
+  notebook?: import("./aiNotebook").AiNotebookSnapshot;
   command?: import("./aiCommands").AiRemoteCommand;
   language: string;
   include: AiContextSelection;

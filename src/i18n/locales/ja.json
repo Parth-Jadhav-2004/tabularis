@@ -2856,7 +2856,12 @@
         "gaps": "不足しているメタデータ",
         "other": "コンテキスト",
         "view": "ビュー",
-        "saved_query": "保存済みクエリ"
+        "saved_query": "保存済みクエリ",
+        "notebook": "ノートブック",
+        "notebook_outline": "ノートブックの構成",
+        "notebook_cell": "ノートブックのセル",
+        "notebook_errors": "ノートブックのエラー",
+        "notebook_results": "結果を含める"
       },
       "refreshPreview": "コンテキストのプレビューを更新",
       "tableCount": "テーブル数: {{count}}",
@@ -2878,7 +2883,8 @@
       "references": "ビューと保存済みクエリ",
       "viewDetail": "ビューの詳細: {{name}}",
       "savedQuery": "保存済みクエリ: {{name}}",
-      "viewCount": "ビュー数: {{count}}"
+      "viewCount": "ビュー数: {{count}}",
+      "notebookResultsDescription": "選択中および参照されたセルの列名、行数、最大5行の結果を送信します。メッセージごとに既定で無効です。"
     },
     "commands": {
       "title": "コマンド",
