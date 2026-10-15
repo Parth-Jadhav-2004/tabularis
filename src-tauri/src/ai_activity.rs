@@ -102,6 +102,7 @@ fn ensure_dir(dir: &Path) -> Result<(), String> {
 pub fn append_event_in(dir: &Path, event: &AiActivityEvent) -> Result<(), String> {
     ensure_dir(dir)?;
     crate::secure_store::with_store_in(dir, true, |store| {
+        crate::secure_store::check_file(&activity_path_in(dir))?;
         let payload =
             serde_json::to_vec(event).map_err(|_| crate::secure_store::StoreError::InvalidInput)?;
         let line = store.seal_line(&payload, "activity")?;
@@ -204,6 +205,7 @@ fn read_all_events_in(dir: &Path) -> Result<Vec<AiActivityEvent>, String> {
         let mut events = Vec::new();
         let mut skipped = 0usize;
         for path in paths {
+            crate::secure_store::check_file(&path)?;
             let reader = BufReader::new(fs::File::open(path)?);
             for line in reader.lines() {
                 let line = match line {

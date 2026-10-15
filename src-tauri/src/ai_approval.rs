@@ -68,6 +68,7 @@ fn approvals_dir(base: &Path) -> PathBuf {
 
 fn ensure_dir(base: &Path) -> Result<PathBuf, String> {
     let dir = approvals_dir(base);
+    crate::secure_store::check_directory(&dir).map_err(|error| error.to_string())?;
     if !dir.exists() {
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     }
@@ -101,6 +102,8 @@ pub fn write_pending_in(base: &Path, req: &PendingApproval) -> Result<PathBuf, S
 
 pub fn read_pending_in(base: &Path, id: &str) -> Result<Option<PendingApproval>, String> {
     validate_approval_id(id)?;
+    crate::secure_store::check_directory(&approvals_dir(base))
+        .map_err(|error| error.to_string())?;
     let path = pending_file(base, id);
     if !path.exists() {
         return Ok(None);
@@ -119,6 +122,7 @@ pub fn read_pending_in(base: &Path, id: &str) -> Result<Option<PendingApproval>,
 
 pub fn list_pending_in(base: &Path) -> Result<Vec<PendingApproval>, String> {
     let dir = approvals_dir(base);
+    crate::secure_store::check_directory(&dir).map_err(|error| error.to_string())?;
     if !dir.exists() {
         return Ok(Vec::new());
     }
@@ -174,6 +178,8 @@ pub fn write_decision_in(base: &Path, decision: &ApprovalDecision) -> Result<(),
 
 pub fn read_decision_in(base: &Path, id: &str) -> Result<Option<ApprovalDecision>, String> {
     validate_approval_id(id)?;
+    crate::secure_store::check_directory(&approvals_dir(base))
+        .map_err(|error| error.to_string())?;
     let path = decision_file(base, id);
     if !path.exists() {
         return Ok(None);

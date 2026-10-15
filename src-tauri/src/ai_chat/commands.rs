@@ -5,6 +5,26 @@ use super::{
 use crate::secure_store::StoreError;
 
 #[tauri::command]
+pub async fn ai_reset_encryption_key(
+    app: tauri::AppHandle,
+    manager: tauri::State<'_, super::run::RunManager>,
+    confirmed: bool,
+) -> Result<(), StoreError> {
+    use tauri::Emitter;
+    if !confirmed {
+        return Err(StoreError::InvalidInput);
+    }
+    manager.cancel_all();
+    tokio::task::spawn_blocking(|| {
+        crate::secure_store::reset::reset_in(&crate::paths::get_app_config_dir(), true)
+    })
+    .await
+    .map_err(|_| StoreError::Io)??;
+    let _ = app.emit("ai-chat://storage-cleared", "reset");
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn ai_chat_put_blob(bytes: Vec<u8>, mime: String) -> Result<String, StoreError> {
     tokio::task::spawn_blocking(move || {
         super::blobs::BlobStore::new(&crate::paths::get_app_config_dir()).put(&bytes, &mime)
@@ -45,7 +65,8 @@ pub async fn ai_chat_load(connection_id: String, id: String) -> Result<Conversat
 #[tauri::command]
 pub async fn ai_chat_save(conversation: Conversation) -> Result<SaveResult, StoreError> {
     tokio::task::spawn_blocking(move || {
-        ConversationStore::new(&crate::paths::get_app_config_dir()).save(conversation)
+        ConversationStore::new(&crate::paths::get_app_config_dir())
+            .save_for_existing_connection(conversation)
     })
     .await
     .map_err(|_| StoreError::Io)?
@@ -78,10 +99,17 @@ pub async fn ai_chat_delete(connection_id: String, id: String) -> Result<(), Sto
 }
 
 #[tauri::command]
-pub async fn ai_chat_delete_all() -> Result<(), StoreError> {
+pub async fn ai_chat_delete_all(
+    app: tauri::AppHandle,
+    manager: tauri::State<'_, super::run::RunManager>,
+) -> Result<(), StoreError> {
+    use tauri::Emitter;
+    manager.cancel_all();
     tokio::task::spawn_blocking(|| {
         ConversationStore::new(&crate::paths::get_app_config_dir()).delete_all()
     })
     .await
-    .map_err(|_| StoreError::Io)?
+    .map_err(|_| StoreError::Io)??;
+    let _ = app.emit("ai-chat://storage-cleared", "conversations");
+    Ok(())
 }

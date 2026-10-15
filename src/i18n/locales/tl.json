@@ -681,6 +681,19 @@
     "version": "Bersyon",
     "starOnGithub": "Mag-star sa GitHub",
     "ai": {
+      "storage": {
+        "title": "Naka-save na datos ng AI",
+        "description": "Naka-encrypt ang mga usapan, attachment, aktibidad at pag-apruba gamit ang key sa keychain ng system.",
+        "delete": "Burahin ang lahat ng usapan",
+        "deleteDescription": "Permanenteng burahin ang mga usapan at attachment sa lahat ng koneksyon.",
+        "reset": "I-reset ang encryption key",
+        "resetDescription": "Permanenteng burahin ang lahat ng naka-save na datos ng AI at i-reset ang encryption key nito.",
+        "deleteConfirm": "Burahin ang lahat ng usapan at attachment sa lahat ng koneksyon? Hindi na ito maibabalik.",
+        "resetConfirm": "Burahin ang lahat ng usapan, attachment, aktibidad at pag-apruba ng AI at i-reset ang encryption key nito? Hindi na ito maibabalik.",
+        "deleteSuccess": "Nabura na ang lahat ng usapan at attachment.",
+        "resetSuccess": "Nabura na ang lahat ng naka-save na datos ng AI at na-reset ang encryption key nito.",
+        "error": "Hindi makumpleto ang aksyong ito. Suriin ang access sa keychain at mga pahintulot sa storage."
+      },
       "tab": "AI",
       "title": "AI Configuration",
       "description": "I-configure ang mga AI provider para i-enable ang natural language to SQL generation. Ang mga key ay ligtas na naka-store sa keychain ng iyong system.",

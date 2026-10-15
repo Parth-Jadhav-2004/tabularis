@@ -613,6 +613,19 @@
     "version": "版本",
     "starOnGithub": "在 GitHub 上 Star",
     "ai": {
+      "storage": {
+        "title": "已保存的 AI 数据",
+        "description": "对话、附件、活动和审批使用系统钥匙串中的密钥加密。",
+        "delete": "删除所有对话",
+        "deleteDescription": "永久删除所有连接的对话和附件。",
+        "reset": "重置加密密钥",
+        "resetDescription": "永久删除所有已保存的 AI 数据并重置其加密密钥。",
+        "deleteConfirm": "删除所有连接的对话和附件？此操作无法撤销。",
+        "resetConfirm": "删除所有对话、附件、AI 活动和审批，并重置其加密密钥？此操作无法撤销。",
+        "deleteSuccess": "所有对话和附件已删除。",
+        "resetSuccess": "所有已保存的 AI 数据已删除，加密密钥已重置。",
+        "error": "无法完成此操作。请检查钥匙串访问权限和存储权限。"
+      },
       "tab": "AI",
       "title": "AI 配置",
       "description": "配置 AI 提供商以启用自然语言到 SQL 生成。密钥安全存储在您的系统密钥链中。",

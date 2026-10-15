@@ -687,6 +687,19 @@
     "version": "Version",
     "starOnGithub": "Star on GitHub",
     "ai": {
+      "storage": {
+        "title": "Stored AI data",
+        "description": "Conversations, attachments, activity and approvals are encrypted with a key in the system keychain.",
+        "delete": "Delete all conversations",
+        "deleteDescription": "Permanently delete conversations and attachments from every connection.",
+        "reset": "Reset encryption key",
+        "resetDescription": "Permanently delete all stored AI data and reset its encryption key.",
+        "deleteConfirm": "Delete all conversations and attachments from every connection? This cannot be undone.",
+        "resetConfirm": "Delete all conversations, attachments, AI activity and approvals, and reset their encryption key? This cannot be undone.",
+        "deleteSuccess": "All conversations and attachments were deleted.",
+        "resetSuccess": "All stored AI data was deleted and its encryption key was reset.",
+        "error": "Could not complete this action. Check keychain access and storage permissions."
+      },
       "tab": "AI",
       "title": "AI Configuration",
       "description": "Configure AI providers to enable natural language to SQL generation. Keys are stored securely in your system's keychain.",

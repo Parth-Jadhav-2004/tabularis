@@ -101,3 +101,26 @@ fn gc_does_not_remove_any_blob_if_a_conversation_is_unreadable() {
     assert!(blobs.gc(Duration::ZERO).is_err());
     assert!(blobs.get(&orphan).is_ok());
 }
+
+#[test]
+fn gc_preserves_blobs_when_future_blocks_might_reference_them() {
+    let dir = TestDirectory::new().unwrap();
+    let blobs = BlobStore::new(dir.path());
+    let id = blobs.put(b"future-reference", "text/plain").unwrap();
+    let mut raw = serde_json::to_value(chat(&id)).unwrap();
+    ConversationStore::new(dir.path()).save(chat(&id)).unwrap();
+    raw["messages"][0]["blocks"] = serde_json::json!([{"type":"future_attachment", "blob_id":id}]);
+    crate::secure_store::with_store_in(dir.path(), false, |cipher| {
+        cipher.write_sealed(
+            &dir.path().join("ai_chats/c/one.chat"),
+            &serde_json::to_vec(&raw).unwrap(),
+            "chat:c:one",
+        )
+    })
+    .unwrap();
+    assert!(matches!(
+        blobs.gc(Duration::ZERO),
+        Err(StoreError::UnsupportedVersion)
+    ));
+    assert!(blobs.get(&id).is_ok());
+}

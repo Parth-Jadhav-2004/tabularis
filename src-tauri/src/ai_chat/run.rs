@@ -26,6 +26,12 @@ impl Drop for RunGuard {
 }
 
 impl RunManager {
+    pub fn cancel_all(&self) {
+        for token in self.runs.lock().unwrap().values() {
+            token.cancel();
+        }
+    }
+
     pub(super) fn start(&self, requested_id: Option<String>) -> Result<RunGuard, ProviderError> {
         let id = requested_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
         if !uuid::Uuid::parse_str(&id).is_ok_and(|parsed| parsed.to_string() == id) {

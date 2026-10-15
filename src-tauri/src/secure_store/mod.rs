@@ -4,10 +4,12 @@ mod envelope;
 mod io;
 mod key;
 pub mod migration;
+pub mod reset;
 
 #[cfg(test)]
 pub(crate) mod testing;
 
+pub(crate) use io::{check_directory, check_file};
 pub(crate) use key::{exclusive_in, with_store_in};
 
 pub fn ensure_available() -> Result<(), StoreError> {
@@ -149,6 +151,7 @@ impl CipherStore {
     }
 
     pub(crate) fn read_sealed(&self, path: &Path, aad: &str) -> Result<Vec<u8>, StoreError> {
+        io::check_file(path)?;
         self.open(&std::fs::read(path)?, aad)
     }
 

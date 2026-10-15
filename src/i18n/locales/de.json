@@ -648,6 +648,19 @@
     "version": "Version",
     "starOnGithub": "Auf GitHub mit Stern markieren",
     "ai": {
+      "storage": {
+        "title": "Gespeicherte KI-Daten",
+        "description": "Unterhaltungen, Anhänge, Aktivitäten und Genehmigungen werden mit einem Schlüssel im Systemschlüsselbund verschlüsselt.",
+        "delete": "Alle Unterhaltungen löschen",
+        "deleteDescription": "Unterhaltungen und Anhänge aller Verbindungen dauerhaft löschen.",
+        "reset": "Verschlüsselungsschlüssel zurücksetzen",
+        "resetDescription": "Alle gespeicherten KI-Daten dauerhaft löschen und ihren Verschlüsselungsschlüssel zurücksetzen.",
+        "deleteConfirm": "Alle Unterhaltungen und Anhänge aller Verbindungen löschen? Dies kann nicht rückgängig gemacht werden.",
+        "resetConfirm": "Alle Unterhaltungen, Anhänge, KI-Aktivitäten und Genehmigungen löschen und ihren Verschlüsselungsschlüssel zurücksetzen? Dies kann nicht rückgängig gemacht werden.",
+        "deleteSuccess": "Alle Unterhaltungen und Anhänge wurden gelöscht.",
+        "resetSuccess": "Alle gespeicherten KI-Daten wurden gelöscht und ihr Verschlüsselungsschlüssel wurde zurückgesetzt.",
+        "error": "Die Aktion konnte nicht abgeschlossen werden. Prüfe den Zugriff auf den Schlüsselbund und die Speicherberechtigungen."
+      },
       "tab": "KI",
       "title": "KI-Konfiguration",
       "description": "Konfiguriere KI-Anbieter, um SQL-Generierung aus natürlicher Sprache zu aktivieren. Schlüssel werden sicher im System-Keychain gespeichert.",

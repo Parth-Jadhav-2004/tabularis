@@ -217,3 +217,56 @@ fn symlinked_connection_directories_are_rejected() {
         .is_err());
     assert_eq!(fs::read_dir(outside.path()).unwrap().count(), 0);
 }
+
+#[test]
+fn late_saves_cannot_recreate_history_after_connection_deletion() {
+    let dir = TestDirectory::new().unwrap();
+    let store = ConversationStore::new(dir.path());
+    let connection = crate::models::SavedConnection {
+        id: "c".into(),
+        name: "Test".into(),
+        params: crate::models::ConnectionParams::default(),
+        group_id: None,
+        sort_order: None,
+        detect_json_in_text_columns: None,
+        appearance: None,
+        tag_ids: None,
+        environment: None,
+    };
+    let path = dir.path().join("connections.json");
+    fs::write(&path, serde_json::to_vec(&vec![connection]).unwrap()).unwrap();
+    store
+        .save_for_existing_connection(conversation("c", "one"))
+        .unwrap();
+    fs::write(&path, "[]").unwrap();
+    store.delete_connection("c").unwrap();
+    assert!(matches!(
+        store.save_for_existing_connection(conversation("c", "one")),
+        Err(StoreError::InvalidInput)
+    ));
+    assert!(!dir.path().join("ai_chats/c").exists());
+}
+
+#[test]
+fn saving_a_loaded_future_block_does_not_discard_unknown_data() {
+    let dir = TestDirectory::new().unwrap();
+    let store = ConversationStore::new(dir.path());
+    let chat = conversation("c", "one");
+    store.save(chat.clone()).unwrap();
+    let path = dir.path().join("ai_chats/c/one.chat");
+    let mut raw = serde_json::to_value(&chat).unwrap();
+    raw["messages"][0]["blocks"]
+        .as_array_mut()
+        .unwrap()
+        .push(serde_json::json!({"type":"future_block", "blob_id":"future"}));
+    with_store_in(dir.path(), false, |cipher| {
+        cipher.write_sealed(&path, &serde_json::to_vec(&raw).unwrap(), "chat:c:one")
+    })
+    .unwrap();
+    let original = fs::read(&path).unwrap();
+    assert!(matches!(
+        store.save(store.load("c", "one").unwrap()),
+        Err(StoreError::UnsupportedVersion)
+    ));
+    assert_eq!(fs::read(path).unwrap(), original);
+}

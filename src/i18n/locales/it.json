@@ -686,6 +686,19 @@
     "version": "Versione",
     "starOnGithub": "Star su GitHub",
     "ai": {
+      "storage": {
+        "title": "Dati AI salvati",
+        "description": "Conversazioni, allegati, attività e approvazioni sono cifrati con una chiave nel portachiavi di sistema.",
+        "delete": "Elimina tutte le conversazioni",
+        "deleteDescription": "Elimina definitivamente conversazioni e allegati di tutte le connessioni.",
+        "reset": "Reimposta la chiave di cifratura",
+        "resetDescription": "Elimina definitivamente tutti i dati AI salvati e reimposta la loro chiave di cifratura.",
+        "deleteConfirm": "Eliminare tutte le conversazioni e gli allegati di tutte le connessioni? Questa azione è irreversibile.",
+        "resetConfirm": "Eliminare tutte le conversazioni, gli allegati, le attività e le approvazioni AI e reimpostare la loro chiave di cifratura? Questa azione è irreversibile.",
+        "deleteSuccess": "Tutte le conversazioni e gli allegati sono stati eliminati.",
+        "resetSuccess": "Tutti i dati AI salvati sono stati eliminati e la chiave di cifratura è stata reimpostata.",
+        "error": "Impossibile completare questa azione. Controlla l’accesso al portachiavi e i permessi di archiviazione."
+      },
       "tab": "AI",
       "title": "Configurazione AI",
       "description": "Configura i provider AI per abilitare la generazione di SQL da linguaggio naturale. Le chiavi sono salvate in modo sicuro nel portachiavi di sistema.",

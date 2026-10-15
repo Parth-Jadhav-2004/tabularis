@@ -52,7 +52,17 @@ pub(crate) fn exclusive_in<T>(
     work: impl FnOnce() -> Result<T, StoreError>,
 ) -> Result<T, StoreError> {
     let _process = PROCESS_LOCK.lock().map_err(|_| StoreError::Io)?;
+    // The keychain account is shared even when the user changes storage roots.
+    #[cfg(not(test))]
+    let _key_lock =
+        lock_file(&crate::paths::get_default_app_config_dir().join(".ai_store.key.lock"))?;
     fs::create_dir_all(base)?;
+    let _data_lock = lock_file(&base.join(".ai_store.lock"))?;
+    work()
+}
+
+fn lock_file(path: &Path) -> Result<fs::File, StoreError> {
+    fs::create_dir_all(path.parent().ok_or(StoreError::InvalidInput)?)?;
     let mut options = OpenOptions::new();
     options.read(true).write(true).create(true).truncate(false);
     #[cfg(unix)]
@@ -60,9 +70,9 @@ pub(crate) fn exclusive_in<T>(
         use std::os::unix::fs::OpenOptionsExt;
         options.mode(0o600);
     }
-    let lock = options.open(base.join(".ai_store.lock"))?;
+    let lock = options.open(path)?;
     FileExt::lock_exclusive(&lock)?;
-    work()
+    Ok(lock)
 }
 
 pub(crate) fn with_store_in<T>(
@@ -146,6 +156,7 @@ fn load_in(
 
 fn has_sealed_artifacts(base: &Path) -> Result<bool, StoreError> {
     let chats = base.join("ai_chats");
+    super::check_directory(&chats)?;
     if chats.exists() && contains_files(&chats)? {
         return Ok(true);
     }
@@ -170,6 +181,7 @@ fn has_sealed_artifacts(base: &Path) -> Result<bool, StoreError> {
         }
     }
     let approvals = base.join("pending_approvals");
+    super::check_directory(&approvals)?;
     if approvals.exists() {
         for entry in fs::read_dir(approvals)? {
             let entry = entry?;

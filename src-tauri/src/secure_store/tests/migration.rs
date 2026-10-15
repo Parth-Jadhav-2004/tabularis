@@ -127,3 +127,16 @@ fn migration_rejects_symlinks_without_modifying_external_files() {
         "external-private-marker"
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn migration_rejects_symlinked_approval_directories() {
+    let dir = TestDirectory::new().unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    let path = outside.path().join("one.pending.json");
+    let original = serde_json::to_vec(&pending("one")).unwrap();
+    fs::write(&path, &original).unwrap();
+    std::os::unix::fs::symlink(outside.path(), dir.path().join("pending_approvals")).unwrap();
+    assert!(migrate_in(dir.path()).is_err());
+    assert_eq!(fs::read(path).unwrap(), original);
+}

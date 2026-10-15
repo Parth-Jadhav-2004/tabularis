@@ -129,3 +129,21 @@ fn concurrent_appenders_do_not_interleave_encrypted_lines() {
         16
     );
 }
+
+#[cfg(unix)]
+#[test]
+fn symlinks_cannot_redirect_activity_or_approval_writes() {
+    let dir = TestDirectory::new().unwrap();
+    let outside = tempfile::tempdir().unwrap();
+    let target = outside.path().join("untouched");
+    std::fs::write(&target, "external-private-marker").unwrap();
+    std::os::unix::fs::symlink(&target, dir.path().join("ai_activity.jsonl")).unwrap();
+    assert!(activity::append_event_in(dir.path(), &activity_event("one")).is_err());
+    assert_eq!(
+        std::fs::read_to_string(&target).unwrap(),
+        "external-private-marker"
+    );
+    std::os::unix::fs::symlink(outside.path(), dir.path().join("pending_approvals")).unwrap();
+    assert!(approval::write_pending_in(dir.path(), &pending("one")).is_err());
+    assert!(!outside.path().join("one.pending.json").exists());
+}

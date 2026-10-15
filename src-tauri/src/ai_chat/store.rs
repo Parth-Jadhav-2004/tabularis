@@ -51,6 +51,27 @@ impl ConversationStore {
         with_store_in(&self.base, true, |store| self.save_locked(chat, store))
     }
 
+    /// Validate the live connection under the same lock used by cascade cleanup,
+    /// so a late frontend save cannot recreate history for a deleted connection.
+    pub(crate) fn save_for_existing_connection(
+        &self,
+        chat: Conversation,
+    ) -> Result<SaveResult, StoreError> {
+        store_paths::chat_path(&self.base, &chat.connection_id, &chat.id)?;
+        with_store_in(&self.base, true, |store| {
+            let path = crate::paths::resolve_connections_path(&self.base);
+            let connections =
+                crate::persistence::load_connections(&path).map_err(|_| StoreError::Io)?;
+            if !connections
+                .iter()
+                .any(|connection| connection.id == chat.connection_id)
+            {
+                return Err(StoreError::InvalidInput);
+            }
+            self.save_locked(chat, store)
+        })
+    }
+
     fn save_locked(
         &self,
         mut chat: Conversation,
@@ -64,6 +85,7 @@ impl ConversationStore {
         }
         let path = store_paths::chat_path(&self.base, &chat.connection_id, &chat.id)?;
         if path.exists() {
+            store_index::supports_mutation(&self.base, &chat.connection_id, &chat.id, store)?;
             // Refuse to overwrite unreadable/newer history; preserve its creation date.
             chat.created_at =
                 store_index::load_locked(&self.base, &chat.connection_id, &chat.id, store)?

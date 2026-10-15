@@ -41,6 +41,15 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: M2 confirmed recovery controls and path guards completed
+- Added Settings > AI deletion/reset actions with separate explicit confirmations, busy/error handling, and translations in all 11 locales. Reset requires backend confirmation, cancels active chat runs, clears AI artifacts/key/cache and preserves the watched approval directory.
+- Added managed-path preflight and symlink guards for activity/approval writes, migration and reset. Named encrypted staging files are identifiable and removed by recovery after crashes.
+- The global keychain account is now protected by a lock in the default config directory even if processes use different active storage roots.
+- GC and overwrite operations stop on unknown future blocks; a late save validates the current connection under the AI storage lock so deleted connections' histories cannot be recreated.
+- Validation: full Rust suite 1,792 passed / 11 ignored; full frontend suite 6,089 passed; typecheck, scoped ESLint and theme-token lint pass. Production cargo check passes (one pre-existing sandbox dead-code warning).
+- Added regression tests for symlink redirection, reset preflight/staging cleanup, unknown-block retention, delayed saves and cancellation, plus four confirmation UI tests.
+- Final security review remains in progress, including debug diagnostic paths. Native signed/dev and other-platform keychain verification is still pending; no real user key or history was reset.
+
 ### 2026-10-15: M2 startup migration completed
 - GUI migration runs on the blocking pool before starting approval consumers/GC; standalone MCP migrates and verifies key availability before handling requests.
 - Legacy activity/rotated logs, session state and approvals are converted in place, with encrypted staging files read back and verified before replacing originals. Mixed logs preserve existing sealed lines; malformed legacy lines are retained encrypted and skipped by readers.

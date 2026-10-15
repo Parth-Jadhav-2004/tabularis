@@ -690,6 +690,7 @@ pub fn run() {
             ai_chat::ai_chat_delete_all,
             ai_chat::ai_chat_put_blob,
             ai_chat::ai_chat_get_blob,
+            ai_chat::ai_reset_encryption_key,
             ai::providers::get_ai_model_capabilities,
             ai::explain_ai_query,
             ai::analyze_ai_explain_plan,

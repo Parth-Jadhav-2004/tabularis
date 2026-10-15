@@ -119,8 +119,48 @@ pub(crate) fn all_conversations_locked(
     let mut chats = Vec::new();
     for connection in store_paths::connections(base)? {
         for id in chat_ids(base, &connection)? {
+            supports_mutation(base, &connection, &id, store)?;
             chats.push(load_locked(base, &connection, &id, store)?);
         }
     }
     Ok(chats)
+}
+
+pub(super) fn supports_mutation(
+    base: &Path,
+    connection: &str,
+    id: &str,
+    store: &CipherStore,
+) -> Result<(), StoreError> {
+    let path = store_paths::chat_path(base, connection, id)?;
+    let bytes = store.open(
+        &store_paths::read_bounded(&path)?,
+        &format!("chat:{connection}:{id}"),
+    )?;
+    let raw: serde_json::Value =
+        serde_json::from_slice(&bytes).map_err(|_| StoreError::Corrupted)?;
+    if let Some(messages) = raw["messages"].as_array() {
+        for message in messages {
+            if let Some(blocks) = message["blocks"].as_array() {
+                for block in blocks {
+                    if !matches!(
+                        block["type"].as_str(),
+                        Some(
+                            "text"
+                                | "reasoning"
+                                | "tool_call"
+                                | "tool_result"
+                                | "image"
+                                | "attachment"
+                                | "context"
+                                | "error"
+                        )
+                    ) {
+                        return Err(StoreError::UnsupportedVersion);
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }

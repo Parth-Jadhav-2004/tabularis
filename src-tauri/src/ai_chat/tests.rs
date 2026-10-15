@@ -34,6 +34,16 @@ fn run_manager_limits_active_requests_and_releases_slots() {
 }
 
 #[test]
+fn clearing_storage_cancels_every_active_chat_run() {
+    let manager = RunManager::default();
+    let first = manager.start(None).unwrap();
+    let second = manager.start(None).unwrap();
+    manager.cancel_all();
+    assert!(first.cancel.is_cancelled());
+    assert!(second.cancel.is_cancelled());
+}
+
+#[test]
 fn run_ids_must_match_the_canonical_event_channel() {
     let manager = RunManager::default();
     let id = uuid::Uuid::new_v4();

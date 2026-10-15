@@ -21,6 +21,7 @@ import { getProviderLabel } from "../../utils/settingsUI";
 import { Select } from "../ui/Select";
 import { SettingSection, SettingRow, SettingToggle } from "./SettingControls";
 import { ProxyOverrideEditor } from "./ProxyFields";
+import { AiStorageSection } from "./AiStorageSection";
 import {
   defaultProxyOverride,
   normalizeProxyOverride,
@@ -637,6 +638,8 @@ export function AiTab() {
             </div>
           </SettingSection>
         )}
+
+        <AiStorageSection />
 
         {/* Prompt customization */}
         <SettingSection title={t("settings.ai.promptCustomization")}>

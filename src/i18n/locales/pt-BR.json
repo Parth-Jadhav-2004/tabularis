@@ -657,6 +657,19 @@
     "version": "Versão",
     "starOnGithub": "Dar Estrela no GitHub",
     "ai": {
+      "storage": {
+        "title": "Dados de IA salvos",
+        "description": "Conversas, anexos, atividades e aprovações são criptografados com uma chave no chaveiro do sistema.",
+        "delete": "Excluir todas as conversas",
+        "deleteDescription": "Exclui permanentemente conversas e anexos de todas as conexões.",
+        "reset": "Redefinir a chave de criptografia",
+        "resetDescription": "Exclui permanentemente todos os dados de IA salvos e redefine sua chave de criptografia.",
+        "deleteConfirm": "Excluir todas as conversas e anexos de todas as conexões? Esta ação não pode ser desfeita.",
+        "resetConfirm": "Excluir todas as conversas, anexos, atividades e aprovações de IA e redefinir sua chave de criptografia? Esta ação não pode ser desfeita.",
+        "deleteSuccess": "Todas as conversas e anexos foram excluídos.",
+        "resetSuccess": "Todos os dados de IA salvos foram excluídos e sua chave de criptografia foi redefinida.",
+        "error": "Não foi possível concluir esta ação. Verifique o acesso ao chaveiro e as permissões de armazenamento."
+      },
       "tab": "IA",
       "title": "Configuração de IA",
       "description": "Configure provedores de IA para habilitar a geração de SQL a partir de linguagem natural. As chaves são armazenadas com segurança no chaveiro do seu sistema.",

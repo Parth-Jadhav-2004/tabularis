@@ -681,6 +681,19 @@
     "version": "Version",
     "starOnGithub": "Mettre une étoile sur GitHub",
     "ai": {
+      "storage": {
+        "title": "Données IA enregistrées",
+        "description": "Les conversations, pièces jointes, activités et approbations sont chiffrées avec une clé du trousseau système.",
+        "delete": "Supprimer toutes les conversations",
+        "deleteDescription": "Supprime définitivement les conversations et pièces jointes de toutes les connexions.",
+        "reset": "Réinitialiser la clé de chiffrement",
+        "resetDescription": "Supprime définitivement toutes les données IA enregistrées et réinitialise leur clé de chiffrement.",
+        "deleteConfirm": "Supprimer toutes les conversations et pièces jointes de toutes les connexions ? Cette action est irréversible.",
+        "resetConfirm": "Supprimer toutes les conversations, pièces jointes, activités et approbations IA et réinitialiser leur clé de chiffrement ? Cette action est irréversible.",
+        "deleteSuccess": "Toutes les conversations et pièces jointes ont été supprimées.",
+        "resetSuccess": "Toutes les données IA enregistrées ont été supprimées et leur clé de chiffrement a été réinitialisée.",
+        "error": "Impossible de terminer cette action. Vérifiez l’accès au trousseau et les autorisations de stockage."
+      },
       "tab": "IA",
       "title": "Configuration IA",
       "description": "Configurez les fournisseurs IA pour activer la génération SQL en langage naturel. Les clés sont stockées en toute sécurité dans le trousseau de votre système.",

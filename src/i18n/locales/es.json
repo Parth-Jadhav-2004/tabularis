@@ -673,6 +673,19 @@
     "version": "Versión",
     "starOnGithub": "Estrella en GitHub",
     "ai": {
+      "storage": {
+        "title": "Datos de IA guardados",
+        "description": "Las conversaciones, los adjuntos, la actividad y las aprobaciones se cifran con una clave del llavero del sistema.",
+        "delete": "Eliminar todas las conversaciones",
+        "deleteDescription": "Elimina permanentemente las conversaciones y los adjuntos de todas las conexiones.",
+        "reset": "Restablecer la clave de cifrado",
+        "resetDescription": "Elimina permanentemente todos los datos de IA guardados y restablece su clave de cifrado.",
+        "deleteConfirm": "¿Eliminar todas las conversaciones y los adjuntos de todas las conexiones? Esta acción no se puede deshacer.",
+        "resetConfirm": "¿Eliminar todas las conversaciones, los adjuntos, la actividad y las aprobaciones de IA y restablecer su clave de cifrado? Esta acción no se puede deshacer.",
+        "deleteSuccess": "Se eliminaron todas las conversaciones y los adjuntos.",
+        "resetSuccess": "Se eliminaron todos los datos de IA guardados y se restableció su clave de cifrado.",
+        "error": "No se pudo completar esta acción. Comprueba el acceso al llavero y los permisos de almacenamiento."
+      },
       "tab": "IA",
       "title": "Configuración de IA",
       "description": "Configura los proveedores de IA para habilitar la generación de SQL desde lenguaje natural. Las claves se almacenan de forma segura en el llavero del sistema.",

@@ -18,6 +18,7 @@ pub(crate) fn activity_paths(base: &Path) -> Vec<PathBuf> {
 fn json_paths(base: &Path) -> Result<Vec<(PathBuf, String)>, StoreError> {
     let mut paths = vec![(base.join(".mcp_session_state.json"), "mcp_session".into())];
     let approvals = base.join("pending_approvals");
+    super::check_directory(&approvals)?;
     if approvals.exists() {
         for entry in fs::read_dir(approvals)? {
             let entry = entry?;
@@ -85,7 +86,9 @@ fn replace_verified(
     sealed: &[u8],
     verify: impl FnOnce(&[u8]) -> Result<(), StoreError>,
 ) -> Result<(), StoreError> {
-    let staging = tempfile::NamedTempFile::new_in(path.parent().ok_or(StoreError::InvalidInput)?)?
+    let staging = tempfile::Builder::new()
+        .prefix(".ai-migration-")
+        .tempfile_in(path.parent().ok_or(StoreError::InvalidInput)?)?
         .into_temp_path();
     super::io::write_private_atomic(&staging, sealed)?;
     verify(&fs::read(&staging)?)?;
