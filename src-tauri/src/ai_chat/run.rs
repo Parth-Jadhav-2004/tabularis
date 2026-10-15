@@ -87,6 +87,7 @@ pub async fn ai_chat_send(
             "AI is disabled in Settings.",
         ));
     }
+    super::slash::prepare_request(&mut req, context.as_ref())?;
     let guard = manager.start(run_id)?;
     let id = guard.id.clone();
     tauri::async_runtime::spawn(async move {
@@ -99,7 +100,7 @@ pub async fn ai_chat_send(
                 let built = tokio::select! {
                     biased;
                     _ = guard.cancel.cancelled() => return Err(ProviderError::new(ErrorKind::Other, "AI request cancelled.")),
-                    result = tokio::time::timeout(std::time::Duration::from_secs(15), super::request_context::resolve(&app, &spec)) => {
+                    result = tokio::time::timeout(std::time::Duration::from_secs(15), super::slash::resolve(&app, &spec)) => {
                         result.map_err(|_| ProviderError::new(ErrorKind::Other, "Preparing the AI context timed out. Refresh the schema or reduce the context and try again."))??
                     }
                 };

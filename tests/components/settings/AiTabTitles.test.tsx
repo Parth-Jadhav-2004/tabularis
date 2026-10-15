@@ -19,6 +19,24 @@ beforeEach(() => {
 });
 
 describe("conversation title prompt settings", () => {
+  it.each(["optimize", "fix"])("loads, saves and resets the %s command prompt", async (type) => {
+    const original = vi.mocked(invoke).getMockImplementation()!;
+    vi.mocked(invoke).mockImplementation(async (command, args) => {
+      if (command === `get_${type}_prompt`) return "Custom action instructions";
+      if (command === `reset_${type}_prompt`) return "Default action instructions";
+      return original(command, args);
+    });
+    render(<AiTab />);
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith(`get_${type}_prompt`));
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(`settings.ai.${type}Prompt`) }));
+    const editor = screen.getByRole("textbox", { name: `settings.ai.${type}Prompt` });
+    await waitFor(() => expect(editor).toHaveValue("Custom action instructions"));
+    fireEvent.change(editor, { target: { value: "New action instructions" } });
+    fireEvent.click(screen.getByRole("button", { name: "settings.ai.savePrompt" }));
+    await waitFor(() => expect(invoke).toHaveBeenCalledWith(`save_${type}_prompt`, { prompt: "New action instructions" }));
+    fireEvent.click(screen.getByRole("button", { name: "settings.ai.resetDefault" }));
+    await waitFor(() => expect(editor).toHaveValue("Default action instructions"));
+  });
   it("loads, edits, saves and resets the dedicated prompt", async () => {
     render(<AiTab />);
     await waitFor(() => expect(invoke).toHaveBeenCalledWith("get_chattitle_prompt"));

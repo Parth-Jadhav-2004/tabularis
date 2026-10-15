@@ -40,6 +40,7 @@ import {
   Clipboard,
   BookOpen,
   UsersRound,
+  Sparkles,
 } from "lucide-react";
 import { ask, open } from "@tauri-apps/plugin-dialog";
 import { toErrorMessage } from "../../utils/errors";
@@ -90,6 +91,8 @@ import { useConnectionLayoutContext } from "../../hooks/useConnectionLayoutConte
 import { useCopyFeedback } from "../../hooks/useCopyFeedback";
 import { useDrivers } from "../../hooks/useDrivers";
 import { useDatabaseObjectNavigation } from "../../hooks/useDatabaseObjectNavigation";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
+import { useAskAiTable } from "../../hooks/useAskAiTable";
 import { getConnectionAccent } from "../../utils/driverUI";
 import type { TableColumn } from "../../types/schema";
 import type { ContextMenuData } from "../../types/sidebar";
@@ -124,6 +127,8 @@ interface ExplorerSidebarProps {
 export const ExplorerSidebar = ({ sidebarWidth, startResize, onCollapse, sidebarTab, onSidebarTabChange }: ExplorerSidebarProps) => {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { available: aiAvailable } = useAiAvailability();
+  const aiTable = useAskAiTable();
   const {
     activeConnectionId,
     activeDriver,
@@ -2289,6 +2294,13 @@ export const ExplorerSidebar = ({ sidebarWidth, startResize, onCollapse, sidebar
                   const ctxSchema = contextMenu.data && "schema" in contextMenu.data ? contextMenu.data.schema : undefined;
                   const ctxDatabase = (contextMenu.data && "database" in contextMenu.data ? contextMenu.data.database : undefined) ?? undefined;
                   return [
+                    aiAvailable ? {
+                      label: t("aiChat.entryPoints.askTable"), icon: Sparkles, disabled: aiTable.disabled || !activeConnectionId,
+                      action: () => {
+                        if (activeConnectionId) aiTable.ask({ connectionId: activeConnectionId, tableName: contextMenu.id,
+                          schema: ctxSchema ?? activeSchema ?? undefined, database: ctxDatabase ?? activeDatabaseName ?? undefined });
+                      },
+                    } : null,
                     {
                       label: t("sidebar.showData"),
                       icon: PlaySquare,

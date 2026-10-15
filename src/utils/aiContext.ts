@@ -2,7 +2,7 @@ import type { AiContextOptions, AiContextScope, AiContextSelection, AiContextTab
 import type { AiContextItemRef } from "../types/aiChat";
 
 export function defaultAiContextSelection(): AiContextSelection {
-  return { connection: true, schema: true, query: true, selection: true, cursor_statement: true, error: false };
+  return { connection: true, instructions: true, schema: true, query: true, selection: true, cursor_statement: true, error: false };
 }
 
 export function createAiContextOptions(snapshot: AiEditorSnapshot, include: AiContextSelection, language: string, tables?: AiContextTables): AiContextOptions {

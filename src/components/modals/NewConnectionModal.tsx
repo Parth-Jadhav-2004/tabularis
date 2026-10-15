@@ -24,6 +24,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { ConnectionAppearance } from "../../contexts/DatabaseContext";
 import { AppearanceSection } from "./NewConnectionModal/AppearanceSection";
+import { AiInstructionsSection } from "./NewConnectionModal/AiInstructionsSection";
 import { MaskingOverridesEditor } from "../settings/MaskingOverridesEditor";
 import { ProxyOverrideEditor } from "../settings/ProxyFields";
 import {
@@ -178,6 +179,7 @@ interface ConnectionParams {
 interface SavedConnection {
   id: string;
   name: string;
+  ai_instructions?: string;
   params: ConnectionParams;
   detect_json_in_text_columns?: boolean;
   appearance?: ConnectionAppearance;
@@ -367,6 +369,7 @@ export const NewConnectionModal = ({
     return getDriverIcon(activeDriver, size);
   };
   const [name, setName] = useState("");
+  const [aiInstructions, setAiInstructions] = useState("");
   const [formData, setFormData] = useState<Partial<ConnectionParams>>({
     host: "localhost",
     port: 3306,
@@ -963,6 +966,7 @@ export const NewConnectionModal = ({
       formData,
       selectedDatabasesState,
       detectJsonInTextColumns,
+      aiInstructions,
       appearance,
       sshMode,
       k8sMode,
@@ -978,6 +982,7 @@ export const NewConnectionModal = ({
       appearance,
       appliedK8sOptions,
       detectJsonInTextColumns,
+      aiInstructions,
       driver,
       effectiveK8sPort,
       formData,
@@ -1848,6 +1853,7 @@ export const NewConnectionModal = ({
 
       if (initialConnection) {
         setName(initialConnection.name);
+        setAiInstructions(initialConnection.ai_instructions ?? "");
         setDriver(initialConnection.params.driver);
         setDetectJsonInTextColumns(
           initialConnection.detect_json_in_text_columns === true,
@@ -1961,6 +1967,7 @@ export const NewConnectionModal = ({
         }
       } else {
         setName("");
+        setAiInstructions("");
         setDriver("mysql");
         setFormData({
           host: "localhost",
@@ -2426,6 +2433,7 @@ export const NewConnectionModal = ({
             name,
             params,
             detectJsonInTextColumns: detectJsonInTextColumns ? true : null,
+            aiInstructions: aiInstructions.trim() ? aiInstructions : null,
             environment: environment || null,
           });
           persistedInKeychain = updated?.params?.save_in_keychain;
@@ -2442,6 +2450,7 @@ export const NewConnectionModal = ({
             name,
             params,
             detectJsonInTextColumns: detectJsonInTextColumns ? true : null,
+            aiInstructions: aiInstructions.trim() ? aiInstructions : null,
             environment: environment || null,
           });
           persistedInKeychain = saved.params?.save_in_keychain;
@@ -3096,6 +3105,7 @@ export const NewConnectionModal = ({
   // ── rendered Advanced tab content (driver-specific options + startup SQL) ──
   const advancedTabContent = (
     <div className="space-y-4">
+      <AiInstructionsSection value={aiInstructions} onChange={setAiInstructions} disabled={isPersistencePending} />
       {/* MySQL: PIPES_AS_CONCAT compatibility (Vitess/PlanetScale) */}
       {driver === "mysql" && (
         <div className="flex flex-col gap-1">

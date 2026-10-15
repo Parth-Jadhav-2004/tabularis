@@ -1,5 +1,5 @@
 import { useCallback, useLayoutEffect, useRef, useState, useImperativeHandle, type Ref } from "react";
-import { act, render } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { invoke } from "@tauri-apps/api/core";
 import { Editor } from "../../src/pages/Editor";
@@ -7,6 +7,8 @@ import { EditorContext, type EditorContextType } from "../../src/contexts/Editor
 import { createAutoRefreshSchedule, type AutoRefreshSchedule } from "../../src/utils/autoRefresh";
 import type { Tab, QueryResult } from "../../src/types/editor";
 import type { DataGridCommandTarget } from "../../src/components/ui/DataGrid";
+import { AiEditorContext } from "../../src/contexts/AiEditorContext";
+import { createAiEditorStore } from "../../src/utils/aiEditor";
 
 // Captures the `onRunQuery` prop the Editor passes to TableToolbar so the test
 // can drive it directly, exercising the real `runToolbarQuery` callback
@@ -70,8 +72,6 @@ vi.mock("../../src/hooks/useQueryGuards", () => ({
 vi.mock("../../src/hooks/useSqlAutocompleteRegistration", () => ({
   useSqlAutocompleteRegistration: () => {},
 }));
-vi.mock("../../src/components/modals/AiQueryModal", () => ({ AiQueryModal: () => null }));
-vi.mock("../../src/components/modals/AiExplainModal", () => ({ AiExplainModal: () => null }));
 vi.mock("../../src/components/modals/VisualExplainModal", () => ({ VisualExplainModal: () => null }));
 vi.mock("../../src/components/modals/NewRowModal", () => ({ NewRowModal: () => null }));
 vi.mock("../../src/components/modals/QuerySelectionModal", () => ({ QuerySelectionModal: () => null }));
@@ -210,6 +210,7 @@ function Harness({ initialTabs = [initialTab()] }: { initialTabs?: Tab[] }) {
     getSchema: mocks.noop,
     reopenClosedTab: mocks.noop,
     canReopenClosedTab: false,
+    getRecentTabIds: () => [],
   } as EditorContextType;
   return (
     <EditorContext.Provider value={value}>
@@ -240,6 +241,18 @@ describe("runToolbarQuery database field", () => {
   });
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("retains the failed executed SQL for AI after the user edits the console draft", async () => {
+    const editors = createAiEditorStore();
+    const tab: Tab = { ...initialTab("console"), type: "console", query: "SELECT missing_column", activeTable: null, isEditorOpen: true };
+    vi.mocked(invoke).mockImplementation((command) => command === "execute_query" ? Promise.reject("missing column") : Promise.resolve([]));
+    render(<AiEditorContext.Provider value={editors}><Harness initialTabs={[tab]} /></AiEditorContext.Provider>);
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "editor.run (Ctrl+Enter)" })); });
+    expect(executeQueryCalls()[0]?.[1]).toMatchObject({ query: "SELECT missing_column" });
+    act(() => { mocks.sqlOnChange.get("console")?.("SELECT unrelated_draft"); });
+    expect(editors.get("root")?.readContext?.().query).toBe("SELECT unrelated_draft");
+    expect(editors.get("root")?.readErrorContext?.()).toMatchObject({ query: "SELECT missing_column", last_error: "missing column" });
   });
 
   it("passes the tab's database to execute_query when one is set", async () => {

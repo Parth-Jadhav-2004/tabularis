@@ -3,6 +3,7 @@ import type {
 } from "../types/aiChat";
 import { aiChatReducer, createAiChatState, createAiConversation, createAiMessage, type AiChatAction } from "./aiChat";
 import { aiHistoryError, restoreAiConversationModel, sameAiConversation } from "./aiConversationHistory";
+import { parseAiCommand } from "./aiCommands";
 
 interface PendingRun {
   id: string;
@@ -238,6 +239,8 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
   }
 
   async function send(text: string, options: AiSendOptions = {}) {
+    const parsed = parseAiCommand(text);
+    if (parsed.kind === "unknown" || (parsed.kind === "command" && (parsed.command === "help" || !options.context))) return false;
     const conversation = state.conversation;
     if (!mounted || !state.ready || active || state.saveState === "saving" || state.history.restoring || state.history.busy || !text.trim()
       || !conversation?.provider || !conversation.model) return false;
@@ -248,13 +251,14 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
     };
     const context = options.context ? { ...options.context,
       connection_id: conversation.connection_id, database: conversation.database, schema: conversation.schema,
+      command: parsed.kind === "command" && parsed.command !== "help" ? parsed.command : undefined,
     } : undefined;
     active = run;
     const user = createAiMessage("user", [{ type: "text", text }]);
     const assistant = {
       ...createAiMessage("assistant"), provider: conversation.provider, model: conversation.model,
     };
-    dispatch({ type: "start", runId: run.id, user, assistant });
+    dispatch({ type: "start", runId: run.id, user, assistant, editorTarget: options.editorTarget });
     const request = {
       provider: conversation.provider, model: conversation.model, system: options.system ?? "",
       messages: [...conversation.messages, user], tools: [],

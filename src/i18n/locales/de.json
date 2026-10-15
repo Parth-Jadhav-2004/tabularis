@@ -730,7 +730,13 @@
       "apiKeySaved": "API-Schlüssel sicher gespeichert",
       "chattitlePrompt": "Prompt für Konversationstitel",
       "chattitlePromptDesc": "Passe den Prompt nach der ersten Antwort an. Manuell umbenannte Titel bleiben erhalten.",
-      "enterChattitlePrompt": "Prompt für Konversationstitel eingeben..."
+      "enterChattitlePrompt": "Prompt für Konversationstitel eingeben...",
+      "optimizePrompt": "Prompt zur SQL-Optimierung",
+      "optimizePromptDesc": "Anweisungen für /optimize. Unterstützt {{LANGUAGE}}.",
+      "enterOptimizePrompt": "Optimierungsanweisungen eingeben…",
+      "fixPrompt": "Prompt zur SQL-Korrektur",
+      "fixPromptDesc": "Anweisungen für /fix. Unterstützt {{LANGUAGE}}.",
+      "enterFixPrompt": "Korrekturanweisungen eingeben…"
     },
     "updates": "Updates",
     "openSourceLibraries": "Open-Source-Bibliotheken",
@@ -1089,22 +1095,14 @@
     "managedByPackageManagerDesc": "Verwende deinen Paketmanager, um Tabularis zu aktualisieren."
   },
   "ai": {
-    "assist": "AI Assist",
     "explain": "Erklären",
-    "generateSql": "SQL generieren",
-    "generating": "Wird generiert...",
-    "explainQuery": "KI-Abfrageerklärung",
-    "queryLabel": "Abfrage",
-    "explanationLabel": "Erklärung",
-    "generatingExplanation": "Erklärung wird generiert...",
-    "configRequired": "⚠️ KI-Anbieter nicht konfiguriert. Bitte gehe zu Einstellungen > KI.",
-    "enterPrompt": "Beschreibe deine Abfrage in natürlicher Sprache",
-    "promptPlaceholder": "z. B. Finde alle Benutzer, die sich letzten Monat registriert und einen 'Premium'-Plan bestellt haben...",
-    "readingSchema": "Datenbankschema wird gelesen...",
-    "schemaError": "Laden des Datenbankschema-Kontexts fehlgeschlagen",
-    "configError": "Bitte konfiguriere einen KI-Anbieter in den Einstellungen und gib einen Prompt ein."
+    "generateSql": "SQL generieren"
   },
   "newConnection": {
+    "aiInstructions": "KI-Anweisungen",
+    "aiInstructionsHint": "Vorgaben für Chats dieser Verbindung. Sie werden an das Modell gesendet, sofern sie nicht aus dem Kontext entfernt werden. Unverschlüsselt in den Verbindungseinstellungen gespeichert und in Exporten enthalten; keine Geheimnisse eingeben.",
+    "aiInstructionsPlaceholder": "Explizite Joins und qualifizierte Tabellennamen bevorzugen.",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "Wird zu {{document}} aufgelöst - leitet über den verwalteten Knoten an {{host}}:{{port}} weiter. Die Zieladresse wird im Tab „Allgemein“ geändert; ein Loopback-Host bedeutet den Knoten selbst.",
     "ssmIamHint": "Erfordert ssm:StartSession für das Ziel und für das aufgelöste Dokument.",
     "ssmNotAvailable": "AWS SSM ist für diesen Treiber nicht verfügbar.",
@@ -2861,6 +2859,26 @@
       "viewDetail": "Ansichtsdetails: {{name}}",
       "savedQuery": "Gespeicherte Abfrage: {{name}}",
       "viewCount": "Ansichten: {{count}}"
+    },
+    "commands": {
+      "title": "Befehle",
+      "hint": "Tippe /, um Befehle anzuzeigen.",
+      "unknown": "Unbekannter Befehl. Mit /help werden verfügbare Befehle angezeigt.",
+      "helpTitle": "Assistentenbefehle",
+      "generate": "SQL aus einer Anfrage oder der aktuellen Abfrage erzeugen",
+      "explain": "Ausgewähltes SQL oder die aktuelle Abfrage erklären",
+      "optimize": "Ausgewähltes SQL oder die aktuelle Abfrage optimieren",
+      "fix": "SQL anhand des letzten Abfragefehlers korrigieren",
+      "help": "Diese Hilfe ohne Modellanfrage anzeigen"
+    },
+    "entryPoints": {
+      "fix": "Mit KI korrigieren",
+      "explainSelection": "Auswahl mit KI erklären",
+      "optimizeSelection": "Auswahl mit KI optimieren",
+      "askSelection": "KI zur Auswahl fragen",
+      "askTable": "KI zu dieser Tabelle fragen",
+      "explainQuery": "Aktuelle Abfrage mit KI erklären",
+      "optimizeQuery": "Aktuelle Abfrage mit KI optimieren"
     }
   }
 }

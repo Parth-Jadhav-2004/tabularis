@@ -94,6 +94,7 @@ pub(crate) async fn resolve<R: Runtime>(
         readonly,
         super::schema_cache::shared(),
         Some(&saved),
+        connection.ai_instructions.as_deref(),
     )
     .await
 }
@@ -105,6 +106,7 @@ async fn resolve_with_driver(
     readonly: bool,
     cache: &SchemaCache,
     saved_queries: Option<&SavedQueryContexts>,
+    instructions: Option<&str>,
 ) -> Result<BuiltContext, ProviderError> {
     spec.validate()?;
     let capabilities = &driver.manifest().capabilities;
@@ -146,7 +148,14 @@ async fn resolve_with_driver(
         selection::selected_objects(
             spec,
             catalog,
-            query.unwrap_or_default(),
+            query
+                .or_else(|| {
+                    spec.include
+                        .selection
+                        .then_some(spec.editor.selection.as_deref())
+                        .flatten()
+                })
+                .unwrap_or_default(),
             database,
             prompt_schema,
         )
@@ -188,7 +197,7 @@ async fn resolve_with_driver(
                 server_version: None,
                 readonly,
             }),
-            instructions: None,
+            instructions: spec.include.instructions.then_some(instructions).flatten(),
             catalog: if spec.include.schema {
                 catalog.as_deref()
             } else {

@@ -8,6 +8,25 @@ import { defaultAiContextSelection } from "../../../src/utils/aiContext";
 vi.mock("lucide-react", () => vi.importActual("lucide-react"));
 
 describe("AI context controls", () => {
+  it("shows configured instructions, their actual size, and removal/restoration state", () => {
+    const include = defaultAiContextSelection();
+    const onChange = vi.fn();
+    const { rerender } = render(<ContextChips include={include} onChange={onChange} disabled={false} hasError={false} hasInstructions
+      preview={{ items: [{ kind: "instructions", id: "instructions", label: "Connection instructions", chars: 123, truncated: true }], total_chars: 1000, truncated: true }} />);
+    const chip = screen.getByRole("button", { name: /aiChat.context.kinds.instructions/ });
+    expect(chip).toHaveAttribute("aria-pressed", "true");
+    expect(chip).toHaveTextContent("aiChat.context.characters");
+    fireEvent.click(chip);
+    expect(onChange).toHaveBeenCalledWith({ ...include, instructions: false });
+    rerender(<ContextChips include={{ ...include, instructions: false }} onChange={onChange} disabled={false} hasError={false} hasInstructions />);
+    expect(chip).toHaveAttribute("aria-pressed", "false");
+    fireEvent.click(chip);
+    expect(onChange).toHaveBeenLastCalledWith(include);
+    rerender(<ContextChips include={include} onChange={onChange} disabled hasError={false} hasInstructions />);
+    expect(chip).toBeDisabled();
+    rerender(<ContextChips include={include} onChange={onChange} disabled={false} hasError={false} />);
+    expect(screen.queryByRole("button", { name: /aiChat.context.kinds.instructions/ })).not.toBeInTheDocument();
+  });
   it("exposes selected state, allows individual removal and keeps errors opt-in", () => {
     const include = defaultAiContextSelection();
     const onChange = vi.fn();

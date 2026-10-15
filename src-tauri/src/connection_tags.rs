@@ -242,6 +242,7 @@ mod tests {
             group_id: None,
             sort_order: None,
             detect_json_in_text_columns: None,
+            ai_instructions: None,
             appearance: None,
             tag_ids: tag_ids.map(|v| v.iter().map(|s| s.to_string()).collect()),
             environment: None,

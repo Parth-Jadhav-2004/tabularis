@@ -35,8 +35,9 @@ export function AiDropdownButton({
         onClick={() => setIsOpen(!isOpen)}
         disabled={disableAll}
         aria-expanded={isOpen}
-        className={btnClass}
-        title="AI"
+        className={`${btnClass} focus-ring`}
+        aria-label={t("aiChat.commands.title")}
+        title={t("aiChat.commands.title")}
       >
         <Sparkles size={iconSize} />
         AI
@@ -60,7 +61,7 @@ export function AiDropdownButton({
                 onGenerate();
                 setIsOpen(false);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs text-secondary hover:bg-accent-secondary/15 hover:text-accent-secondary w-full text-left transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs text-secondary hover:bg-accent-secondary/15 hover:text-accent-secondary w-full text-left transition-colors focus-ring"
             >
               <Sparkles size={12} className="text-accent-secondary" />
               {t("ai.generateSql")}
@@ -72,7 +73,7 @@ export function AiDropdownButton({
                 setIsOpen(false);
               }}
               disabled={disableExplain}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs text-secondary hover:bg-accent-primary/15 hover:text-accent w-full text-left transition-colors disabled:opacity-30 disabled:pointer-events-none"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs text-secondary hover:bg-accent-primary/15 hover:text-accent w-full text-left transition-colors disabled:opacity-30 disabled:pointer-events-none focus-ring"
             >
               <BookOpen size={12} className="text-accent" />
               {t("ai.explain")}

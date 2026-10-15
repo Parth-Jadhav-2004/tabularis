@@ -41,14 +41,15 @@ import {
   validatePendingInsertion,
   insertionToBackendData,
 } from "../utils/pendingInsertions";
-import { AiQueryModal } from "../components/modals/AiQueryModal";
-import { AiExplainModal } from "../components/modals/AiExplainModal";
 import { AiDropdownButton } from "../components/ui/AiDropdownButton";
 import { useAiAvailability } from "../hooks/useAiAvailability";
 import { useToggleAiChat } from "../hooks/useToggleAiChat";
 import { useRegisterAiEditor } from "../hooks/useAiEditor";
+import { useOpenAiChat } from "../hooks/useAiChatEntry";
 import { createAiSqlActions, readAiEditorContext } from "../utils/aiEditor";
-import type { AiEditorTarget } from "../types/aiEditor";
+import type { AiEditorMenuAction, AiEditorTarget } from "../types/aiEditor";
+import type { AiEditorSnapshot } from "../types/aiContext";
+import { aiSelectionEntry, createAiQueryFailures } from "../utils/aiEntryPoints";
 import { VisualExplainModal } from "../components/modals/VisualExplainModal";
 import {
   Play,
@@ -105,7 +106,7 @@ import {
   type DataGridCommandTarget,
 } from "../components/ui/DataGrid";
 import { MultiResultPanel } from "../components/ui/MultiResultPanel";
-import { ErrorDisplay } from "../components/ui/ErrorDisplay";
+import { QueryErrorDisplay } from "../components/ai-chat/QueryErrorDisplay";
 import { PageSizeSelector } from "../components/ui/PageSizeSelector";
 import { NewRowModal } from "../components/modals/NewRowModal";
 import { QuerySelectionModal } from "../components/modals/QuerySelectionModal";
@@ -270,6 +271,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
   const { settings } = useSettings();
   const { available: aiAvailable } = useAiAvailability();
   const toggleAiChat = useToggleAiChat();
+  const aiChatLauncher = useOpenAiChat(commandScopeId ?? ROOT_COMMAND_SCOPE_ID);
   const { saveQuery } = useSavedQueries();
   const { addEntry: addHistoryEntry } = useQueryHistory();
   const {
@@ -482,6 +484,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
   const isDragging = useRef(false);
   const rafRef = useRef<number | null>(null);
   const editorsRef = useRef<Record<string, Parameters<OnMount>[0]>>({});
+  const [aiQueryFailures] = useState(createAiQueryFailures);
   // DataGrid's scroll offset per tab (#823), kept out of tab/store state:
   // routing it through updateTab would fire EditorProvider's tabs-changed
   // effect (which persists via a Tauri invoke) on every scroll pixel.
@@ -563,8 +566,6 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
     () => setIsDbDropdownOpen(false),
     isDbDropdownOpen,
   );
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
-  const [isAiExplainModalOpen, setIsAiExplainModalOpen] = useState(false);
   const [isVisualExplainOpen, setIsVisualExplainOpen] = useState(false);
   const [visualExplainQuery, setVisualExplainQuery] = useState<string | null>(null);
   const [isExplainSelectionOpen, setIsExplainSelectionOpen] = useState(false);
@@ -1309,6 +1310,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
 
         const generation = (queryGenerationRef.current[targetTabId] ?? 0) + 1;
         queryGenerationRef.current[targetTabId] = generation;
+        if (!backgroundRefresh) aiQueryFailures.clear(targetTabId);
 
         updateTab(targetTabId, backgroundRefresh ? {
           isLoading: true,
@@ -1531,6 +1533,8 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
           const latestTab = tabsRef.current.find((tab) => tab.id === targetTabId);
           if (backgroundRefresh && (!latestTab || !canApplyRefresh(latestTab))) return false;
           if (queryGenerationRef.current[targetTabId] === generation) {
+            if (!backgroundRefresh) aiQueryFailures.record(targetTabId, textToRun,
+              typeof err === "string" ? err : t("editor.queryFailed"));
             updateTab(targetTabId, (tab) =>
               backgroundRefresh && !canApplyRefresh(tab) ? {} : {
                 ...(backgroundRefresh
@@ -1598,6 +1602,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
       guardQueryExecution,
       activeDialect,
       getAutoRefreshSchedule,
+      aiQueryFailures,
     ],
   );
 
@@ -1911,7 +1916,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
   );
 
   const aiEditorTarget = useMemo<AiEditorTarget | null>(() => {
-    if (!activeConnectionId) return null;
+    if (!activeConnectionId || activeTab?.type === "notebook") return null;
     const database = activeTab?.database ?? activeDatabaseName ?? null;
     const schema = activeTab?.schema ?? activeSchema ?? null;
     const actions = createAiSqlActions({
@@ -1928,14 +1933,23 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
         ...(database ? { database } : {}), ...(schema ? { schema } : {}),
       }),
     });
-    return { connectionId: activeConnectionId, database, schema, dialect: activeDialect, actions,
-      hasError: activeTab?.type !== "notebook" && !!activeTab?.error,
-      readContext: () => activeTab && activeTab.type !== "notebook" && activeTab.type !== "users"
+    return { id: activeTab?.id, connectionId: activeConnectionId, database, schema, dialect: activeDialect, actions,
+      readErrorContext: () => ({ query: activeTab
+        ? aiQueryFailures.read(activeTab.id, activeTab.error) ?? null : null, last_error: activeTab?.error }),
+      hasError: !!activeTab?.error,
+      readContext: () => activeTab && activeTab.type !== "users"
         ? readAiEditorContext(editorsRef.current[activeTab.id] ?? null, activeTab.query, activeDialect, activeTab.error)
         : {},
     };
-  }, [activeConnectionId, activeDatabaseName, activeDialect, activeSchema, activeTab, openEditorInScope, updateTab]);
+  }, [activeConnectionId, activeDatabaseName, activeDialect, activeSchema, activeTab, aiQueryFailures, openEditorInScope, updateTab]);
   useRegisterAiEditor(commandScopeId ?? ROOT_COMMAND_SCOPE_ID, aiEditorTarget);
+  const runAiEditorAction = useCallback((action: AiEditorMenuAction, snapshot: AiEditorSnapshot) => {
+    if (aiEditorTarget) aiChatLauncher.open(action === "ask" ? null : action, aiEditorTarget, aiSelectionEntry(snapshot));
+  }, [aiChatLauncher, aiEditorTarget]);
+  const openNotebookAiConsole = useCallback((sql: string, schema: string | null) => {
+    openEditorInScope({ kind: "console", initialQuery: sql, targetConnectionId: activeConnectionId ?? undefined,
+      ...(activeTab?.database ? { database: activeTab.database } : {}), ...(schema ? { schema } : {}) });
+  }, [activeConnectionId, activeTab?.database, openEditorInScope]);
 
   const runResultEntryPage = useCallback(
     async (entryId: string, pageNum: number, tabIdArg?: string) => {
@@ -5023,6 +5037,8 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
                 updateTab={updateTab}
                 connectionId={activeConnectionId || ""}
                 isActive={isActive}
+                commandScopeId={commandScopeId}
+                onOpenAiConsole={openNotebookAiConsole}
               />
             </div>
           );
@@ -5047,6 +5063,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
               <VisualQueryBuilder />
             ) : (
               <SqlEditorWrapper
+                aiActions={isActive && aiAvailable ? { disabled: aiChatLauncher.disabled, run: runAiEditorAction } : undefined}
                 height="100%"
                 initialValue={tab.query}
                 dialect={activeDialect}
@@ -5098,9 +5115,9 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
                     <MessageSquare size={12} />{t("aiChat.title")}
                   </button>
                   <AiDropdownButton
-                    onGenerate={() => setIsAiModalOpen(true)}
-                    onExplain={() => setIsAiExplainModalOpen(true)}
-                    disableAll={!activeConnectionId}
+                    onGenerate={() => aiChatLauncher.open("generate")}
+                    onExplain={() => aiChatLauncher.open("explain")}
+                    disableAll={!activeConnectionId || aiChatLauncher.disabled}
                     disableExplain={!tab.query?.trim()}
                   />
                   </>
@@ -5328,7 +5345,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
                 <p className="text-sm">{t("editor.executingQuery")}</p>
               </div>
             ) : activeTab.error ? (
-              <ErrorDisplay error={activeTab.error} t={t} />
+              <QueryErrorDisplay error={activeTab.error} connectionId={activeConnectionId} t={t} />
             ) : shouldShowStatementSuccess(activeTab) ? (
               // Non-SELECT statement (INSERT/UPDATE/DELETE/DDL): no result set,
               // so surface an explicit success message instead of an empty grid.
@@ -5891,23 +5908,6 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
           title={t("editor.saveQuery")}
         />
       )}
-      <AiQueryModal
-        isOpen={isAiModalOpen && aiAvailable}
-        onClose={() => setIsAiModalOpen(false)}
-        connectionId={activeConnectionId ?? undefined}
-        schema={activeTab?.schema ?? activeSchema ?? undefined}
-        database={activeTab?.database}
-        onInsert={(q) => {
-          updateActiveTab({ query: q });
-          // AI-generated SQL uses the same production-first safety pipeline.
-          void runQuery(q, 1);
-        }}
-      />
-      <AiExplainModal
-        isOpen={isAiExplainModalOpen && aiAvailable}
-        onClose={() => setIsAiExplainModalOpen(false)}
-        query={activeTab.query}
-      />
       <VisualExplainModal
         isOpen={isVisualExplainOpen}
         onClose={() => {

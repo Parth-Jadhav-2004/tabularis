@@ -101,6 +101,8 @@ const settingsValue = {
   settings: DEFAULT_SETTINGS,
   updateSetting: vi.fn(),
   isLoading: false,
+  isLanguageReady: true,
+  isLanguageSettled: true,
 };
 
 const wrapper = ({ children }: { children: ReactNode }) => (
@@ -126,7 +128,6 @@ const standaloneWrapper = ({ children }: { children: ReactNode }) => (
 describe('SqlEditorWrapper', () => {
   const mockOnChange = vi.fn();
   const mockOnRun = vi.fn();
-  const mockOnMount = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -138,7 +139,7 @@ describe('SqlEditorWrapper', () => {
 
   const mountCapturedEditor = () => {
     const keyDownHandlers: Array<(event: MonacoKeyDownEventMock) => void> = [];
-    const addAction = vi.fn();
+    const addAction = vi.fn((_action: unknown) => ({ dispose: vi.fn() }));
     const addCommand = vi.fn();
     const trigger = vi.fn();
     const editor = {
@@ -166,6 +167,16 @@ describe('SqlEditorWrapper', () => {
 
     return { addAction, addCommand, keyDownHandlers, trigger };
   };
+
+  it("registers AI selection actions after the lazy Monaco editor mounts", () => {
+    render(<SqlEditorWrapper initialValue="SELECT 1" onChange={mockOnChange} onRun={mockOnRun}
+      aiActions={{ disabled: false, run: vi.fn() }} /> , { wrapper });
+    let captured: ReturnType<typeof mountCapturedEditor> | undefined;
+    act(() => { captured = mountCapturedEditor(); });
+    for (const action of ["explain", "optimize", "ask"]) {
+      expect(captured?.addAction).toHaveBeenCalledWith(expect.objectContaining({ id: `tabularis.ai.${action}`, precondition: "editorHasSelection" }));
+    }
+  });
 
   describe('Select current statement', () => {
     const registerAction = (dialect = 'postgres') => {
@@ -404,7 +415,7 @@ describe('SqlEditorWrapper', () => {
     );
     const { addAction } = mountCapturedEditor();
     const action = addAction.mock.calls
-      .map(([descriptor]) => descriptor as { id: string; run: (ed: unknown) => void })
+      .map(([descriptor]) => descriptor as { id: string; label: string; run: (ed: unknown) => void })
       .find((descriptor) => descriptor.id === 'tabularis.removeInvisibleSqlCharacters');
     expect(action?.label).toBe('editor.removeInvisibleCharacters');
     if (!action) throw new Error('cleanup action was not registered');
@@ -933,6 +944,7 @@ describe('SqlEditorWrapper', () => {
   describe('acceptSuggestionOnEnter mapping', () => {
     const renderWith = (editorAcceptSuggestionOnEnter: boolean | undefined, key: string) => {
       const ctx = {
+        ...settingsValue,
         settings: { ...DEFAULT_SETTINGS, editorAcceptSuggestionOnEnter },
         updateSetting: vi.fn(),
         isLoading: false,

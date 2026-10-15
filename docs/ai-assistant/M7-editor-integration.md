@@ -8,11 +8,15 @@ Make the sidebar the single entry point for AI in the editor, and delete the old
 
 ## Current state
 
-- `src/components/ui/AiDropdownButton.tsx` (items `ai.generateSql`, `ai.explain`), floating in `src/pages/Editor.tsx` (~line 5060).
-- `src/components/modals/AiQueryModal.tsx`: Generate replaces the whole tab and runs it immediately.
-- `src/components/modals/AiExplainModal.tsx`: plain-text output, hardcoded English strings, `bg-black/50` overlay.
-- Notebook: `src/components/notebook/NotebookAiButtons.tsx` reuses both modals per SQL cell.
-- Prompt overrides: `prompt_query.txt`, `prompt_explain.txt` (+ explain plan, cell name, tab rename) with get/save/reset commands and editors in `AiTab.tsx`.
+- `AiDropdownButton` in `Editor.tsx` opens the sidebar. Generate focuses `/generate ` for the user's request; Explain sends `/explain` on the SQL selection or current query.
+- `NotebookAiButtons` uses the same sidebar launcher and selects its cell explicitly. `NotebookView` registers the focused SQL cell as the active editor target, including its database/schema override and error. Insert/Replace use Monaco undo stops or update collapsed cells through notebook history; Run opens a console through the existing guarded execution pipeline.
+- Pending entry points wait for model discovery and connection-history restoration, are claimed once, and are discarded after a target/pane change. SQL replies retain their original editor/cell target in memory, so switching cells cannot redirect an earlier reply's actions. These bindings are not serialized into history or provider requests; persistent notebook binding belongs to M8.
+- `AiQueryModal.tsx`, `AiExplainModal.tsx`, their superseded tests/mocks and unused translations have been removed. Visual Explain's `ExplainAiAnalysis.tsx` remains unchanged.
+- Prompt overrides include `prompt_query.txt`, `prompt_explain.txt`, `prompt_optimize.txt` and `prompt_fix.txt` (+ explain plan, cell name, tab rename), with get/save/reset commands and Settings editors.
+- Query errors offer Fix with AI, including individual statements in both multi-result layouts. A bounded, transient cache retains single-query execution failures independently of later draft edits; `/fix` sends the failed SQL and complete error, excluding unrelated selection/cursor context. Missing or evicted failure context hides Fix instead of substituting the current draft.
+- Monaco selection menus in the editor and notebook offer Explain, Optimize and Ask AI. Explain/Optimize send immediately with selection-only editor context; Ask AI focuses an empty composer without a model call. Registration follows editor mounting, AI availability, busy state and cleanup.
+- Explorer tables offer Ask AI with an explicit table chip and database/schema scope. A temporary target survives composer edits and opens SQL actions in a console scoped to that table; editor changes or owner unmount release it. Cross-connection requests are rejected. The palette offers Explain/Optimize for the whole current query in the active pane.
+- All entry-point labels are translated in all 11 locales. Implementation and automated checks are complete; visual/native/live-provider validation remains pending.
 
 ## Design
 
@@ -31,6 +35,8 @@ Make the sidebar the single entry point for AI in the editor, and delete the old
 
 - Text after the command is the user request; with no text, the command works on the selection or current query.
 - The command is stored on the user message, so the transcript shows "/explain" as a chip.
+
+Implementation note: the original slash prefix is retained in the encrypted user-message text and rendered as a command chip. This also preserves commands in exports and older clients without a message-schema change. `ContextSpec.command` carries the typed action for the current turn; Rust checks it against the latest user message and sends only the arguments to the provider. Prompt overrides are read afresh for both sends and previews. `/help` stays local and is not added to history.
 
 ### Migrating the modals
 
@@ -51,20 +57,22 @@ Make the sidebar the single entry point for AI in the editor, and delete the old
 
 ## Steps
 
-- [ ] `impact` on `AiDropdownButton`, `AiQueryModal`, `AiExplainModal`, `NotebookAiButtons`, the `Editor.tsx` region, the error view.
-- [ ] Slash command registry (frontend list + backend instruction lookup).
-- [ ] New default prompts for optimize and fix in `config.rs` + override files + editors in `AiTab.tsx`.
-- [ ] Rewire the dropdown and notebook buttons; extend the editor bridge to notebook cells.
-- [ ] Fix with AI button.
-- [ ] Context menu actions + palette entries.
-- [ ] Delete the old modals and dead i18n keys.
-- [ ] Changelog note.
+- [x] `impact` on `AiDropdownButton`, `AiQueryModal`, `AiExplainModal`, `NotebookAiButtons`, the `Editor.tsx` region, the error view. Repeat before the migration edits if the index or callers change.
+- [x] Slash command registry (frontend list + backend instruction lookup).
+- [x] New default prompts for optimize and fix in `config.rs` + override files + editors in `AiTab.tsx`.
+- [x] Rewire the dropdown and notebook buttons; extend the editor bridge to notebook cells.
+- [x] Fix with AI button.
+- [x] Context menu actions + palette entries.
+- [x] Delete the old modals and dead i18n keys.
+- [x] Changelog note.
 
 ## Tests
 
 - Slash parser: command + args, unknown command, `/` mid-text is plain text.
 - Each entry point sends the expected command and context spec (mock `useAiChat`).
 - Notebook target: Insert writes into the right cell.
+
+Implemented coverage: parser/picker keyboard and IME behavior, unknown commands, local help without model/history calls, selected-SQL defaults, removable error context, command persistence and turn isolation, prompt editor load/save/reset, Rust action/request validation and placeholder expansion, and selected-table metadata/gaps with the full query excluded. Migration regressions cover Generate without automatic sends/edits/execution, invocation-time Explain selections, lazy mounting/history restoration and StrictMode, pane switches, availability/streaming guards, per-cell scope and action binding, reordering/deletion/collapsed cells, Monaco undo/disposal/focus callbacks and reply-binding reset. Final entry-point regressions cover failed executed SQL after draft edits, full error details, selection-only menus and notebook-cell routing, empty selections, availability/disposal, Ask without a provider call, scoped table chips/SQL actions and overlay cleanup, foreign-connection rejection and whole-query palette actions in split panes.
 
 ## Notebooks
 

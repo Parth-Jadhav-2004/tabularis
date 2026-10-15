@@ -763,7 +763,13 @@
       "apiKeySaved": "Matagumpay na na-save ang API key",
       "chattitlePrompt": "Prompt para sa pamagat ng usapan",
       "chattitlePromptDesc": "I-customize ang prompt pagkatapos ng unang sagot. Pinapanatili ang mga pamagat na manu-manong pinalitan.",
-      "enterChattitlePrompt": "Maglagay ng prompt para sa pamagat..."
+      "enterChattitlePrompt": "Maglagay ng prompt para sa pamagat...",
+      "optimizePrompt": "Prompt para sa pag-optimize ng SQL",
+      "optimizePromptDesc": "Mga tagubilin para sa /optimize. Sinusuportahan ang {{LANGUAGE}}.",
+      "enterOptimizePrompt": "Ilagay ang mga tagubilin sa pag-optimize…",
+      "fixPrompt": "Prompt para sa pag-aayos ng SQL",
+      "fixPromptDesc": "Mga tagubilin para sa /fix. Sinusuportahan ang {{LANGUAGE}}.",
+      "enterFixPrompt": "Ilagay ang mga tagubilin sa pag-aayos…"
     },
     "updates": "Mga Update",
     "openSourceLibraries": "Mga Open Source Library",
@@ -1119,22 +1125,14 @@
     "managedByPackageManagerDesc": "Gamitin ang iyong package manager para i-update ang Tabularis."
   },
   "ai": {
-    "assist": "AI Assist",
     "explain": "Ipaliwanag",
-    "generateSql": "Gumawa ng SQL",
-    "generating": "Gumagawa...",
-    "explainQuery": "Pagpapaliwanag ng Query sa AI",
-    "queryLabel": "Query",
-    "explanationLabel": "Pagpapaliwanag",
-    "generatingExplanation": "Gumagawa ng pagpapaliwanag...",
-    "configRequired": "⚠️ Hindi naka-configure ang AI Provider. Pumunta sa Settings > AI.",
-    "enterPrompt": "Ilarawan ang iyong query sa natural na wika",
-    "promptPlaceholder": "hal. Hanapin ang lahat ng user na nag-sign up noong nakaraang buwan at nag-order ng 'Premium' plan...",
-    "readingSchema": "Binabasa ang database schema...",
-    "schemaError": "Nabigong i-load ang database schema context",
-    "configError": "Pakiconfigure ang AI provider sa Settings at maglagay ng prompt."
+    "generateSql": "Gumawa ng SQL"
   },
   "newConnection": {
+    "aiInstructions": "Mga tagubilin sa AI",
+    "aiInstructionsHint": "Mga kagustuhan para sa mga chat sa koneksyong ito. Ipinapadala sa modelo maliban kung inalis sa konteksto. Naka-save nang walang encryption kasama ng mga setting at kasama sa mga export; huwag maglagay ng mga lihim.",
+    "aiInstructionsPlaceholder": "Gumamit ng tahasang JOIN at buong pangalan ng mga talahanayan.",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "Nire-resolve sa {{document}} - ipinapasa sa {{host}}:{{port}} sa pamamagitan ng managed node. Baguhin ang target na address sa tab na General; ang loopback host ay ang node mismo.",
     "ssmIamHint": "Kailangan ng ssm:StartSession sa target at sa na-resolve na dokumento.",
     "ssmNotAvailable": "Hindi available ang AWS SSM para sa driver na ito.",
@@ -2883,6 +2881,26 @@
       "viewDetail": "Mga detalye ng view: {{name}}",
       "savedQuery": "Naka-save na query: {{name}}",
       "viewCount": "Mga view: {{count}}"
+    },
+    "commands": {
+      "title": "Mga command",
+      "hint": "I-type ang / para makita ang mga command.",
+      "unknown": "Hindi kilalang command. Gamitin ang /help para makita ang mga available na command.",
+      "helpTitle": "Mga command ng assistant",
+      "generate": "Bumuo ng SQL mula sa kahilingan o kasalukuyang query",
+      "explain": "Ipaliwanag ang napiling SQL o kasalukuyang query",
+      "optimize": "I-optimize ang napiling SQL o kasalukuyang query",
+      "fix": "Ayusin ang SQL gamit ang huling error ng query",
+      "help": "Ipakita ang tulong na ito nang hindi kumokonekta sa modelo"
+    },
+    "entryPoints": {
+      "fix": "Ayusin gamit ang AI",
+      "explainSelection": "Ipaliwanag ang seleksyon gamit ang AI",
+      "optimizeSelection": "I-optimize ang seleksyon gamit ang AI",
+      "askSelection": "Tanungin ang AI tungkol sa seleksyon",
+      "askTable": "Tanungin ang AI tungkol sa talahanayang ito",
+      "explainQuery": "Ipaliwanag ang kasalukuyang query gamit ang AI",
+      "optimizeQuery": "I-optimize ang kasalukuyang query gamit ang AI"
     }
   }
 }

@@ -769,7 +769,13 @@
       "apiKeySaved": "API key saved securely",
       "chattitlePrompt": "Conversation title prompt",
       "chattitlePromptDesc": "Customize the prompt used after the first assistant reply. Manually renamed titles are preserved.",
-      "enterChattitlePrompt": "Enter a conversation title prompt..."
+      "enterChattitlePrompt": "Enter a conversation title prompt...",
+      "optimizePrompt": "Optimize SQL prompt",
+      "optimizePromptDesc": "Instructions for /optimize. Supports {{LANGUAGE}}.",
+      "enterOptimizePrompt": "Enter optimization instructions…",
+      "fixPrompt": "Fix SQL prompt",
+      "fixPromptDesc": "Instructions for /fix. Supports {{LANGUAGE}}.",
+      "enterFixPrompt": "Enter correction instructions…"
     },
     "updates": "Updates",
     "openSourceLibraries": "Open Source Libraries",
@@ -1134,22 +1140,14 @@
     "nightlyWarning": "Nightly builds are unstable pre-releases. Only assets built for the nightly channel are installed."
   },
   "ai": {
-    "assist": "AI Assist",
     "explain": "Explain",
-    "generateSql": "Generate SQL",
-    "generating": "Generating...",
-    "explainQuery": "AI Query Explanation",
-    "queryLabel": "Query",
-    "explanationLabel": "Explanation",
-    "generatingExplanation": "Generating explanation...",
-    "configRequired": "⚠️ AI Provider not configured. Please go to Settings > AI.",
-    "enterPrompt": "Describe your query in natural language",
-    "promptPlaceholder": "e.g. Find all users who signed up last month and ordered a 'Premium' plan...",
-    "readingSchema": "Reading database schema...",
-    "schemaError": "Failed to load database schema context",
-    "configError": "Please configure AI provider in Settings and enter a prompt."
+    "generateSql": "Generate SQL"
   },
   "newConnection": {
+    "aiInstructions": "AI instructions",
+    "aiInstructionsHint": "Preferences for chats on this connection. Sent to the model unless removed from the context. Stored unencrypted with connection settings and included in exports; do not enter secrets.",
+    "aiInstructionsPlaceholder": "Prefer explicit joins and qualify table names.",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "Resolves to {{document}} - forwards to {{host}}:{{port}} through the managed node. Change the target address on the General tab; a loopback host means the node itself.",
     "ssmIamHint": "Requires ssm:StartSession on the target and on the resolved document.",
     "ssmNotAvailable": "AWS SSM is not available for this driver.",
@@ -2949,6 +2947,26 @@
       "viewDetail": "View details: {{name}}",
       "savedQuery": "Saved query: {{name}}",
       "viewCount": "Views: {{count}}"
+    },
+    "commands": {
+      "title": "Commands",
+      "hint": "Type / for commands.",
+      "unknown": "Unknown command. Use /help to see available commands.",
+      "helpTitle": "Assistant commands",
+      "generate": "Generate SQL from a request or the current query",
+      "explain": "Explain the selected SQL or current query",
+      "optimize": "Optimize the selected SQL or current query",
+      "fix": "Fix SQL using the last query error",
+      "help": "Show this help without contacting a model"
+    },
+    "entryPoints": {
+      "fix": "Fix with AI",
+      "explainSelection": "Explain selection with AI",
+      "optimizeSelection": "Optimize selection with AI",
+      "askSelection": "Ask AI about selection",
+      "askTable": "Ask AI about this table",
+      "explainQuery": "Explain current query with AI",
+      "optimizeQuery": "Optimize current query with AI"
     }
   }
 }

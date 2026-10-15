@@ -755,7 +755,13 @@
       "apiKeySaved": "Clave API guardada de forma segura",
       "chattitlePrompt": "Prompt para el título de la conversación",
       "chattitlePromptDesc": "Personaliza el prompt usado tras la primera respuesta. Se conservan los títulos renombrados manualmente.",
-      "enterChattitlePrompt": "Introduce un prompt para el título..."
+      "enterChattitlePrompt": "Introduce un prompt para el título...",
+      "optimizePrompt": "Prompt de optimización SQL",
+      "optimizePromptDesc": "Instrucciones para /optimize. Admite {{LANGUAGE}}.",
+      "enterOptimizePrompt": "Introduce instrucciones de optimización…",
+      "fixPrompt": "Prompt de corrección SQL",
+      "fixPromptDesc": "Instrucciones para /fix. Admite {{LANGUAGE}}.",
+      "enterFixPrompt": "Introduce instrucciones de corrección…"
     },
     "updates": "Actualizaciones",
     "openSourceLibraries": "Librerías Open Source",
@@ -1117,22 +1123,14 @@
     "managedByPackageManagerDesc": "Usa tu gestor de paquetes para actualizar Tabularis."
   },
   "ai": {
-    "assist": "Asistente IA",
     "explain": "Explicar",
-    "generateSql": "Generar SQL",
-    "generating": "Generando...",
-    "explainQuery": "Explicación de Consulta IA",
-    "queryLabel": "Consulta",
-    "explanationLabel": "Explicación",
-    "generatingExplanation": "Generando explicación...",
-    "configRequired": "⚠️ Proveedor de IA no configurado. Ve a Configuración > IA.",
-    "enterPrompt": "Describe tu consulta en lenguaje natural",
-    "promptPlaceholder": "ej. Encuentra todos los usuarios que se registraron el mes pasado y pidieron un plan 'Premium'...",
-    "readingSchema": "Leyendo esquema de la base de datos...",
-    "schemaError": "Error al cargar el contexto del esquema de la base de datos",
-    "configError": "Configura el proveedor de IA en Configuración e ingresa un prompt."
+    "generateSql": "Generar SQL"
   },
   "newConnection": {
+    "aiInstructions": "Instrucciones de IA",
+    "aiInstructionsHint": "Preferencias para los chats de esta conexión. Se envían al modelo salvo que se eliminen del contexto. Se guardan sin cifrar con la configuración y se incluyen en las exportaciones; no introduzcas secretos.",
+    "aiInstructionsPlaceholder": "Prefiere joins explícitos y nombres de tabla calificados.",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "Se resuelve a {{document}}: reenvía a {{host}}:{{port}} a través del nodo administrado. Cambia la dirección de destino en la pestaña General; un host de bucle invertido significa el propio nodo.",
     "ssmIamHint": "Requiere ssm:StartSession sobre el destino y sobre el documento resuelto.",
     "ssmNotAvailable": "AWS SSM no está disponible para este controlador.",
@@ -2795,6 +2793,26 @@
       "viewDetail": "Detalles de vista: {{name}}",
       "savedQuery": "Consulta guardada: {{name}}",
       "viewCount": "Vistas: {{count}}"
+    },
+    "commands": {
+      "title": "Comandos",
+      "hint": "Escribe / para ver los comandos.",
+      "unknown": "Comando desconocido. Usa /help para ver los comandos disponibles.",
+      "helpTitle": "Comandos del asistente",
+      "generate": "Generar SQL a partir de una solicitud o de la consulta actual",
+      "explain": "Explicar el SQL seleccionado o la consulta actual",
+      "optimize": "Optimizar el SQL seleccionado o la consulta actual",
+      "fix": "Corregir SQL usando el último error de consulta",
+      "help": "Mostrar esta ayuda sin contactar con un modelo"
+    },
+    "entryPoints": {
+      "fix": "Corregir con IA",
+      "explainSelection": "Explicar selección con IA",
+      "optimizeSelection": "Optimizar selección con IA",
+      "askSelection": "Preguntar a la IA sobre la selección",
+      "askTable": "Preguntar a la IA sobre esta tabla",
+      "explainQuery": "Explicar consulta actual con IA",
+      "optimizeQuery": "Optimizar consulta actual con IA"
     }
   }
 }

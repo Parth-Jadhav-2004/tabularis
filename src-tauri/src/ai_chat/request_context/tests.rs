@@ -56,6 +56,116 @@ fn request() -> ChatRequest {
 }
 
 #[tokio::test]
+async fn selection_only_actions_resolve_tables_and_gaps_without_the_excluded_query() {
+    let (_directory, params, driver) = fixture().await;
+    let mut selected = spec();
+    selected.command = Some(super::super::slash::ChatCommand::Explain);
+    selected.include.query = false;
+    selected.editor.query = Some("SELECT * FROM private-excluded-query-marker".into());
+    selected.editor.selection =
+        Some("SELECT * FROM users JOIN missing ON users.id = missing.id".into());
+    let built = resolve_with_driver(
+        &selected,
+        &params,
+        &driver,
+        false,
+        &SchemaCache::default(),
+        None,
+        None,
+    )
+    .await
+    .unwrap();
+    assert!(built
+        .items
+        .iter()
+        .any(|item| item.kind == "table" && item.label == "users"));
+    assert!(built.items.iter().any(|item| item.kind == "gaps"));
+    assert!(built.items.iter().any(|item| item.kind == "selection"));
+    assert!(!built.items.iter().any(|item| item.kind == "query"));
+    assert!(built.system.contains("missing"));
+    assert!(!built.system.contains("private-excluded-query-marker"));
+}
+
+#[tokio::test]
+async fn saved_instructions_are_fresh_independent_removable_and_metadata_only() {
+    let (_directory, params, driver) = fixture().await;
+    let mut selected = spec();
+    selected.include.connection = false;
+    let cache = SchemaCache::default();
+    for text in [
+        "Prefer explicit JOINs. private-instruction-marker",
+        "Use aliases. updated-marker",
+    ] {
+        let built =
+            resolve_with_driver(&selected, &params, &driver, false, &cache, None, Some(text))
+                .await
+                .unwrap();
+        assert!(built.system.contains(text));
+        assert!(built
+            .system
+            .contains("Connection instructions are user preferences"));
+        let preview = super::super::preview::ContextPreview::from(
+            resolve_with_driver(&selected, &params, &driver, false, &cache, None, Some(text))
+                .await
+                .unwrap(),
+        );
+        let mut req = request();
+        apply(&mut req, built).unwrap();
+        let sent = req.messages[0]
+            .blocks
+            .iter()
+            .find_map(|block| match block {
+                Block::Context { items } => Some(items),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(
+            serde_json::to_value(sent).unwrap(),
+            serde_json::to_value(&preview.items).unwrap()
+        );
+        let item = preview
+            .items
+            .iter()
+            .find(|item| item.kind == "instructions")
+            .unwrap();
+        assert!(item.chars.is_some_and(|size| size > text.chars().count()));
+        let metadata = serde_json::to_string(&preview).unwrap();
+        assert!(!metadata.contains(text));
+        assert!(!metadata.contains("-marker"));
+    }
+    selected.include.instructions = false;
+    let built = resolve_with_driver(
+        &selected,
+        &params,
+        &driver,
+        false,
+        &cache,
+        None,
+        Some("excluded-marker"),
+    )
+    .await
+    .unwrap();
+    assert!(!built.system.contains("excluded-marker"));
+    assert!(!built.items.iter().any(|item| item.kind == "instructions"));
+    selected.include.instructions = true;
+    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None, None)
+        .await
+        .unwrap();
+    assert!(!built.items.iter().any(|item| item.kind == "instructions"));
+}
+
+#[test]
+fn old_context_choices_default_instructions_on_and_client_text_is_rejected() {
+    let old = serde_json::json!({"connection_id":"fixture", "database":null, "schema":null,
+        "language":"en", "include":{"connection":false}});
+    let selected: ContextSpec = serde_json::from_value(old.clone()).unwrap();
+    assert!(selected.include.instructions);
+    let mut spoofed = old;
+    spoofed["ai_instructions"] = serde_json::json!("client-marker");
+    assert!(serde_json::from_value::<ContextSpec>(spoofed).is_err());
+}
+
+#[tokio::test]
 async fn rust_builds_scoped_context_and_attaches_only_names_and_sizes() {
     let (_directory, params, driver) = fixture().await;
     let built = resolve_with_driver(
@@ -64,6 +174,7 @@ async fn rust_builds_scoped_context_and_attaches_only_names_and_sizes() {
         &driver,
         true,
         &SchemaCache::default(),
+        None,
         None,
     )
     .await
@@ -111,6 +222,7 @@ async fn excluded_context_is_not_loaded_or_sent_and_explicit_tables_take_priorit
         false,
         &SchemaCache::default(),
         None,
+        None,
     )
     .await
     .unwrap();
@@ -124,6 +236,7 @@ async fn excluded_context_is_not_loaded_or_sent_and_explicit_tables_take_priorit
         &driver,
         false,
         &SchemaCache::default(),
+        None,
         None,
     )
     .await
@@ -140,6 +253,7 @@ async fn excluded_context_is_not_loaded_or_sent_and_explicit_tables_take_priorit
         false,
         &SchemaCache::default(),
         None,
+        None,
     )
     .await
     .unwrap();
@@ -150,7 +264,7 @@ async fn excluded_context_is_not_loaded_or_sent_and_explicit_tables_take_priorit
 async fn backend_refresh_changes_context_while_identical_requests_share_metadata() {
     let (_directory, params, driver) = fixture().await;
     let cache = SchemaCache::default();
-    let first = resolve_with_driver(&spec(), &params, &driver, false, &cache, None)
+    let first = resolve_with_driver(&spec(), &params, &driver, false, &cache, None, None)
         .await
         .unwrap();
     let path = params.database.primary();
@@ -163,12 +277,12 @@ async fn backend_refresh_changes_context_while_identical_requests_share_metadata
         .await
         .unwrap();
     pool.close().await;
-    let cached = resolve_with_driver(&spec(), &params, &driver, false, &cache, None)
+    let cached = resolve_with_driver(&spec(), &params, &driver, false, &cache, None, None)
         .await
         .unwrap();
     assert_eq!(first.system, cached.system);
     cache.invalidate_connection("fixture");
-    let refreshed = resolve_with_driver(&spec(), &params, &driver, false, &cache, None)
+    let refreshed = resolve_with_driver(&spec(), &params, &driver, false, &cache, None, None)
         .await
         .unwrap();
     assert!(refreshed.system.contains("refreshed_column"));
@@ -201,6 +315,7 @@ async fn context_cannot_be_attached_to_an_assistant_or_ambiguous_message_id() {
         false,
         &SchemaCache::default(),
         None,
+        None,
     )
     .await
     .unwrap();
@@ -213,6 +328,7 @@ async fn context_cannot_be_attached_to_an_assistant_or_ambiguous_message_id() {
         &driver,
         false,
         &SchemaCache::default(),
+        None,
         None,
     )
     .await
@@ -266,7 +382,7 @@ async fn preview_matches_sent_summaries_without_prompt_or_editor_contents() {
     let cache = SchemaCache::default();
     let mut selected = spec();
     selected.editor.query = Some("SELECT * FROM users -- private-editor-marker 界".into());
-    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None)
+    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None, None)
         .await
         .unwrap();
     let expected_size = built.system.chars().count();
@@ -282,7 +398,7 @@ async fn preview_matches_sent_summaries_without_prompt_or_editor_contents() {
         Some(1)
     );
     let mut req = request();
-    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None)
+    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None, None)
         .await
         .unwrap();
     let ContextEvent::Context { items, .. } = apply(&mut req, built).unwrap();
@@ -313,6 +429,7 @@ async fn preview_exposes_budget_truncation_and_respects_table_and_schema_exclusi
         false,
         &SchemaCache::default(),
         None,
+        None,
     )
     .await
     .unwrap();
@@ -330,6 +447,7 @@ async fn preview_exposes_budget_truncation_and_respects_table_and_schema_exclusi
         &driver,
         false,
         &SchemaCache::default(),
+        None,
         None,
     )
     .await
@@ -352,7 +470,7 @@ async fn view_references_mentions_exclusions_and_saved_query_summaries_reach_the
     let mut selected = spec();
     selected.editor.query = Some("SELECT * FROM v_users".into());
     let cache = SchemaCache::default();
-    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None)
+    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None, None)
         .await
         .unwrap();
     assert!(built
@@ -369,7 +487,7 @@ async fn view_references_mentions_exclusions_and_saved_query_summaries_reach_the
         Some(1)
     );
     selected.excluded_views = vec!["v_users".into()];
-    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None)
+    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, None, None)
         .await
         .unwrap();
     assert!(!built.items.iter().any(|item| item.kind == "view"));
@@ -386,9 +504,17 @@ async fn view_references_mentions_exclusions_and_saved_query_summaries_reach_the
         }],
         unavailable: Vec::new(),
     };
-    let built = resolve_with_driver(&selected, &params, &driver, false, &cache, Some(&saved))
-        .await
-        .unwrap();
+    let built = resolve_with_driver(
+        &selected,
+        &params,
+        &driver,
+        false,
+        &cache,
+        Some(&saved),
+        None,
+    )
+    .await
+    .unwrap();
     assert!(built.items.iter().any(|item| item.kind == "view"));
     assert!(!built
         .items

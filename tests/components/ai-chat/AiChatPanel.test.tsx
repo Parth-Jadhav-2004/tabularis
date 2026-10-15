@@ -59,6 +59,60 @@ async function send(text = "Write a query") {
 }
 
 describe("AI chat panel", () => {
+  it("sends a slash command with fresh selected SQL and keeps the command in history", async () => {
+    const fixture = setup();
+    act(() => { fixture.store.register("root", { ...fixture.target, readContext: () => ({ query: "private-whole-query", selection: "SELECT * FROM users" }) }); });
+    await send("/explain why this join");
+    await waitFor(() => expect(fixture.transport.send).toHaveBeenCalledTimes(1));
+    const [request, , context] = fixture.transport.send.mock.calls[0];
+    expect(context).toMatchObject({ command: "explain", include: { query: false, selection: true, error: false }, editor: { query: null, selection: "SELECT * FROM users" } });
+    expect(JSON.stringify(context)).not.toContain("private-whole-query");
+    expect(request.messages[0].blocks).toEqual([{ type: "text", text: "/explain why this join" }]);
+    expect(screen.getByLabelText("aiChat.commands.explain")).toHaveTextContent("/explain");
+    fixture.emit({ type: "done", finish: "stop" });
+    await waitFor(() => expect(fixture.transport.save).toHaveBeenCalledTimes(1));
+    expect(fixture.transport.save.mock.calls[0][0].messages[0].blocks).toEqual(request.messages[0].blocks);
+  });
+  it("defaults /fix to the last error and lets the user remove it before sending", async () => {
+    const fixture = setup();
+    act(() => { fixture.store.register("root", { ...fixture.target, hasError: true, readContext: () => ({ query: "SELECT broken", last_error: "private-error" }) }); });
+    await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.error" })).toBeEnabled());
+    const input = screen.getByLabelText("aiChat.message");
+    fireEvent.change(input, { target: { value: "/fix " } });
+    const error = await screen.findByRole("button", { name: "aiChat.context.kinds.error" });
+    await waitFor(() => expect(error).toBeEnabled());
+    expect(error).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(error);
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.send" }));
+    await waitFor(() => expect(fixture.transport.send).toHaveBeenCalledTimes(1));
+    expect(fixture.transport.send.mock.calls[0][2]).toMatchObject({ command: "fix", last_error: null, include: { error: false } });
+  });
+  it("handles /help locally without creating history or a model request", async () => {
+    const fixture = setup();
+    await send("/help");
+    expect(screen.getByRole("region", { name: "aiChat.commands.helpTitle" })).toBeInTheDocument();
+    expect(screen.getByLabelText("aiChat.message")).toHaveValue("");
+    expect(fixture.transport.send).not.toHaveBeenCalled();
+    expect(fixture.transport.save).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "common.close" }));
+    expect(screen.queryByRole("region", { name: "aiChat.commands.helpTitle" })).not.toBeInTheDocument();
+  });
+  it("preserves an unknown command for correction without contacting the model", async () => {
+    const fixture = setup();
+    await send("/unknown args");
+    expect(screen.getByRole("alert")).toHaveTextContent("aiChat.commands.unknown");
+    expect(screen.getByLabelText("aiChat.message")).toHaveValue("/unknown args");
+    expect(fixture.transport.send).not.toHaveBeenCalled();
+  });
+  it("restores ordinary context defaults when a command is removed", async () => {
+    const fixture = setup();
+    act(() => { fixture.store.register("root", { ...fixture.target, hasError: true, readContext: () => ({ query: "SELECT 1", last_error: "private-error" }) }); });
+    await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.error" })).toBeEnabled());
+    fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "/fix " } });
+    expect(screen.getByRole("button", { name: "aiChat.context.kinds.error" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "ordinary question" } });
+    expect(screen.getByRole("button", { name: "aiChat.context.kinds.error" })).toHaveAttribute("aria-pressed", "false");
+  });
   it("mentions a saved query by ID, preserves it through model changes/remounts and omits cached SQL from sends", async () => {
     const id = "ab1f316f-e0c8-4681-9bf3-e56cba339ce0";
     const fixture = setup({ queries: [{ id, name: "Revenue", sql: "private-cached-sql-marker", connection_id: "one", database: "db", created_at: null, updated_at: null }], isLoading: false,

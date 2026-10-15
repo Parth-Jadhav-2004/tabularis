@@ -1396,7 +1396,9 @@ pub async fn save_connection<R: Runtime>(
     params: ConnectionParams,
     detect_json_in_text_columns: Option<bool>,
     environment: Option<String>,
+    ai_instructions: Option<String>,
 ) -> Result<SavedConnection, String> {
+    let ai_instructions = crate::connection_ai::normalize_instructions(ai_instructions)?;
     log::info!("Saving new connection: {}", name);
     validate_connection_uri_persistence(&params)?;
 
@@ -1484,6 +1486,7 @@ pub async fn save_connection<R: Runtime>(
         group_id: None,
         sort_order: None,
         detect_json_in_text_columns,
+        ai_instructions,
         appearance: None,
         tag_ids: None,
         environment: validate_environment(environment)?,
@@ -1600,7 +1603,9 @@ pub async fn update_connection<R: Runtime>(
     params: ConnectionParams,
     detect_json_in_text_columns: Option<bool>,
     environment: Option<String>,
+    ai_instructions: Option<String>,
 ) -> Result<SavedConnection, String> {
+    let ai_instructions = crate::connection_ai::normalize_instructions(ai_instructions)?;
     validate_connection_uri_persistence(&params)?;
     let path = get_config_path(&app)?;
     let mut conn_file = persistence::load_connections_file(&path)?;
@@ -1744,6 +1749,7 @@ pub async fn update_connection<R: Runtime>(
         group_id: original_group_id,
         sort_order: original_sort_order,
         detect_json_in_text_columns,
+        ai_instructions,
         appearance: original_appearance,
         tag_ids: original_tag_ids,
         environment: validate_environment(environment)?,
@@ -1965,6 +1971,7 @@ pub async fn duplicate_connection<R: Runtime>(
         group_id: original.group_id.clone(), // Copy to same group as original
         sort_order: None,                    // Will be placed at end of group
         detect_json_in_text_columns: original.detect_json_in_text_columns,
+        ai_instructions: original.ai_instructions.clone(),
         appearance: new_appearance,
         tag_ids: original.tag_ids.clone(),
         // Normalize rather than fail: an invalid on-disk value must not
@@ -3285,6 +3292,7 @@ mod tests {
             group_id: None,
             sort_order: None,
             detect_json_in_text_columns: None,
+            ai_instructions: None,
             appearance: None,
             tag_ids: None,
             environment: None,
@@ -3313,6 +3321,7 @@ mod tests {
             group_id: Some("group-a".to_string()),
             sort_order: Some(3),
             detect_json_in_text_columns: None,
+            ai_instructions: None,
             appearance: Some(ConnectionAppearance {
                 accent_color: Some("#ff0000".to_string()),
                 icon: Some(IconOverride::Emoji {
@@ -3333,6 +3342,7 @@ mod tests {
             group_id: existing.group_id.clone(),
             sort_order: existing.sort_order,
             detect_json_in_text_columns: None,
+            ai_instructions: None,
             appearance: original_appearance,
             tag_ids: None,
             environment: None,
@@ -3358,6 +3368,7 @@ mod tests {
             group_id: None,
             sort_order: None,
             detect_json_in_text_columns: None,
+            ai_instructions: None,
             appearance,
             tag_ids: None,
             environment: None,

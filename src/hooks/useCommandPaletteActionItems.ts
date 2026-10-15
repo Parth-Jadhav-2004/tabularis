@@ -12,6 +12,9 @@ import { SettingsContext } from "../contexts/SettingsContext";
 import { useAiAvailability } from "./useAiAvailability";
 import { useToggleAiChat } from "./useToggleAiChat";
 import type { PaletteItem } from "../types/palette";
+import { useAiEditor } from "./useAiEditor";
+import { useOpenAiChat } from "./useAiChatEntry";
+import { aiQueryEntry } from "../utils/aiEntryPoints";
 
 export function useCommandPaletteActionItems(
   onGenerateSql: (target: TableTarget) => void,
@@ -23,6 +26,8 @@ export function useCommandPaletteActionItems(
   const scope = useActiveCommandPaletteScope();
   const { available: aiAvailable } = useAiAvailability();
   const toggleAiChat = useToggleAiChat();
+  const aiTarget = useAiEditor();
+  const aiLauncher = useOpenAiChat();
   // Read the settings context directly so the palette also renders outside a
   // SettingsProvider (isolated hook usage); the app always provides it.
   const settingsContext = useContext(SettingsContext);
@@ -101,6 +106,18 @@ export function useCommandPaletteActionItems(
       icon: "generate-sql", shortcut: getShortcut("toggle_ai_chat"),
       primaryAction: { id: "ai.toggle-chat", label: t("aiChat.toggle"), execute: toggleAiChat },
     }] : [];
+    if (aiAvailable && !aiLauncher.disabled && aiTarget?.connectionId === scope.connectionId
+      && aiTarget.readContext?.().query?.trim()) {
+      for (const command of ["explain", "optimize"] as const) {
+        const title = t(`aiChat.entryPoints.${command}Query`);
+        aiItems.push({ id: `ai.${command}-query`, title, group: t("settings.shortcuts.categories.editor"),
+          icon: "generate-sql", keywords: ["ai", command, "query", `/${command}`],
+          primaryAction: { id: `ai.${command}-query`, label: title, execute: () => {
+            const snapshot = aiTarget.readContext?.() ?? {};
+            if (snapshot.query?.trim()) aiLauncher.open(command, aiTarget, aiQueryEntry(snapshot));
+          } } });
+      }
+    }
     return [...builtInItems, ...connectionItems, ...aiItems];
   }, [
     onGenerateSql,
@@ -115,5 +132,7 @@ export function useCommandPaletteActionItems(
     toggleWordWrap,
     aiAvailable,
     toggleAiChat,
+    aiTarget,
+    aiLauncher,
   ]);
 }

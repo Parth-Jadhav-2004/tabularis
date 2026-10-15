@@ -62,6 +62,10 @@ vi.mock("../../../src/hooks/useAlert", () => ({
   useAlert: () => ({ showAlert: alertMocks.showAlert }),
 }));
 
+vi.mock("../../../src/components/ui/SqlEditorWrapper", () => ({
+  SqlEditorWrapper: () => <div data-testid="startup-sql-editor" />,
+}));
+
 vi.mock("../../../src/components/ui/Modal", () => ({
   Modal: ({
     isOpen,
@@ -366,6 +370,44 @@ describe("NewConnectionModal layout", () => {
     k8sMocks.validateK8sPath.mockResolvedValue(undefined);
   });
 
+  describe("AI instructions", () => {
+    it.each(["Prefer explicit JOINs.\n😀", ""])("loads and saves edited preferences: %s", async (value) => {
+      const initial = { ...createInitialConnection({}), ai_instructions: "Existing preferences" };
+      renderModal(initial);
+      fireEvent.click(await screen.findByRole("button", { name: "newConnection.advanced" }));
+      const field = screen.getByRole("textbox", { name: "newConnection.aiInstructions" });
+      expect(field).toHaveValue("Existing preferences");
+      fireEvent.change(field, { target: { value } });
+      fireEvent.click(screen.getByText("newConnection.save"));
+      await waitFor(() => expect(invoke).toHaveBeenCalledWith("update_connection", expect.objectContaining({
+        id: initial.id, aiInstructions: value || null,
+      })));
+    });
+    it("sends new preferences with the connection, outside driver parameters", async () => {
+      vi.mocked(invoke).mockImplementation(async (command) => command === "save_connection" ? { id: "new-connection" } : "ok");
+      renderModal();
+      pickEngineFromCatalogue();
+      fireEvent.change(screen.getByPlaceholderText("newConnection.namePlaceholder"), { target: { value: "Local" } });
+      fireEvent.change(screen.getByPlaceholderText("newConnection.dbNamePlaceholder"), { target: { value: "database" } });
+      fireEvent.click(screen.getByRole("button", { name: "newConnection.advanced" }));
+      fireEvent.change(screen.getByRole("textbox", { name: "newConnection.aiInstructions" }), { target: { value: "Use aliases." } });
+      fireEvent.click(screen.getByText("newConnection.save"));
+      await waitFor(() => expect(invoke).toHaveBeenCalledWith("save_connection", expect.objectContaining({ aiInstructions: "Use aliases." })));
+      const call = vi.mocked(invoke).mock.calls.find(([command]) => command === "save_connection");
+      const args = call?.[1];
+      expect(args && "params" in args ? args.params : undefined).not.toHaveProperty("ai_instructions");
+    });
+    it("clears preferences when an edit session is replaced by a new connection", async () => {
+      render(<SwitchingModalHarness initialConnection={{ ...createInitialConnection({}), ai_instructions: "private-old-preference" }} />);
+      fireEvent.click(await screen.findByRole("button", { name: "newConnection.advanced" }));
+      expect(screen.getByRole("textbox", { name: "newConnection.aiInstructions" })).toHaveValue("private-old-preference");
+      fireEvent.click(screen.getByText("open-new"));
+      pickEngineFromCatalogue();
+      fireEvent.click(screen.getByRole("button", { name: "newConnection.advanced" }));
+      expect(screen.getByRole("textbox", { name: "newConnection.aiInstructions" })).toHaveValue("");
+    });
+  });
+
   describe("default database selection", () => {
     const databases = ["analytics", "production", "reporting"];
 
@@ -396,12 +438,12 @@ describe("NewConnectionModal layout", () => {
     it("keeps the draft default and deselection when databases are reloaded", async () => {
       const select = await openDatabaseSelection();
       fireEvent.change(select, { target: { value: "reporting" } });
-      fireEvent.click(screen.getByRole("button", { name: "analytics", exact: true }));
+      fireEvent.click(screen.getByRole("button", { name: "analytics" }));
       vi.mocked(invoke).mockClear();
       fireEvent.click(screen.getByText("newConnection.loadDatabases"));
       await waitFor(() => expect(screen.getByText("newConnection.loadDatabases")).not.toBeDisabled());
       expect(select).toHaveValue("reporting");
-      expect(screen.queryByRole("option", { name: "analytics", exact: true })).not.toBeInTheDocument();
+      expect(screen.queryByRole("option", { name: "analytics" })).not.toBeInTheDocument();
       fireEvent.click(screen.getByText("newConnection.save"));
       await waitFor(() => expect(invoke).toHaveBeenCalledWith(
         "update_connection", expect.objectContaining({
@@ -413,9 +455,9 @@ describe("NewConnectionModal layout", () => {
     it("falls back to the next selected database when the default is removed", async () => {
       const select = await openDatabaseSelection();
       fireEvent.change(select, { target: { value: "reporting" } });
-      fireEvent.click(screen.getByRole("button", { name: "reporting", exact: true }));
+      fireEvent.click(screen.getByRole("button", { name: "reporting" }));
       expect(select).toHaveValue("analytics");
-      fireEvent.click(screen.getByRole("button", { name: "analytics", exact: true }));
+      fireEvent.click(screen.getByRole("button", { name: "analytics" }));
       expect(select).toHaveValue("production");
       fireEvent.click(screen.getByText("newConnection.save"));
       await waitFor(() => expect(invoke).toHaveBeenCalledWith(
@@ -439,8 +481,8 @@ describe("NewConnectionModal layout", () => {
       fireEvent.click(screen.getByText("newConnection.selectDatabases"));
       fireEvent.click(screen.getByText("newConnection.chooseDatabases"));
       fireEvent.click(screen.getByText("newConnection.loadDatabases"));
-      fireEvent.click(await screen.findByRole("button", { name: "analytics", exact: true }));
-      fireEvent.click(screen.getByRole("button", { name: "production", exact: true }));
+      fireEvent.click(await screen.findByRole("button", { name: "analytics" }));
+      fireEvent.click(screen.getByRole("button", { name: "production" }));
       fireEvent.change(screen.getByRole("combobox", { name: "newConnection.defaultDatabase" }), { target: { value: "production" } });
       fireEvent.click(screen.getByText("newConnection.save"));
       await waitFor(() => expect(invoke).toHaveBeenCalledWith(

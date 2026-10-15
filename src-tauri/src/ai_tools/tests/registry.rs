@@ -101,6 +101,7 @@ async fn fixture(
         group_id: None,
         sort_order: None,
         detect_json_in_text_columns: None,
+        ai_instructions: None,
         appearance: None,
         tag_ids: None,
         environment: None,

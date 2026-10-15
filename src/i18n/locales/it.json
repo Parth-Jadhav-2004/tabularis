@@ -768,7 +768,13 @@
       "apiKeySaved": "Chiave API salvata in modo sicuro",
       "chattitlePrompt": "Prompt per il titolo della conversazione",
       "chattitlePromptDesc": "Personalizza il prompt usato dopo la prima risposta. I titoli rinominati manualmente vengono conservati.",
-      "enterChattitlePrompt": "Inserisci un prompt per il titolo della conversazione..."
+      "enterChattitlePrompt": "Inserisci un prompt per il titolo della conversazione...",
+      "optimizePrompt": "Prompt di ottimizzazione SQL",
+      "optimizePromptDesc": "Istruzioni per /optimize. Supporta {{LANGUAGE}}.",
+      "enterOptimizePrompt": "Inserisci le istruzioni di ottimizzazione…",
+      "fixPrompt": "Prompt di correzione SQL",
+      "fixPromptDesc": "Istruzioni per /fix. Supporta {{LANGUAGE}}.",
+      "enterFixPrompt": "Inserisci le istruzioni di correzione…"
     },
     "updates": "Aggiornamenti",
     "openSourceLibraries": "Librerie Open Source",
@@ -1130,22 +1136,14 @@
     "managedByPackageManagerDesc": "Usa il tuo package manager per aggiornare Tabularis."
   },
   "ai": {
-    "assist": "AI Assist",
     "explain": "Spiega",
-    "generateSql": "Genera SQL",
-    "generating": "Generazione...",
-    "explainQuery": "Spiegazione Query AI",
-    "queryLabel": "Query",
-    "explanationLabel": "Spiegazione",
-    "generatingExplanation": "Generazione spiegazione...",
-    "configRequired": "⚠️ Provider AI non configurato. Vai su Impostazioni > AI.",
-    "enterPrompt": "Descrivi la tua query in linguaggio naturale",
-    "promptPlaceholder": "es. Trova tutti gli utenti iscritti il mese scorso che hanno ordinato un piano 'Premium'...",
-    "readingSchema": "Lettura schema database...",
-    "schemaError": "Impossibile caricare il contesto dello schema del database",
-    "configError": "Configura il provider AI nelle Impostazioni e inserisci un prompt."
+    "generateSql": "Genera SQL"
   },
   "newConnection": {
+    "aiInstructions": "Istruzioni AI",
+    "aiInstructionsHint": "Preferenze per le chat su questa connessione. Inviate al modello salvo rimozione dal contesto. Salvate senza cifratura nelle impostazioni della connessione e incluse nelle esportazioni; non inserire segreti.",
+    "aiInstructionsPlaceholder": "Preferisci join espliciti e nomi di tabella qualificati.",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "Si risolve in {{document}}: inoltra a {{host}}:{{port}} attraverso il nodo gestito. Modifica l'indirizzo di destinazione nella scheda Generale; un host di loopback indica il nodo stesso.",
     "ssmIamHint": "Richiede ssm:StartSession sul target e sul documento risolto.",
     "ssmNotAvailable": "AWS SSM non è disponibile per questo driver.",
@@ -2872,6 +2870,26 @@
       "viewDetail": "Dettagli vista: {{name}}",
       "savedQuery": "Query salvata: {{name}}",
       "viewCount": "Viste: {{count}}"
+    },
+    "commands": {
+      "title": "Comandi",
+      "hint": "Digita / per vedere i comandi.",
+      "unknown": "Comando sconosciuto. Usa /help per vedere i comandi disponibili.",
+      "helpTitle": "Comandi dell’assistente",
+      "generate": "Genera SQL da una richiesta o dalla query corrente",
+      "explain": "Spiega il codice SQL selezionato o la query corrente",
+      "optimize": "Ottimizza il codice SQL selezionato o la query corrente",
+      "fix": "Correggi SQL usando l’ultimo errore della query",
+      "help": "Mostra questa guida senza contattare un modello"
+    },
+    "entryPoints": {
+      "fix": "Correggi con AI",
+      "explainSelection": "Spiega la selezione con AI",
+      "optimizeSelection": "Ottimizza la selezione con AI",
+      "askSelection": "Chiedi all’AI della selezione",
+      "askTable": "Chiedi all’AI di questa tabella",
+      "explainQuery": "Spiega la query corrente con AI",
+      "optimizeQuery": "Ottimizza la query corrente con AI"
     }
   }
 }

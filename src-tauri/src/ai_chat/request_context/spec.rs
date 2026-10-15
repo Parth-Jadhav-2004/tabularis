@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 #[serde(default, deny_unknown_fields)]
 pub(crate) struct ContextSelection {
     pub connection: bool,
+    pub instructions: bool,
     pub schema: bool,
     pub query: bool,
     pub selection: bool,
@@ -16,6 +17,7 @@ impl Default for ContextSelection {
     fn default() -> Self {
         Self {
             connection: true,
+            instructions: true,
             schema: true,
             query: true,
             selection: true,
@@ -36,6 +38,8 @@ pub(crate) struct EditorSnapshot {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ContextSpec {
+    #[serde(default)]
+    pub command: Option<super::super::slash::ChatCommand>,
     pub connection_id: String,
     pub database: Option<String>,
     pub schema: Option<String>,

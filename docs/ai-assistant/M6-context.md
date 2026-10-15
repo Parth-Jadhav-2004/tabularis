@@ -51,8 +51,8 @@ Send the model the right context with a predictable budget, show the user exactl
 
 ### Per-connection instructions
 
-- A new optional field `ai_instructions` on the connection (`persistence.rs` model + connection modal), max 2000 chars.
-- Included in exports/imports of connections. Not secret, so it stays in the connections file (decide whether it should be sealed too; probably not, it is configuration).
+- Optional `ai_instructions` on `SavedConnection` (`models.rs` + connection modal), max 2,000 Unicode code points.
+- Included in native connection exports/imports and duplication. It is non-secret configuration, stored unencrypted in the connections file. The field description makes this explicit and asks users not to enter secrets.
 
 ## Steps
 
@@ -61,10 +61,10 @@ Send the model the right context with a predictable budget, show the user exactl
 - [x] `context.rs` with layers, budget allocation and the referenced-table extraction.
 - [x] Backend schema cache with a short TTL per connection/database/schema and invalidation on schema refresh.
 - [x] `ContextSpec` in `ai_chat_send`; store a `Context` block on the user message.
-- [ ] Chips UI (schema/table previews, counts and removable layer/table controls complete; instructions chip pending).
+- [x] Chips UI (schema/table previews, counts and removable layer/table/instructions controls).
 - [x] `@` mention popover + explorer drag and drop (tables, regular views and saved queries; scoped table drops).
-- [ ] Connection `ai_instructions` field + modal UI.
-- [ ] i18n (context controls and all mention types translated; connection instructions UI pending).
+- [x] Connection `ai_instructions` field + modal UI.
+- [x] i18n (context controls, all mention types and connection instructions UI in all 11 locales).
 
 ## Implementation notes
 
@@ -80,7 +80,10 @@ Send the model the right context with a predictable budget, show the user exactl
 - `ContextSpec` accepts defaulted `views`, `excluded_views` and saved-query IDs. Explicit table/view mentions take priority over inferred references and share the default 20-detail limit. Cache keys retain object kind, so equal table/view names cannot share a detail batch; failed view catalogs are retried. The table-only detail loader remains compatible.
 - Saved-query text is resolved afresh in Rust on the blocking pool, with exact connection/database matching; entries without a database are connection-wide. The focused reader validates canonical IDs and selected files, caps metadata at 2 MiB and each SQL source at 256 KiB, and preserves UTF-8 boundaries. Missing/ambiguous/unreadable selections become explicit gaps. Up to 20 saved queries share the editor layer budget and its escaped untrusted-data envelope. Frontend requests carry IDs only, while preview/history carry names and sizes. MySQL-style tab schema overrides resolve as database names for saved-query matching and context metadata.
 - View and saved-query choices use the same scoped session state as tables. Model changes before the first message now retain all next-message context choices.
-- Next: per-connection instructions, their chip and translations. Attachments and notebook context remain M10/M8 work. Mixed-mention visual verification and native/live-provider context smoke validation remain pending.
+- Connection instructions are optional ordinary configuration on `SavedConnection`, separate from driver parameters and secrets. Save/update validate the 2,000-code-point limit before credential operations; native deserialization enforces the same limit, and empty preferences become absent. Existing records without the field remain compatible. Native export/import and duplication retain preferences, and clearing a saved value does not resurrect it through unknown-field preservation.
+- The Advanced connection tab includes an accessible textarea, Unicode-safe input cap and character counter, with translations in all 11 locales. Form edits preserve exact nonempty text; a new form session resets preferences. Rust reads the saved connection's instructions afresh for each send/preview, independently of cached schema details. `include.instructions` defaults on for old clients and controls only this layer; clients cannot supply instruction text through `ContextSpec`.
+- Configured instructions have a removable/restorable chip with actual preview size and truncation. Their inclusion is independent of connection metadata and follows the existing per-turn/session lifecycle. Preview and encrypted history retain names/sizes only; instruction text stays inside the prompt's escaped preferences envelope.
+- M6 implementation is complete. Mixed-mention/instructions visual verification and native/live-provider context smoke validation remain pending. Attachments and notebook context remain M10/M8 work. Next implementation: M7 editor actions and modal migration.
 
 ## Tests
 

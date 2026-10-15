@@ -1,3 +1,10 @@
+## Unreleased
+
+### Features
+
+* **ai:** Generate SQL and Explain in the editor and notebook now open the conversational sidebar. Generated SQL offers Insert, Replace and Run actions; generating a query no longer replaces or executes SQL automatically.
+* **ai:** Fix query errors from the sidebar, explain or optimize selected SQL from the editor context menu, ask about explorer tables, and explain or optimize the current query from the command palette.
+
 # [0.28.0](https://github.com/TabularisDB/tabularis/compare/v0.27.0...v0.28.0) (2026-10-13)
 
 

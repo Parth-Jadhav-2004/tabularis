@@ -53,6 +53,8 @@ export interface ConnectionAppearance {
 export interface SavedConnection {
   id: string;
   name: string;
+  /** Non-secret AI preferences, limited to 2,000 Unicode code points. */
+  ai_instructions?: string;
   params: {
     driver: string;
     host?: string;

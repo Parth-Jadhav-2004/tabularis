@@ -1,5 +1,6 @@
 export interface AiContextSelection {
   connection: boolean;
+  instructions: boolean;
   schema: boolean;
   query: boolean;
   selection: boolean;
@@ -15,6 +16,7 @@ export interface AiEditorSnapshot {
 }
 
 export interface AiContextOptions {
+  command?: import("./aiCommands").AiRemoteCommand;
   language: string;
   include: AiContextSelection;
   tables: string[];

@@ -4,14 +4,16 @@ import type { AiContextPreview, AiContextSelection, AiContextTables, AiMentionIt
 import { aiContextLabelKey, aiContextSize, aiContextTableCount, aiContextViewCount } from "../../utils/aiContext";
 import { ContextReferenceChips } from "./ContextReferenceChips";
 
-export function ContextChips({ include, onChange, disabled, hasError, tables, onTable, preview, loading, error, onRefresh, onMention }: {
+export function ContextChips({ include, onChange, disabled, hasError, hasInstructions, tables, onTable, preview, loading, error, onRefresh, onMention }: {
   include: AiContextSelection; onChange: (include: AiContextSelection) => void; disabled: boolean; hasError: boolean;
   tables?: AiContextTables; onTable?: (name: string, selected: boolean) => boolean;
   preview?: AiContextPreview | null; loading?: boolean; error?: boolean; onRefresh?: () => void;
   onMention?: (item: AiMentionItem, selected: boolean) => boolean;
+  hasInstructions?: boolean;
 }) {
   const { t } = useTranslation();
-  const kinds = ["connection", "schema", "query", "selection", "cursor_statement", ...(hasError ? ["error" as const] : [])] as const;
+  const instructions = preview?.items.find((item) => item.kind === "instructions");
+  const kinds = ["connection", ...(hasInstructions || instructions ? ["instructions" as const] : []), "schema", "query", "selection", "cursor_statement", ...(hasError ? ["error" as const] : [])] as const;
   const details = preview?.items.filter((item) => item.kind === "table") ?? [];
   const names = [...new Set([...(tables?.tables ?? []), ...details.map((item) => item.id), ...(tables?.excluded_tables ?? [])])];
   const schema = preview?.items.find((item) => item.kind === "schema");
@@ -29,6 +31,8 @@ export function ContextChips({ include, onChange, disabled, hasError, tables, on
         title={t(include[kind] ? "aiChat.context.remove" : "aiChat.context.include", { context: t(aiContextLabelKey(kind)) })}
         className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs disabled:opacity-40 focus-ring ${include[kind] ? "border-strong bg-surface-secondary text-primary" : "border-default bg-base text-muted"}`}>
         {t(aiContextLabelKey(kind))}
+        {kind === "instructions" && include.instructions && instructions && <span>{t("aiChat.context.characters", { count: aiContextSize(instructions) ?? 0 })}</span>}
+        {kind === "instructions" && instructions?.truncated && <span className="text-accent-warning">{t("aiChat.context.truncated")}</span>}
         {kind === "schema" && count !== null && <span>({t("aiChat.context.tableCount", { count })})</span>}
         {kind === "schema" && viewCount !== null && viewCount > 0 && <span>· {t("aiChat.context.viewCount", { count: viewCount })}</span>}
         {kind === "schema" && schema?.truncated && <span className="text-accent-warning">{t("aiChat.context.truncated")}</span>}

@@ -96,12 +96,14 @@ export function AiTab() {
   const [showKey, setShowKey] = useState(false);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [explainPrompt, setExplainPrompt] = useState("");
+  const [optimizePrompt, setOptimizePrompt] = useState("");
+  const [fixPrompt, setFixPrompt] = useState("");
   const [cellnamePrompt, setCellnamePrompt] = useState("");
   const [tabrenamePrompt, setTabrenamePrompt] = useState("");
   const [chattitlePrompt, setChattitlePrompt] = useState("");
   const [explainplanPrompt, setExplainplanPrompt] = useState("");
   const [promptSectionOpen, setPromptSectionOpen] = useState<
-    "system" | "explain" | "cellname" | "tabrename" | "chattitle" | "explainplan" | null
+    "system" | "explain" | "optimize" | "fix" | "cellname" | "tabrename" | "chattitle" | "explainplan" | null
   >(null);
 
   const loadModels = useCallback(
@@ -170,6 +172,12 @@ export function AiTab() {
     invoke<string>("get_explain_prompt")
       .then(setExplainPrompt)
       .catch(console.error);
+    invoke<string>("get_optimize_prompt")
+      .then(setOptimizePrompt)
+      .catch(() => {});
+    invoke<string>("get_fix_prompt")
+      .then(setFixPrompt)
+      .catch(() => {});
     invoke<string>("get_cellname_prompt")
       .then(setCellnamePrompt)
       .catch(console.error);
@@ -201,10 +209,10 @@ export function AiTab() {
     }
   };
 
-  const handleSavePrompt = async (type: "system" | "explain" | "cellname" | "tabrename" | "chattitle" | "explainplan") => {
-    const cmdMap = { system: "save_system_prompt", explain: "save_explain_prompt", cellname: "save_cellname_prompt", tabrename: "save_tabrename_prompt", chattitle: "save_chattitle_prompt", explainplan: "save_explainplan_prompt" } as const;
+  const handleSavePrompt = async (type: "system" | "explain" | "optimize" | "fix" | "cellname" | "tabrename" | "chattitle" | "explainplan") => {
+    const cmdMap = { system: "save_system_prompt", explain: "save_explain_prompt", optimize: "save_optimize_prompt", fix: "save_fix_prompt", cellname: "save_cellname_prompt", tabrename: "save_tabrename_prompt", chattitle: "save_chattitle_prompt", explainplan: "save_explainplan_prompt" } as const;
     const cmd = cmdMap[type];
-    const promptMap = { system: systemPrompt, explain: explainPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, chattitle: chattitlePrompt, explainplan: explainplanPrompt };
+    const promptMap = { system: systemPrompt, explain: explainPrompt, optimize: optimizePrompt, fix: fixPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, chattitle: chattitlePrompt, explainplan: explainplanPrompt };
     const prompt = promptMap[type];
     try {
       await invoke(cmd, { prompt });
@@ -217,10 +225,10 @@ export function AiTab() {
     }
   };
 
-  const handleResetPrompt = async (type: "system" | "explain" | "cellname" | "tabrename" | "chattitle" | "explainplan") => {
-    const cmdMap = { system: "reset_system_prompt", explain: "reset_explain_prompt", cellname: "reset_cellname_prompt", tabrename: "reset_tabrename_prompt", chattitle: "reset_chattitle_prompt", explainplan: "reset_explainplan_prompt" } as const;
+  const handleResetPrompt = async (type: "system" | "explain" | "optimize" | "fix" | "cellname" | "tabrename" | "chattitle" | "explainplan") => {
+    const cmdMap = { system: "reset_system_prompt", explain: "reset_explain_prompt", optimize: "reset_optimize_prompt", fix: "reset_fix_prompt", cellname: "reset_cellname_prompt", tabrename: "reset_tabrename_prompt", chattitle: "reset_chattitle_prompt", explainplan: "reset_explainplan_prompt" } as const;
     const cmd = cmdMap[type];
-    const setterMap = { system: setSystemPrompt, explain: setExplainPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, chattitle: setChattitlePrompt, explainplan: setExplainplanPrompt };
+    const setterMap = { system: setSystemPrompt, explain: setExplainPrompt, optimize: setOptimizePrompt, fix: setFixPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, chattitle: setChattitlePrompt, explainplan: setExplainplanPrompt };
     const setter = setterMap[type];
     try {
       const defaultPrompt = await invoke<string>(cmd);
@@ -651,10 +659,10 @@ export function AiTab() {
 
         {/* Prompt customization */}
         <SettingSection title={t("settings.ai.promptCustomization")}>
-          {(["system", "explain", "cellname", "tabrename", "chattitle", "explainplan"] as const).map((type) => {
+          {(["system", "explain", "optimize", "fix", "cellname", "tabrename", "chattitle", "explainplan"] as const).map((type) => {
             const isOpen = promptSectionOpen === type;
-            const promptMap = { system: systemPrompt, explain: explainPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, chattitle: chattitlePrompt, explainplan: explainplanPrompt };
-            const setPromptMap = { system: setSystemPrompt, explain: setExplainPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, chattitle: setChattitlePrompt, explainplan: setExplainplanPrompt };
+            const promptMap = { system: systemPrompt, explain: explainPrompt, optimize: optimizePrompt, fix: fixPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, chattitle: chattitlePrompt, explainplan: explainplanPrompt };
+            const setPromptMap = { system: setSystemPrompt, explain: setExplainPrompt, optimize: setOptimizePrompt, fix: setFixPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, chattitle: setChattitlePrompt, explainplan: setExplainplanPrompt };
             const prompt = promptMap[type];
             const setPrompt = setPromptMap[type];
             return (
@@ -699,7 +707,7 @@ export function AiTab() {
                       onChange={(e) => setPrompt(e.target.value)}
                       className="w-full h-36 bg-base border border-strong rounded-lg p-3 text-primary text-sm font-mono focus:outline-none focus:border-focus transition-colors resize-y"
                       placeholder={t(
-                        `settings.ai.enter${type === "system" ? "System" : type === "explain" ? "Explain" : type === "cellname" ? "Cellname" : type === "chattitle" ? "Chattitle" : "Tabrename"}Prompt`,
+                        `settings.ai.enter${type === "system" ? "System" : type === "explain" ? "Explain" : type === "optimize" ? "Optimize" : type === "fix" ? "Fix" : type === "cellname" ? "Cellname" : type === "chattitle" ? "Chattitle" : "Tabrename"}Prompt`,
                       )}
                     />
                     <div className="flex justify-end gap-2 mt-3">

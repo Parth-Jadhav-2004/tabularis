@@ -243,6 +243,7 @@ mod tests {
             group_id: group_id.map(str::to_string),
             sort_order: Some(3),
             detect_json_in_text_columns: None,
+            ai_instructions: None,
             appearance: None,
             tag_ids: None,
             environment: None,

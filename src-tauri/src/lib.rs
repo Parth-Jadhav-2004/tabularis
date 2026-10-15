@@ -23,6 +23,7 @@ pub mod cli;
 pub mod clipboard_import;
 pub mod commands;
 pub mod connection_appearance;
+mod connection_ai;
 pub mod connection_import;
 pub mod connection_import_commands;
 #[cfg(test)]
@@ -686,6 +687,12 @@ pub fn run() {
             config::get_chattitle_prompt,
             config::save_chattitle_prompt,
             config::reset_chattitle_prompt,
+            config::get_optimize_prompt,
+            config::save_optimize_prompt,
+            config::reset_optimize_prompt,
+            config::get_fix_prompt,
+            config::save_fix_prompt,
+            config::reset_fix_prompt,
             // AI
             ai::generate_ai_query,
             ai_chat::ai_chat_send,

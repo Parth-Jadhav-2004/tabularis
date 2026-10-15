@@ -1,7 +1,8 @@
 //! Read-only context preparation. The prompt and editor contents stay in Rust;
 //! previews share the send resolver and expose only bounded metadata summaries.
 use super::context::{BuiltContext, ContextItemSummary};
-use super::request_context::{resolve, ContextSpec};
+use super::request_context::ContextSpec;
+use super::slash::resolve;
 use crate::ai::message::ContextItemRef;
 use crate::ai::provider::{ErrorKind, ProviderError};
 use serde::Serialize;

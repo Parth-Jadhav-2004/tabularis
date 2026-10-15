@@ -20,6 +20,26 @@ async function fixture() {
 }
 
 describe("AI resolved context lifecycle", () => {
+  it("derives the action from the message instead of trusting an option and resets it next turn", async () => {
+    const { session, transport, listeners, unmount } = await fixture();
+    const context = { ...createAiContextOptions({ query: "SELECT 1" }, defaultAiContextSelection(), "it"), command: "fix" as const };
+    await session.send("/optimize", { context });
+    expect(vi.mocked(transport.send).mock.calls[0][2]?.command).toBe("optimize");
+    expect(vi.mocked(transport.send).mock.calls[0][0].messages[0].blocks).toEqual([{ type: "text", text: "/optimize" }]);
+    listeners.get(vi.mocked(transport.send).mock.calls[0][1])!({ type: "done", finish: "stop" });
+    await Promise.resolve();
+    await session.send("follow-up", { context });
+    expect(vi.mocked(transport.send).mock.calls[1][2]?.command).toBeUndefined();
+    unmount();
+  });
+  it("rejects local, unknown and unresolved commands without starting a run", async () => {
+    const { session, transport, unmount } = await fixture();
+    for (const text of ["/help", "/unknown", "/fix"]) expect(await session.send(text)).toBe(false);
+    expect(session.getSnapshot().activeRun).toBeNull();
+    expect(transport.send).not.toHaveBeenCalled();
+    expect(session.getSnapshot().conversation?.messages).toEqual([]);
+    unmount();
+  });
   it("binds context to the conversation scope and resets next-message choices after send", async () => {
     const { session, transport, unmount } = await fixture();
     const include = { ...defaultAiContextSelection(), query: false };

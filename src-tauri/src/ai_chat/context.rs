@@ -73,7 +73,11 @@ fn layers(input: &ContextInput<'_>) -> Vec<Vec<Part>> {
     if let Some(catalog) = input.catalog {
         let known = reference_catalog(catalog);
         let references = references::extract_referenced_tables(
-            input.editor.query.unwrap_or_default(),
+            input
+                .editor
+                .query
+                .or(input.editor.selection)
+                .unwrap_or_default(),
             &known,
             input.connection.and_then(|connection| connection.database),
             input.connection.and_then(|connection| connection.schema),

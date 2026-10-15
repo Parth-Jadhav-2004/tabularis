@@ -2,6 +2,14 @@ import { describe, expect, it } from "vitest";
 import { aiContextLabelKey, aiContextSize, aiContextTableCount, aiContextViewCount, changeAiContextMention, changeAiContextTable, createAiContextOptions, defaultAiContextSelection, sameAiContextScope } from "../../src/utils/aiContext";
 
 describe("AI context choices", () => {
+  it("defaults instructions on for each turn and passes only the inclusion choice", () => {
+    const include = defaultAiContextSelection();
+    expect(include.instructions).toBe(true);
+    include.instructions = false;
+    expect(createAiContextOptions({}, include, "en").include.instructions).toBe(false);
+    expect(defaultAiContextSelection().instructions).toBe(true);
+    expect(createAiContextOptions({}, include, "en")).not.toHaveProperty("ai_instructions");
+  });
   it("omits excluded editor data and includes errors only by explicit choice", () => {
     const include = { ...defaultAiContextSelection(), query: false, selection: false, cursor_statement: false };
     const snapshot = { query: "private-query", selection: "private-selection", cursor_statement: "private-cursor", last_error: "private-error" };

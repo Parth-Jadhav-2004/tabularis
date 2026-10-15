@@ -1,51 +1,35 @@
-import { useState } from "react";
-import { AiQueryModal } from "../modals/AiQueryModal";
-import { AiExplainModal } from "../modals/AiExplainModal";
+import { useContext } from "react";
+import { AiNotebookContext } from "../../contexts/AiNotebookContext";
+import { useOpenAiChat } from "../../hooks/useAiChatEntry";
 import { AiDropdownButton } from "../ui/AiDropdownButton";
 
 interface NotebookAiButtonsProps {
+  cellId: string;
   content: string;
-  onInsert: (sql: string) => void;
   connectionId: string;
-  schema?: string;
 }
 
 export function NotebookAiButtons({
+  cellId,
   content,
-  onInsert,
   connectionId,
-  schema,
 }: NotebookAiButtonsProps) {
-  const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [isExplainOpen, setIsExplainOpen] = useState(false);
+  const notebook = useContext(AiNotebookContext);
+  const launcher = useOpenAiChat(notebook?.scopeId);
+  const open = (command: "generate" | "explain") => {
+    const target = notebook?.selectCell(cellId);
+    if (target) launcher.open(command, target);
+  };
 
   return (
-    <>
       <div className="absolute bottom-1 right-2 z-10 flex items-center gap-1">
         <AiDropdownButton
-          onGenerate={() => setIsGenerateOpen(true)}
-          onExplain={() => setIsExplainOpen(true)}
-          disableAll={!connectionId}
+          onGenerate={() => open("generate")}
+          onExplain={() => open("explain")}
+          disableAll={!connectionId || !notebook || launcher.disabled}
           disableExplain={!content.trim()}
           compact
         />
       </div>
-
-      <AiQueryModal
-        isOpen={isGenerateOpen}
-        onClose={() => setIsGenerateOpen(false)}
-        connectionId={connectionId}
-        schema={schema}
-        onInsert={(sql) => {
-          onInsert(sql);
-          setIsGenerateOpen(false);
-        }}
-      />
-      <AiExplainModal
-        isOpen={isExplainOpen}
-        onClose={() => setIsExplainOpen(false)}
-        query={content}
-      />
-    </>
   );
 }

@@ -735,7 +735,13 @@
       "apiKeySaved": "Chave de API salva com segurança",
       "chattitlePrompt": "Prompt do título da conversa",
       "chattitlePromptDesc": "Personalize o prompt usado após a primeira resposta. Títulos renomeados manualmente são preservados.",
-      "enterChattitlePrompt": "Digite um prompt para o título..."
+      "enterChattitlePrompt": "Digite um prompt para o título...",
+      "optimizePrompt": "Prompt de otimização SQL",
+      "optimizePromptDesc": "Instruções para /optimize. Suporta {{LANGUAGE}}.",
+      "enterOptimizePrompt": "Insira as instruções de otimização…",
+      "fixPrompt": "Prompt de correção SQL",
+      "fixPromptDesc": "Instruções para /fix. Suporta {{LANGUAGE}}.",
+      "enterFixPrompt": "Insira as instruções de correção…"
     },
     "updates": "Atualizações",
     "openSourceLibraries": "Bibliotecas de Código Aberto",
@@ -1103,22 +1109,14 @@
     "nightlyWarning": "As versões Nightly são pré-lançamentos instáveis. Apenas os artefatos compilados para o canal nightly são instalados."
   },
   "ai": {
-    "assist": "Assistente de IA",
     "explain": "Explicar",
-    "generateSql": "Gerar SQL",
-    "generating": "Gerando...",
-    "explainQuery": "Explicação de Consulta por IA",
-    "queryLabel": "Consulta",
-    "explanationLabel": "Explicação",
-    "generatingExplanation": "Gerando explicação...",
-    "configRequired": "⚠️ Provedor de IA não configurado. Vá para Configurações > IA.",
-    "enterPrompt": "Descreva sua consulta em linguagem natural",
-    "promptPlaceholder": "ex.: Encontrar todos os usuários que se cadastraram no mês passado e pediram o plano 'Premium'...",
-    "readingSchema": "Lendo esquema do banco de dados...",
-    "schemaError": "Falha ao carregar o contexto do esquema do banco de dados",
-    "configError": "Configure o provedor de IA em Configurações e digite um prompt."
+    "generateSql": "Gerar SQL"
   },
   "newConnection": {
+    "aiInstructions": "Instruções de IA",
+    "aiInstructionsHint": "Preferências para conversas nesta conexão. Enviadas ao modelo, a menos que removidas do contexto. Salvas sem criptografia nas configurações e incluídas nas exportações; não insira segredos.",
+    "aiInstructionsPlaceholder": "Prefira joins explícitos e nomes de tabela qualificados.",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "Resolve para {{document}}: encaminha para {{host}}:{{port}} através do nó gerenciado. Altere o endereço de destino na aba Geral; um host de loopback significa o próprio nó.",
     "ssmIamHint": "Requer ssm:StartSession no destino e no documento resolvido.",
     "ssmNotAvailable": "O AWS SSM não está disponível para este driver.",
@@ -2910,6 +2908,26 @@
       "viewDetail": "Detalhes da visualização: {{name}}",
       "savedQuery": "Consulta salva: {{name}}",
       "viewCount": "Visualizações: {{count}}"
+    },
+    "commands": {
+      "title": "Comandos",
+      "hint": "Digite / para ver os comandos.",
+      "unknown": "Comando desconhecido. Use /help para ver os comandos disponíveis.",
+      "helpTitle": "Comandos do assistente",
+      "generate": "Gerar SQL a partir de uma solicitação ou da consulta atual",
+      "explain": "Explicar o SQL selecionado ou a consulta atual",
+      "optimize": "Otimizar o SQL selecionado ou a consulta atual",
+      "fix": "Corrigir SQL usando o último erro de consulta",
+      "help": "Mostrar esta ajuda sem contatar um modelo"
+    },
+    "entryPoints": {
+      "fix": "Corrigir com IA",
+      "explainSelection": "Explicar seleção com IA",
+      "optimizeSelection": "Otimizar seleção com IA",
+      "askSelection": "Perguntar à IA sobre a seleção",
+      "askTable": "Perguntar à IA sobre esta tabela",
+      "explainQuery": "Explicar consulta atual com IA",
+      "optimizeQuery": "Otimizar consulta atual com IA"
     }
   }
 }

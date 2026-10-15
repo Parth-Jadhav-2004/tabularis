@@ -55,8 +55,6 @@ vi.mock("../../src/hooks/useToast", () => ({ useToast: () => ({ showToast: mocks
 vi.mock("../../src/hooks/useProductionGuard", () => ({ useProductionGuard: () => mocks.guard }));
 vi.mock("../../src/hooks/useQueryGuards", () => ({ useQueryGuards: () => ({ guardQuery: mocks.guard, pending: null, resolve: mocks.noop }) }));
 vi.mock("../../src/hooks/useSqlAutocompleteRegistration", () => ({ useSqlAutocompleteRegistration: () => {} }));
-vi.mock("../../src/components/modals/AiQueryModal", () => ({ AiQueryModal: () => null }));
-vi.mock("../../src/components/modals/AiExplainModal", () => ({ AiExplainModal: () => null }));
 vi.mock("../../src/components/modals/VisualExplainModal", () => ({ VisualExplainModal: () => null }));
 vi.mock("../../src/components/modals/NewRowModal", () => ({ NewRowModal: () => null }));
 vi.mock("../../src/components/modals/QuerySelectionModal", () => ({ QuerySelectionModal: () => null }));

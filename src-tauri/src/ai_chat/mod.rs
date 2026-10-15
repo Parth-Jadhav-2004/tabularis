@@ -7,6 +7,7 @@ mod preview;
 mod request_context;
 pub mod run;
 pub(crate) mod schema_cache;
+mod slash;
 pub mod store;
 mod store_index;
 mod store_paths;

@@ -125,6 +125,7 @@ export interface AiNewConversation extends AiModelChoice {
 }
 
 export interface AiSendOptions {
+  editorTarget?: string;
   context?: AiContextOptions;
   system?: string;
   max_output_tokens?: number;
@@ -163,6 +164,7 @@ export type AiChatFailure =
   | { kind: "stream" };
 
 export interface AiChatState {
+  replyTargets: Record<string, string>;
   contextInclude: AiContextSelection;
   contextTables: AiContextTableChoices | null;
   ready: boolean;

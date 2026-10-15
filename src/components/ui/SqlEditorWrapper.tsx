@@ -32,8 +32,11 @@ import {
   setSqlFoldingDialect,
 } from "../../utils/sqlFolding";
 import { installSqlFoldPreview } from "../../utils/sqlFoldPreview";
+import { useMonacoAiActions } from "../../hooks/useMonacoAiActions";
+import type { AiEditorMenuActions } from "../../types/aiEditor";
 
 interface SqlEditorWrapperProps {
+  aiActions?: AiEditorMenuActions;
   initialValue: string;
   onChange: (value: string) => void;
   onRun: () => void;
@@ -99,6 +102,7 @@ const MAX_PENDING_ECHOES = 50;
 
 // Internal component that resets when key changes
 const SqlEditorInternal = ({
+  aiActions,
   initialValue,
   onChange,
   onRun,
@@ -112,6 +116,7 @@ const SqlEditorInternal = ({
 }: SqlEditorWrapperProps & { editorKey: string }) => {
   const updateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { t } = useTranslation();
+  const mountAiEditor = useMonacoAiActions(aiActions, dialect);
   const editorRef = useRef<Parameters<OnMount>[0] | null>(null);
   const monacoRef = useRef<typeof Monaco | null>(null);
   const foldPreviewRef = useRef<Monaco.IDisposable | null>(null);
@@ -742,6 +747,7 @@ const SqlEditorInternal = ({
       w.__e2e_editor = editor;
       w.__e2e_monaco = monaco;
 
+      mountAiEditor(editor);
       if (onMount) onMount(editor, monaco);
     };
 

@@ -744,7 +744,13 @@
       "apiKeySaved": "APIキーを安全に保存しました",
       "chattitlePrompt": "会話タイトルのプロンプト",
       "chattitlePromptDesc": "最初の応答後に使うプロンプトをカスタマイズします。手動で変更したタイトルは保持されます。",
-      "enterChattitlePrompt": "会話タイトルのプロンプトを入力..."
+      "enterChattitlePrompt": "会話タイトルのプロンプトを入力...",
+      "optimizePrompt": "SQL 最適化プロンプト",
+      "optimizePromptDesc": "/optimize の指示。{{LANGUAGE}} に対応しています。",
+      "enterOptimizePrompt": "最適化の指示を入力…",
+      "fixPrompt": "SQL 修正プロンプト",
+      "fixPromptDesc": "/fix の指示。{{LANGUAGE}} に対応しています。",
+      "enterFixPrompt": "修正の指示を入力…"
     },
     "updates": "アップデート",
     "openSourceLibraries": "オープンソースライブラリ",
@@ -1103,22 +1109,14 @@
     "managedByPackageManagerDesc": "Tabularis のアップデートにはパッケージマネージャを使用してください。"
   },
   "ai": {
-    "assist": "AI Assist",
     "explain": "Explain",
-    "generateSql": "SQL を生成",
-    "generating": "生成中...",
-    "explainQuery": "AI によるクエリ説明",
-    "queryLabel": "クエリ",
-    "explanationLabel": "説明",
-    "generatingExplanation": "説明を生成中...",
-    "configRequired": "⚠️ AI プロバイダが未設定です。設定 > AI に移動してください。",
-    "enterPrompt": "クエリを自然言語で記述してください",
-    "promptPlaceholder": "例: 先月登録し、「Premium」プランを購入したすべてのユーザーを検索...",
-    "readingSchema": "データベーススキーマを読み込み中...",
-    "schemaError": "データベーススキーマのコンテキスト読み込みに失敗しました",
-    "configError": "設定で AI プロバイダを構成し、プロンプトを入力してください。"
+    "generateSql": "SQL を生成"
   },
   "newConnection": {
+    "aiInstructions": "AIへの指示",
+    "aiInstructionsHint": "この接続のチャットに適用する設定です。コンテキストから除外しない限りモデルに送信されます。接続設定に暗号化せず保存され、エクスポートにも含まれます。秘密情報は入力しないでください。",
+    "aiInstructionsPlaceholder": "明示的なJOINと修飾されたテーブル名を優先する。",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "{{document}} に解決されます。マネージドノード経由で {{host}}:{{port}} に転送します。転送先アドレスは「一般」タブで変更します。ループバックホストはノード自身を意味します。",
     "ssmIamHint": "対象と解決されたドキュメントに対する ssm:StartSession 権限が必要です。",
     "ssmNotAvailable": "AWS SSM はこのドライバーでは利用できません。",
@@ -2878,6 +2876,26 @@
       "viewDetail": "ビューの詳細: {{name}}",
       "savedQuery": "保存済みクエリ: {{name}}",
       "viewCount": "ビュー数: {{count}}"
+    },
+    "commands": {
+      "title": "コマンド",
+      "hint": "/ を入力するとコマンドを表示します。",
+      "unknown": "不明なコマンドです。/help で利用可能なコマンドを確認してください。",
+      "helpTitle": "アシスタントのコマンド",
+      "generate": "リクエストまたは現在のクエリから SQL を生成",
+      "explain": "選択した SQL または現在のクエリを説明",
+      "optimize": "選択した SQL または現在のクエリを最適化",
+      "fix": "直前のクエリエラーを使って SQL を修正",
+      "help": "モデルに接続せずにこのヘルプを表示"
+    },
+    "entryPoints": {
+      "fix": "AIで修正",
+      "explainSelection": "選択範囲をAIで説明",
+      "optimizeSelection": "選択範囲をAIで最適化",
+      "askSelection": "選択範囲についてAIに質問",
+      "askTable": "このテーブルについてAIに質問",
+      "explainQuery": "現在のクエリをAIで説明",
+      "optimizeQuery": "現在のクエリをAIで最適化"
     }
   }
 }

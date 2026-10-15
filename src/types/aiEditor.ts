@@ -1,4 +1,4 @@
-import type { AiEditorSnapshot } from "./aiContext";
+import type { AiContextSelection, AiEditorSnapshot } from "./aiContext";
 
 export interface AiSqlActions {
   insert: (sql: string) => void;
@@ -8,7 +8,9 @@ export interface AiSqlActions {
 }
 
 export interface AiEditorTarget {
+  id?: string;
   readContext?: () => AiEditorSnapshot;
+  readErrorContext?: () => AiEditorSnapshot;
   hasError?: boolean;
   connectionId: string;
   database: string | null;
@@ -17,8 +19,31 @@ export interface AiEditorTarget {
   actions: AiSqlActions;
 }
 
+export interface AiChatEntryOptions {
+  snapshot?: AiEditorSnapshot;
+  include?: AiContextSelection;
+  tables?: string[];
+}
+
+export type AiEditorMenuAction = "explain" | "optimize" | "ask";
+export interface AiEditorMenuActions {
+  disabled: boolean;
+  run: (action: AiEditorMenuAction, snapshot: AiEditorSnapshot) => void;
+}
+
+export interface AiChatEntry extends AiChatEntryOptions {
+  scopeId: string;
+  target: AiEditorTarget;
+  snapshot: AiEditorSnapshot;
+  command: import("./aiCommands").AiRemoteCommand | null;
+}
+
 export interface AiEditorStore {
   register: (scopeId: string, target: AiEditorTarget) => () => void;
   get: (scopeId: string) => AiEditorTarget | undefined;
   subscribe: (listener: () => void) => () => void;
+  requestEntry: (scopeId: string, target: AiEditorTarget, command: AiChatEntry["command"], options?: AiChatEntryOptions) => void;
+  setContextTarget: (scopeId: string, target: AiEditorTarget) => void;
+  getEntry: () => AiChatEntry | null;
+  consumeEntry: (entry: AiChatEntry) => boolean;
 }

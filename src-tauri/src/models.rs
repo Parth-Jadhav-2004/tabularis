@@ -318,6 +318,13 @@ pub struct ConnectionAppearance {
 pub struct SavedConnection {
     pub id: String,
     pub name: String,
+    /// Non-secret, user-written preferences for the conversational assistant.
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        deserialize_with = "crate::connection_ai::deserialize_instructions"
+    )]
+    pub ai_instructions: Option<String>,
     pub params: ConnectionParams,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group_id: Option<String>,

@@ -7,6 +7,7 @@ import { defaultAiContextSelection } from "./aiContext";
 
 export function createAiChatState(conversation: AiConversation | null = null): AiChatState {
   return {
+    replyTargets: {},
     contextInclude: defaultAiContextSelection(),
     contextTables: null,
     ready: false, conversation, draft: "", runState: "idle", activeRun: null,
@@ -39,7 +40,7 @@ export type AiChatAction =
   | { type: "select"; conversation: AiConversation | null }
   | { type: "draft"; draft: string }
   | { type: "model"; choice: AiModelChoice }
-  | { type: "start"; runId: string; user: AiMessage; assistant: AiMessage }
+  | { type: "start"; runId: string; user: AiMessage; assistant: AiMessage; editorTarget?: string }
   | { type: "event"; runId: string; event: AiChatEvent }
   | { type: "failure"; runId?: string; error: AiChatFailure; keepRun?: boolean }
   | { type: "saving" }
@@ -127,6 +128,7 @@ export function aiChatReducer(state: AiChatState, action: AiChatAction): AiChatS
         contextInclude: defaultAiContextSelection(),
         contextTables: null,
         activeRun: { id: action.runId, assistantId: action.assistant.id },
+        replyTargets: action.editorTarget ? { ...state.replyTargets, [action.assistant.id]: action.editorTarget } : state.replyTargets,
         saveState: "idle", saveResult: null,
         conversation: {
           ...state.conversation, title, updated_at: action.user.created_at,

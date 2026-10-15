@@ -12,6 +12,11 @@ import { useEditor } from "../../../src/hooks/useEditor";
 import { useSettings } from "../../../src/hooks/useSettings";
 import { useDatabaseObjectNavigation } from "../../../src/hooks/useDatabaseObjectNavigation";
 import { openEditor } from "../../../src/utils/editorNavigation";
+import { useAiAvailability } from "../../../src/hooks/useAiAvailability";
+import { useAskAiTable } from "../../../src/hooks/useAskAiTable";
+
+vi.mock("../../../src/hooks/useAiAvailability", () => ({ useAiAvailability: vi.fn(() => ({ available: false })) }));
+vi.mock("../../../src/hooks/useAskAiTable", () => ({ useAskAiTable: vi.fn(() => ({ disabled: false, ask: vi.fn() })) }));
 
 const translateMock = vi.hoisted(() => (key: string) => key);
 const toastSpy = vi.hoisted(() => vi.fn());
@@ -99,7 +104,7 @@ vi.mock("../../../src/components/layout/sidebar/SidebarTableItem", async (import
     ...actual,
     SidebarTableItem: (props: Record<string, unknown>) => {
       sidebarItemMocks.sidebarTableItemProps.push(props);
-      return <actual.SidebarTableItem {...(props as Parameters<typeof actual.SidebarTableItem>[0])} />;
+      return <actual.SidebarTableItem {...(props as unknown as Parameters<typeof actual.SidebarTableItem>[0])} />;
     },
   };
 });
@@ -112,7 +117,7 @@ vi.mock("../../../src/components/layout/sidebar/SidebarViewItem", async (importO
     ...actual,
     SidebarViewItem: (props: Record<string, unknown>) => {
       sidebarItemMocks.sidebarViewItemProps.push(props);
-      return <actual.SidebarViewItem {...(props as Parameters<typeof actual.SidebarViewItem>[0])} />;
+      return <actual.SidebarViewItem {...(props as unknown as Parameters<typeof actual.SidebarViewItem>[0])} />;
     },
   };
 });
@@ -333,6 +338,18 @@ describe("ExplorerSidebar — database object navigation", () => {
     renderSidebar();
     fireEvent.contextMenu(screen.getByText(name));
   };
+
+  it("asks AI about the exact context-menu table and hides the action when AI is unavailable", () => {
+    const ask = vi.fn();
+    vi.mocked(useAiAvailability).mockReturnValue({ available: true } as ReturnType<typeof useAiAvailability>);
+    vi.mocked(useAskAiTable).mockReturnValue({ disabled: false, ask });
+    openContextMenuOn("orders");
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.entryPoints.askTable" }));
+    expect(ask).toHaveBeenCalledWith({ connectionId: "c1", tableName: "orders", schema: undefined, database: undefined });
+    vi.mocked(useAiAvailability).mockReturnValue({ available: false } as ReturnType<typeof useAiAvailability>);
+    fireEvent.contextMenu(screen.getByText("orders"));
+    expect(screen.queryByRole("button", { name: "aiChat.entryPoints.askTable" })).not.toBeInTheDocument();
+  });
 
   it("double-clicking a table opens it", () => {
     renderSidebar();

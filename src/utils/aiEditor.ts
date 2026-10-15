@@ -1,7 +1,11 @@
-import type { AiEditorStore, AiEditorTarget, AiSqlActions } from "../types/aiEditor";
+import type { AiChatEntry, AiEditorStore, AiEditorTarget, AiSqlActions } from "../types/aiEditor";
 import type { editor } from "monaco-editor";
 import type { AiEditorSnapshot } from "../types/aiContext";
 import { findStatementAtOffset, splitBatches } from "./sql";
+
+export function aiEditorTargetKey(target: AiEditorTarget | undefined, scopeId: string): string | undefined {
+  return target?.id ? JSON.stringify([scopeId, target.id, target.connectionId, target.database, target.schema]) : undefined;
+}
 
 export function readAiEditorContext(codeEditor: editor.IStandaloneCodeEditor | null, fallbackQuery: string | null, dialect?: string, lastError?: string | null): AiEditorSnapshot {
   const model = codeEditor?.getModel();
@@ -15,20 +19,39 @@ export function readAiEditorContext(codeEditor: editor.IStandaloneCodeEditor | n
 }
 
 export function createAiEditorStore(): AiEditorStore {
+  let entry: AiChatEntry | null = null;
   const targets = new Map<string, AiEditorTarget>();
+  const contextTargets = new Map<string, AiEditorTarget>();
   const listeners = new Set<() => void>();
   const notify = () => listeners.forEach((listener) => listener());
   return {
     register(scopeId, target) {
+      contextTargets.delete(scopeId);
       targets.set(scopeId, target);
       notify();
       return () => {
         if (targets.get(scopeId) !== target) return;
+        contextTargets.delete(scopeId);
         targets.delete(scopeId);
         notify();
       };
     },
-    get: (scopeId) => targets.get(scopeId),
+    get: (scopeId) => contextTargets.get(scopeId) ?? targets.get(scopeId),
+    setContextTarget(scopeId, target) {
+      contextTargets.set(scopeId, target);
+      notify();
+    },
+    requestEntry(scopeId, target, command, options = {}) {
+      entry = { ...options, scopeId, target, command, snapshot: options.snapshot ?? target.readContext?.() ?? {} };
+      notify();
+    },
+    getEntry: () => entry,
+    consumeEntry(expected) {
+      if (entry !== expected) return false;
+      entry = null;
+      notify();
+      return true;
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };

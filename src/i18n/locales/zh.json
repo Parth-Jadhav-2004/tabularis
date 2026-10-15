@@ -695,7 +695,13 @@
       "apiKeySaved": "API 密钥已安全保存",
       "chattitlePrompt": "对话标题提示词",
       "chattitlePromptDesc": "自定义首次回复后使用的提示词。手动重命名的标题将保留。",
-      "enterChattitlePrompt": "输入对话标题提示词..."
+      "enterChattitlePrompt": "输入对话标题提示词...",
+      "optimizePrompt": "SQL 优化提示词",
+      "optimizePromptDesc": "/optimize 的指令。支持 {{LANGUAGE}}。",
+      "enterOptimizePrompt": "输入优化指令…",
+      "fixPrompt": "SQL 修复提示词",
+      "fixPromptDesc": "/fix 的指令。支持 {{LANGUAGE}}。",
+      "enterFixPrompt": "输入修复指令…"
     },
     "updates": "更新",
     "openSourceLibraries": "开源库",
@@ -1065,22 +1071,14 @@
     "managedByPackageManagerDesc": "使用您的包管理器更新 Tabularis。"
   },
   "ai": {
-    "assist": "AI 辅助",
     "explain": "解释",
-    "generateSql": "生成 SQL",
-    "generating": "生成中...",
-    "explainQuery": "AI 查询解释",
-    "queryLabel": "查询",
-    "explanationLabel": "解释",
-    "generatingExplanation": "生成解释中...",
-    "configRequired": "⚠️ 未配置 AI 提供商。请前往设置 > AI。",
-    "enterPrompt": "用自然语言描述您的查询",
-    "promptPlaceholder": "例如：查找所有上个月注册并订购了\"高级\"方案的用户...",
-    "readingSchema": "读取数据库模式中...",
-    "schemaError": "加载数据库模式上下文失败",
-    "configError": "请在设置中配置 AI 提供商并输入提示词。"
+    "generateSql": "生成 SQL"
   },
   "newConnection": {
+    "aiInstructions": "AI 指令",
+    "aiInstructionsHint": "此连接的聊天偏好设置。除非从上下文中移除，否则会发送给模型。以未加密形式保存在连接设置中，并包含在导出中；请勿输入机密信息。",
+    "aiInstructionsPlaceholder": "优先使用显式 JOIN 和限定的表名。",
+    "aiInstructionsCount": "{{count}} / {{max}}",
     "ssmForwardHint": "解析为 {{document}}：通过托管节点转发到 {{host}}:{{port}}。在“常规”选项卡中修改目标地址；回环地址表示节点自身。",
     "ssmIamHint": "需要对目标和解析出的文档具有 ssm:StartSession 权限。",
     "ssmNotAvailable": "此驱动不支持 AWS SSM。",
@@ -2803,6 +2801,26 @@
       "viewDetail": "视图详情：{{name}}",
       "savedQuery": "已保存查询：{{name}}",
       "viewCount": "视图数量：{{count}}"
+    },
+    "commands": {
+      "title": "命令",
+      "hint": "输入 / 查看命令。",
+      "unknown": "未知命令。使用 /help 查看可用命令。",
+      "helpTitle": "助手命令",
+      "generate": "根据请求或当前查询生成 SQL",
+      "explain": "解释所选 SQL 或当前查询",
+      "optimize": "优化所选 SQL 或当前查询",
+      "fix": "根据上次查询错误修复 SQL",
+      "help": "显示此帮助，不连接模型"
+    },
+    "entryPoints": {
+      "fix": "使用 AI 修复",
+      "explainSelection": "使用 AI 解释所选内容",
+      "optimizeSelection": "使用 AI 优化所选内容",
+      "askSelection": "向 AI 询问所选内容",
+      "askTable": "向 AI 询问此表",
+      "explainQuery": "使用 AI 解释当前查询",
+      "optimizeQuery": "使用 AI 优化当前查询"
     }
   }
 }

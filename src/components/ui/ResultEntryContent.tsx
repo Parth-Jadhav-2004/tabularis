@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { Ref } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { DataGrid, type DataGridCommandTarget } from "./DataGrid";
-import { ErrorDisplay } from "./ErrorDisplay";
+import { QueryErrorDisplay } from "../ai-chat/QueryErrorDisplay";
 import { PaginationControls } from "./PaginationControls";
 import { formatDuration, formatTimingTooltip } from "../../utils/formatTime";
 import { useTimingLabels } from "../../hooks/useTimingLabels";
@@ -59,7 +59,7 @@ export function ResultEntryContent({
   if (entry.error) {
     return (
       <div className={compact ? "max-h-[150px] overflow-auto" : undefined}>
-        <ErrorDisplay error={entry.error} t={t} />
+        <QueryErrorDisplay error={entry.error} query={entry.query} connectionId={connectionId} t={t} />
       </div>
     );
   }

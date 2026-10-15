@@ -74,6 +74,9 @@ import { AddCellButton } from "./AddCellButton";
 import { RunAllSummary } from "./RunAllSummary";
 import { ParamsPanel } from "./ParamsPanel";
 import { NotebookOutline } from "./NotebookOutline";
+import { AiNotebookContext } from "../../contexts/AiNotebookContext";
+import { useNotebookAiEditor } from "../../hooks/useNotebookAiEditor";
+import { ROOT_COMMAND_SCOPE_ID } from "../../utils/commandScopeStore";
 
 interface NotebookViewProps {
   tab: Tab;
@@ -81,6 +84,8 @@ interface NotebookViewProps {
   connectionId: string;
   /** Whether this notebook tab is the active one (gates keyboard shortcuts). */
   isActive: boolean;
+  commandScopeId?: string;
+  onOpenAiConsole?: (sql: string, schema: string | null) => void;
 }
 
 export function NotebookView({
@@ -88,9 +93,11 @@ export function NotebookView({
   updateTab,
   connectionId,
   isActive,
+  commandScopeId = ROOT_COMMAND_SCOPE_ID,
+  onOpenAiConsole,
 }: NotebookViewProps) {
   const { t } = useTranslation();
-  const { activeSchema, activeCapabilities, selectedDatabases, activeDriver } =
+  const { activeSchema, activeDatabaseName, activeCapabilities, selectedDatabases, activeDriver } =
     useDatabase();
   const variableOptions = useMemo(
     () => ({
@@ -279,6 +286,9 @@ export function NotebookView({
     },
     [updateNotebook],
   );
+  const aiNotebook = useNotebookAiEditor({ scopeId: commandScopeId, notebookId: tab.notebookId ?? tab.id,
+    connectionId, database: tab.database ?? activeDatabaseName ?? null, schema: effectiveSchema,
+    dialect: activeDriver ?? undefined, cells, isActive, updateCell, openConsole: onOpenAiConsole });
 
   const focusCell = useCallback((cellId: string) => {
     const tryFocus = (attempts: number) => {
@@ -854,6 +864,7 @@ export function NotebookView({
   );
 
   return (
+    <AiNotebookContext.Provider value={aiNotebook}>
     <div className="flex flex-col h-full relative">
       <ConfirmModal
         isOpen={!!dangerousQuery}
@@ -975,5 +986,6 @@ export function NotebookView({
         ))}
       </div>
     </div>
+    </AiNotebookContext.Provider>
   );
 }
