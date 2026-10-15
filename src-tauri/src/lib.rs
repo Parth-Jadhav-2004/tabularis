@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod ai_chat;
 pub mod ai_activity;
 #[cfg(test)]
 pub mod ai_activity_tests;
@@ -296,6 +297,7 @@ pub fn run() {
         .manage(results_window::ResultsWindowStore::default())
         .manage(window_placement::WindowPlacementCache::default())
         .manage(query_history::QueryHistoryState::default())
+        .manage(ai_chat::RunManager::default())
         .setup(move |app| {
             #[cfg(target_os = "linux")]
             system_theme::watch(app.handle().clone());
@@ -666,6 +668,8 @@ pub fn run() {
             config::reset_tabrename_prompt,
             // AI
             ai::generate_ai_query,
+            ai_chat::ai_chat_send,
+            ai_chat::ai_chat_cancel,
             ai::providers::get_ai_model_capabilities,
             ai::explain_ai_query,
             ai::analyze_ai_explain_plan,

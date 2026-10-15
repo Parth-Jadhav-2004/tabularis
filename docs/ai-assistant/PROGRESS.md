@@ -6,7 +6,7 @@ How to resume: read [README.md](./README.md) (decisions + milestone order), find
 
 | Milestone | Status | Branch / PR | Notes |
 |---|---|---|---|
-| M1 Provider layer | in progress | `feat/ai-assistant-provider-layer` | Provider-neutral messages, streaming adapters and cancellable runs. |
+| M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
 | M2 Secure store | not started | | |
 | M3 Tool registry | not started | | |
 | M4 Chat panel | not started | | |
@@ -20,7 +20,7 @@ How to resume: read [README.md](./README.md) (decisions + milestone order), find
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M1. Preserve the existing commands while introducing the provider-neutral streaming layer.
+**Current focus:** Review M1 with live providers using the smoke checklist in [M1-provider-layer.md](./M1-provider-layer.md). The next implementation milestone is M2 (secure store).
 
 ## Open questions
 
@@ -40,6 +40,15 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M1 cancellable runs completed — ready for review
+- Registered `RunManager`, `ai_chat_send`, `ai_chat_cancel` and model-capability lookup in Tauri. Runs clean up on completion/drop, have independent cancellation tokens and emit exactly one terminal event.
+- Added 50 ms ordered text/reasoning coalescing with immediate metadata/error flushing. Frontends can subscribe using a canonical UUID before starting a run.
+- Validation: 41 focused tests; full Rust suite 1,737 passed / 11 ignored; Vitest 6,085 passed; typecheck passes; theme-token check passes; scoped rustfmt passes.
+- `pnpm lint` traverses pre-existing `.claude/worktrees` copies and reports 517 errors there. ESLint passes with `--ignore-pattern '.claude/worktrees/**'`; no unrelated worktree/config changes made.
+- GitNexus's inconsistent FTS index was rebuilt. `detect_changes --scope staged` was run before every commit; source changes stay within AI modules and Tauri registration. Shared `run` names produce over-approximated execution-flow matches; unrelated command implementations are unchanged.
+- Commits are pushed per completed step without co-author trailers: `f09d87d` (split + plan), `f1be9cd` (types/parser), `c4fde04` (adapters/legacy), followed by this run-lifecycle step.
+- No live cloud calls or native UI smoke checks were performed. M1 stays **in review** until those checks are done. Next implementation: M2, starting with the master key/envelope and crypto tests.
 
 ### 2026-10-15: M1 streaming adapters completed
 - Implemented OpenAI-compatible, Anthropic and Ollama streaming for text, reasoning, usage and tool calls, including fragmented tool arguments and typed/sanitized errors.
