@@ -28,6 +28,8 @@ dist-ssr
 
 devdiary
 /docs
+# Detailed security review notes stay outside the repository.
+/docs/ai-assistant/*security-review*.md
 coverage
 plugins/**/target
 .gitnexus

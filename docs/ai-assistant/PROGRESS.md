@@ -43,6 +43,10 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: documentation privacy policy
+- Keep detailed review material outside version control; public milestone logs contain implementation progress and validation only.
+- Application source and milestone implementation state are unchanged.
+
 ### 2026-10-15: M3 shared SQL classification and safety policy completed
 - Validation: complete Cargo command 1,809 passed / 221 ignored; production cargo check passes with the existing sandbox warning. Scoped formatting and diff checks pass.
 - Extracted the existing SQL classifier/scanner to `ai_tools/safety.rs`; all 22 original function bodies are unchanged except whitespace. Re-exports preserve the existing `ai_activity` API used by audit, SQLite/PostgreSQL protections and tests.
