@@ -4,6 +4,7 @@ import type {
 import { aiChatReducer, createAiChatState, createAiConversation, createAiMessage, type AiChatAction } from "./aiChat";
 import { aiHistoryError, restoreAiConversationModel, sameAiConversation } from "./aiConversationHistory";
 import { parseAiCommand } from "./aiCommands";
+import { aiChatTargetKey, sameAiChatTarget } from "./aiChatTarget";
 
 interface PendingRun {
   id: string;
@@ -31,6 +32,7 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
   let historyRequested = false;
   let connectionInitialized = false;
   let activeConnectionId: string | null = null;
+  let activeSessionKey: string | null = null;
   const connectionSessions = new Map<string, AiChatState>();
   const requestedTitles = new Set<string>();
   let titleVersion = 0;
@@ -92,8 +94,9 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
       if (!summary || !mounted || version !== titleVersion || mount !== mountVersion) return;
       const action = { type: "generated_title", summary } as const;
       dispatch(action);
-      const cached = connectionSessions.get(summary.connection_id);
-      if (cached) connectionSessions.set(summary.connection_id, aiChatReducer(cached, action));
+      const sessionKey = aiChatTargetKey(summary.connection_id, summary.target);
+      const cached = connectionSessions.get(sessionKey);
+      if (cached) connectionSessions.set(sessionKey, aiChatReducer(cached, action));
       if (historyRequested) void refreshHistory(state.history.scope);
     } catch {
       // Title generation is optional; keep the first-message title on failure.
@@ -142,18 +145,22 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
   }
 
   async function activateConnection(connectionId: string | null, options: AiResumeOptions, force = false) {
+    const sessionKey = aiChatTargetKey(connectionId, options.target);
     if (!canChangeSelection() || (force && state.saveState === "error")
-      || (connectionInitialized && activeConnectionId === connectionId && !force)) return;
+      || (connectionInitialized && activeSessionKey === sessionKey && !force)) return;
     const previousId = state.conversation?.connection_id ?? activeConnectionId;
-    if (previousId && !state.history.restoring) connectionSessions.set(previousId, state);
+    const previousKey = state.conversation
+      ? aiChatTargetKey(state.conversation.connection_id, state.conversation.target) : activeSessionKey;
+    if (previousId && previousKey && !state.history.restoring) connectionSessions.set(previousKey, state);
     connectionInitialized = true;
     activeConnectionId = connectionId;
+    activeSessionKey = sessionKey;
     const version = ++selectionVersion;
     // Invalidate list requests from the previous connection, including an All filter.
     historyVersion++;
     dispatch({ type: "history", patch: { scope: connectionId, items: [], loading: false, error: null } });
     if (historyRequested) void refreshHistory(connectionId);
-    const cached = connectionId && !force ? connectionSessions.get(connectionId) : undefined;
+    const cached = connectionId && !force ? connectionSessions.get(sessionKey) : undefined;
     if (cached) {
       dispatch({ type: "restore", state: cached });
       // Keep unsaved transcripts/drafts in memory; never reload over a failed save.
@@ -172,10 +179,15 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
     try {
       const items = await transport.history.list(connectionId);
       if (!mounted || version !== selectionVersion) return;
-      const latest = [...items].sort((a, b) => b.updated_at - a.updated_at || a.id.localeCompare(b.id))[0];
+      const latest = items.filter((item) => item.connection_id === connectionId && sameAiChatTarget(item.target, options.target))
+        .sort((a, b) => b.updated_at - a.updated_at || a.id.localeCompare(b.id))[0];
       if (latest) {
         const conversation = await transport.history.load(connectionId, latest.id);
         if (!mounted || version !== selectionVersion) return;
+        if (conversation.connection_id !== connectionId || !sameAiChatTarget(conversation.target, options.target)) {
+          dispatch({ type: "history", patch: { restoring: false, error: "wrong_context" } });
+          return;
+        }
         const pendingDraft = state.draft;
         restore(conversation, options);
         if (pendingDraft) dispatch({ type: "draft", draft: pendingDraft });
@@ -210,8 +222,11 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
       if (title === undefined) await transport.history.delete(summary.connection_id, summary.id);
       else await transport.history.rename(summary.connection_id, summary.id, title.trim());
       if (!mounted || mount !== mountVersion || version !== selectionVersion) return false;
-      const cached = connectionSessions.get(summary.connection_id);
-      if (sameAiConversation(cached?.conversation ?? null, summary)) connectionSessions.delete(summary.connection_id);
+      for (const [key, cached] of connectionSessions) {
+        if (!sameAiConversation(cached.conversation, summary)) continue;
+        if (title === undefined) connectionSessions.delete(key);
+        else connectionSessions.set(key, aiChatReducer(cached, { type: "rename", title: title.trim() }));
+      }
       if (sameAiConversation(state.conversation, summary)) {
         if (title === undefined) selectConversation(null);
         else dispatch({ type: "rename", title: title.trim() });

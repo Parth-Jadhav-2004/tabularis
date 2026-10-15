@@ -6,20 +6,25 @@ import type { AiChatContextValue, AiConversationSummary, AiResumeOptions } from 
 import { aiHistoryRelativeTime, groupAiHistory } from "../../utils/aiConversationHistory";
 import { ConfirmModal } from "../modals/ConfirmModal";
 import { ConversationExport } from "./ConversationExport";
+import { useAiNotebookCatalog } from "../../hooks/useAiNotebookCatalog";
+import { NotebookConversationTarget } from "./NotebookConversationTarget";
+import type { NotebookMetadata } from "../../types/notebook";
 
 interface ConversationListProps {
   chat: AiChatContextValue;
   connectionId: string | null;
+  notebookId?: string;
   connectionNames: Record<string, string>;
   resumeOptions: AiResumeOptions;
   onClose: () => void;
 }
 
-export function ConversationList({ chat, connectionId, connectionNames, resumeOptions, onClose }: ConversationListProps) {
+export function ConversationList({ chat, connectionId, notebookId, connectionNames, resumeOptions, onClose }: ConversationListProps) {
   const { t, i18n } = useTranslation();
-  const [all, setAll] = useState(false);
+  const [filter, setFilter] = useState(notebookId ? "notebook" : "current");
   const [search, setSearch] = useState("");
   const [deleting, setDeleting] = useState<AiConversationSummary | null>(null);
+  const all = filter === "all";
   const scope = all ? null : connectionId;
   const { refreshHistory } = chat;
   const requested = useRef(false);
@@ -33,7 +38,10 @@ export function ConversationList({ chat, connectionId, connectionNames, resumeOp
   const history = chat.history;
   const disabled = !!chat.activeRun || chat.saveState === "saving" || chat.saveState === "error" || history.busy || history.restoring;
   const items = history.scope === scope ? history.items : [];
-  const filtered = groupAiHistory(items, search).flatMap((group) => group.items);
+  const catalog = useAiNotebookCatalog(items.filter((item) => item.target?.type === "notebook").map((item) => item.connection_id));
+  const scopedItems = filter === "notebook" ? items.filter((item) => item.target?.type === "notebook"
+    && item.target.notebook_id === notebookId && item.connection_id === connectionId) : items;
+  const filtered = groupAiHistory(scopedItems, search).flatMap((group) => group.items);
   const sections = all ? [...new Set(filtered.map((item) => item.connection_id))] : [connectionId];
   const remove = async () => {
     if (deleting && await chat.deleteConversation(deleting)) setDeleting(null);
@@ -46,8 +54,9 @@ export function ConversationList({ chat, connectionId, connectionNames, resumeOp
         <button type="button" disabled={history.loading || history.busy} onClick={() => void refreshHistory(scope)} aria-label={t("aiChat.history.refresh")}
           className="rounded p-1.5 text-secondary hover:text-primary disabled:opacity-40 focus-ring"><RefreshCw size={16} /></button>
       </div>
-      <select aria-label={t("aiChat.history.filter")} value={all ? "all" : "current"} onChange={(event) => setAll(event.target.value === "all")}
+      <select aria-label={t("aiChat.history.filter")} value={filter} onChange={(event) => setFilter(event.target.value)}
         className="w-full rounded border border-strong bg-base p-2 text-sm text-primary focus-ring">
+        {notebookId && <option value="notebook">{t("aiChat.history.thisNotebook")}</option>}
         <option value="current">{t("aiChat.history.thisConnection")}</option>
         <option value="all">{t("aiChat.history.allConnections")}</option>
       </select>
@@ -67,6 +76,7 @@ export function ConversationList({ chat, connectionId, connectionNames, resumeOp
           <h5 className="mb-2 text-xs font-medium text-muted">{t(`aiChat.history.buckets.${group.bucket}`)}</h5>
           <ul className="space-y-2">
             {group.items.map((item) => <ConversationRow key={`${item.connection_id}:${item.id}`} item={item} disabled={disabled}
+              notebooks={catalog[item.connection_id]}
               selected={chat.conversation?.id === item.id && chat.conversation.connection_id === item.connection_id}
               timestamp={aiHistoryRelativeTime(item.updated_at, i18n.resolvedLanguage ?? "en")}
               onResume={() => { void chat.resumeConversation(item, resumeOptions).then((resumed) => { if (resumed) onClose(); }); }}
@@ -81,11 +91,12 @@ export function ConversationList({ chat, connectionId, connectionNames, resumeOp
   </div>;
 }
 
-function ConversationRow({ item, selected, disabled, timestamp, onResume, onRename, onDelete }: {
+function ConversationRow({ item, selected, disabled, timestamp, notebooks, onResume, onRename, onDelete }: {
   item: AiConversationSummary;
   selected: boolean;
   disabled: boolean;
   timestamp: string;
+  notebooks?: readonly NotebookMetadata[];
   onResume: () => void;
   onRename: (title: string) => Promise<boolean>;
   onDelete: () => void;
@@ -108,6 +119,7 @@ function ConversationRow({ item, selected, disabled, timestamp, onResume, onRena
       <button type="button" onClick={onResume} disabled={disabled} aria-current={selected ? "true" : undefined}
         className="min-w-0 flex-1 rounded p-1 text-left disabled:opacity-40 focus-ring">
         <span className="block truncate text-sm text-primary">{item.title}</span>
+        <NotebookConversationTarget target={item.target} notebooks={notebooks} />
         <span className="block text-xs text-muted">{timestamp} · {t("aiChat.history.messages", { count: item.message_count })}</span>
       </button>
       <button type="button" disabled={disabled} onClick={() => { setTitle(item.title); setEditing(true); }} aria-label={t("aiChat.history.rename")}

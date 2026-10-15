@@ -1,6 +1,7 @@
 import type { editor } from "monaco-editor";
 import type { AiEditorTarget } from "../types/aiEditor";
 import type { NotebookCell } from "../types/notebook";
+import type { AiNotebookTarget } from "../types/aiNotebook";
 import { createAiSqlActions, readAiEditorContext } from "./aiEditor";
 
 export function createAiNotebookEditors() {
@@ -16,8 +17,9 @@ export function createAiNotebookEditors() {
   };
 }
 
-export function createAiNotebookTarget({ cell, notebookId, connectionId, database, schema, dialect, getEditor, updateCell, openConsole }: {
+export function createAiNotebookTarget({ cell, notebookId, notebook, connectionId, database, schema, dialect, getEditor, updateCell, openConsole }: {
   cell: NotebookCell; notebookId: string; connectionId: string; database: string | null; schema: string | null; dialect?: string;
+  notebook?: AiNotebookTarget;
   getEditor: () => editor.IStandaloneCodeEditor | null;
   updateCell: (cellId: string, partial: Partial<NotebookCell>) => void;
   openConsole?: (sql: string, schema: string | null) => void;
@@ -37,8 +39,17 @@ export function createAiNotebookTarget({ cell, notebookId, connectionId, databas
     }
   };
   return { id: `notebook:${notebookId}:${cell.id}`, connectionId, database, schema: effectiveSchema, dialect,
+    notebook: notebook ?? { id: notebookId },
     hasError: !!cell.error,
     readContext: () => readAiEditorContext(getEditor(), cell.content, dialect, cell.error),
     actions: { ...actions, insert: (sql) => edit(sql, false), replace: (sql) => edit(sql, true) },
   };
+}
+
+export function createAiNotebookReadOnlyTarget({ notebook, cellId, connectionId, database, schema, dialect }: {
+  notebook: AiNotebookTarget; cellId?: string; connectionId: string; database: string | null; schema: string | null; dialect?: string;
+}): AiEditorTarget {
+  return { id: `notebook:${notebook.id}:${cellId ?? ""}`, notebook, connectionId, database, schema, dialect,
+    sqlActionsAvailable: false, readContext: () => ({}),
+    actions: { insert: () => {}, replace: () => {}, run: () => {}, focus: () => {} } };
 }

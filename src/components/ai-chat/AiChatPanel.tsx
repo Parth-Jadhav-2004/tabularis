@@ -25,6 +25,9 @@ import { dragState } from "../../utils/dragState";
 import { AI_SLASH_COMMANDS, aiCommandContext, parseAiCommand } from "../../utils/aiCommands";
 import { useAiChatEntry } from "../../hooks/useAiChatEntry";
 import { aiEditorTargetKey } from "../../utils/aiEditor";
+import { aiChatTargetKey, sameAiChatTarget } from "../../utils/aiChatTarget";
+import { useAiNotebookCatalog } from "../../hooks/useAiNotebookCatalog";
+import { NotebookConversationTarget } from "./NotebookConversationTarget";
 
 export function AiChatPanel() {
   const { t, i18n } = useTranslation();
@@ -46,18 +49,31 @@ export function AiChatPanel() {
   const localCommand = command === "help" || parsed.kind === "unknown";
   const connectionId = target?.connectionId ?? database?.activeConnectionId ?? null;
   const fallback = defaultAiChatModel(models.choices, settings, null);
-  const resumeOptions = useMemo(() => ({ choices: models.choices, fallback }), [models.choices, fallback]);
+  const notebookId = target?.notebook?.id;
+  const resumeOptions = useMemo(() => ({ choices: models.choices, fallback,
+    target: notebookId ? { type: "notebook" as const, notebook_id: notebookId } : { type: "editor" as const },
+  }), [models.choices, fallback, notebookId]);
   const { activateConnection } = chat;
   useEffect(() => {
     if (chat.ready && !models.loading) void activateConnection(connectionId, resumeOptions);
   }, [activateConnection, connectionId, resumeOptions, models.loading, chat.ready, chat.activeRun, chat.saveState, chat.history.busy, chat.conversation?.id]);
   const conversation = chat.conversation;
+  const displayTarget = conversation ? conversation.target : resumeOptions.target;
+  const displayConnectionId = conversation?.connection_id ?? connectionId;
+  const notebookCatalog = useAiNotebookCatalog(displayTarget?.type === "notebook" && displayConnectionId ? [displayConnectionId] : []);
+  const boundNotebooks = displayConnectionId ? notebookCatalog[displayConnectionId] : undefined;
+  const boundNotebookId = displayTarget?.type === "notebook" ? displayTarget.notebook_id : undefined;
+  const notebookUnavailable = boundNotebookId !== undefined && boundNotebooks !== undefined
+    && !boundNotebooks.some((item) => item.id === boundNotebookId);
+  const activeNotebookUnavailable = notebookUnavailable && displayConnectionId === connectionId
+    && sameAiChatTarget(displayTarget, resumeOptions.target);
   const storedChoice = conversation?.provider && conversation.model
     ? { provider: conversation.provider, model: conversation.model } : null;
   const choice = storedChoice ?? defaultAiChatModel(models.choices, settings, readAiChatModel());
   const usableChoice = !!choice && models.choices.some((item) => item.provider === choice.provider && item.model === choice.model);
-  const sameTarget = !!target && (!conversation || (conversation.connection_id === target.connectionId
-    && conversation.database === target.database && conversation.schema === target.schema));
+  const sameTarget = !!target && !notebookUnavailable && (!conversation || (conversation.connection_id === target.connectionId
+    && conversation.database === target.database && conversation.schema === target.schema
+    && sameAiChatTarget(conversation.target, resumeOptions.target)));
   const historyPending = chat.history.restoring || chat.history.busy;
   const contextEnabled = availability.available && usableChoice && chat.ready && !models.loading && !chat.activeRun
     && sameTarget && !historyPending && chat.saveState !== "saving";
@@ -93,7 +109,7 @@ export function AiChatPanel() {
   const createConversation = (next = choice) => {
     if (!target || !next) return;
     chat.newConversation({ connection_id: target.connectionId, database: target.database,
-      schema: target.schema, provider: next.provider, model: next.model });
+      schema: target.schema, provider: next.provider, model: next.model, target: resumeOptions.target });
     rememberAiChatModel(next);
     setHistoryOpen(false);
   };
@@ -119,13 +135,13 @@ export function AiChatPanel() {
         && (entry.target.id ? entry.target.id === target.id : entry.target === target)
         && entry.target.connectionId === target.connectionId
         && entry.target.database === target.database && entry.target.schema === target.schema;
-      if (!matches || !availability.available) { consumeEntry(entry); return; }
+      if (!matches || !availability.available || activeNotebookUnavailable) { consumeEntry(entry); return; }
       if (!chat.ready || models.loading || !usableChoice || !choice || chat.activeRun
         || chat.saveState === "saving" || chat.saveState === "error" || historyPending
         || chat.history.scope !== connectionId) return;
       if (!consumeEntry(entry)) return;
       if (!conversation || !sameTarget) chat.newConversation({ connection_id: target.connectionId,
-        database: target.database, schema: target.schema, provider: choice.provider, model: choice.model });
+        database: target.database, schema: target.schema, provider: choice.provider, model: choice.model, target: resumeOptions.target });
       const include = entry.include ?? (entry.command ? aiCommandContext(entry.command, entry.snapshot) : defaultAiContextSelection());
       chat.setContextInclude(include);
       chat.setContextTables(entry.tables ? { connection_id: target.connectionId, database: target.database,
@@ -142,7 +158,7 @@ export function AiChatPanel() {
     });
     return () => { cancelled = true; };
   }, [entry, consumeEntry, activeScopeId, target, availability.available, chat, models.loading, usableChoice, choice,
-    historyPending, connectionId, conversation, sameTarget, i18n.resolvedLanguage]);
+    historyPending, connectionId, conversation, sameTarget, i18n.resolvedLanguage, resumeOptions.target, activeNotebookUnavailable]);
   const send = () => {
     if (!availability.available || !chat.ready || chat.activeRun || chat.saveState === "saving" || historyPending) return;
     if (parsed.kind === "unknown") { setCommandError(true); return; }
@@ -167,11 +183,16 @@ export function AiChatPanel() {
   };
   return <section className="flex min-h-0 flex-1 flex-col" aria-label={t("aiChat.title")}>
     <ChatHeader onNew={() => createConversation()} onClose={close} onHistory={() => setHistoryOpen((open) => !open)} historyOpen={historyOpen}
-      disabled={!target || !usableChoice || !!chat.activeRun || chat.saveState === "saving" || chat.saveState === "error" || historyPending} />
-    {historyOpen ? <ConversationList key={connectionId} chat={chat} connectionId={connectionId} resumeOptions={resumeOptions}
+      disabled={!target || !usableChoice || activeNotebookUnavailable || !!chat.activeRun || chat.saveState === "saving" || chat.saveState === "error" || historyPending} />
+    {historyOpen ? <ConversationList key={aiChatTargetKey(connectionId, resumeOptions.target)} chat={chat} connectionId={connectionId}
+      notebookId={notebookId} resumeOptions={resumeOptions}
       connectionNames={Object.fromEntries(database?.connections.map((connection) => [connection.id, connection.name]) ?? [])}
       onClose={() => setHistoryOpen(false)} /> : <>
-    <ChatTranscript chat={chat} target={target} targetKey={aiEditorTargetKey(target, activeScopeId)} canAct={sameTarget && !historyPending} />
+    {displayTarget?.type === "notebook" && <div role="status" className="border-b border-default px-4 py-2">
+      <NotebookConversationTarget target={displayTarget} notebooks={boundNotebooks} />
+    </div>}
+    <ChatTranscript chat={chat} target={target} targetKey={aiEditorTargetKey(target, activeScopeId)}
+      canAct={sameTarget && !historyPending && target?.sqlActionsAvailable !== false} />
     {chat.history.restoring && <p role="status" className="px-4 py-2 text-xs text-secondary">{t("common.loading")}</p>}
     {chat.history.modelFallback && <p role="status" className="px-4 py-2 text-xs text-secondary">{t("aiChat.history.modelFallback")}</p>}
     {chat.history.error && <div role="alert" className="space-y-2 px-4 py-2 text-xs text-accent-error">
@@ -184,7 +205,7 @@ export function AiChatPanel() {
       <Link to="/settings?tab=ai" className="rounded text-accent focus-ring">{t("aiChat.openSettings")}</Link>
     </div>}
     {!target && <p className="px-4 py-2 text-xs text-secondary">{t("aiChat.noConnection")}</p>}
-    {target && !sameTarget && <p className="px-4 py-2 text-xs text-secondary">{t("aiChat.targetChanged")}</p>}
+    {target && !sameTarget && !notebookUnavailable && <p className="px-4 py-2 text-xs text-secondary">{t("aiChat.targetChanged")}</p>}
     {chat.error && <p role="alert" className="px-4 py-2 text-xs text-accent-error">{t(`aiChat.errors.${chat.error.kind}`)}</p>}
     {commandError && <p role="alert" className="px-4 py-2 text-xs text-accent-warning">{t("aiChat.commands.unknown")}</p>}
     {helpOpen && <section aria-label={t("aiChat.commands.helpTitle")} className="max-h-48 space-y-2 overflow-y-auto border-t border-default p-3 text-sm text-secondary">

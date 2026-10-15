@@ -1,4 +1,5 @@
 import type { AiContextSelection, AiEditorSnapshot } from "./aiContext";
+import type { AiNotebookTarget } from "./aiNotebook";
 
 export interface AiSqlActions {
   insert: (sql: string) => void;
@@ -9,6 +10,8 @@ export interface AiSqlActions {
 
 export interface AiEditorTarget {
   id?: string;
+  notebook?: AiNotebookTarget;
+  sqlActionsAvailable?: boolean;
   readContext?: () => AiEditorSnapshot;
   readErrorContext?: () => AiEditorSnapshot;
   hasError?: boolean;

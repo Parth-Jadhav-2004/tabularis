@@ -70,7 +70,7 @@ describe("notebook AI editor target", () => {
     expect(fixture.result.current.cells[1].content).toBe("fallback");
   });
 
-  it("releases inactive and deleted targets and never selects a Markdown cell", () => {
+  it("releases inactive targets and keeps Markdown-only notebooks available without SQL actions", () => {
     const fixture = setup();
     act(() => { fixture.result.current.notebook.selectCell("b"); });
     act(() => { fixture.result.current.setCells((cells) => cells.filter((cell) => cell.id !== "b")); });
@@ -79,7 +79,32 @@ describe("notebook AI editor target", () => {
     expect(fixture.store.get("root")).toBeUndefined();
     act(() => { fixture.result.current.setCells([{ id: "markdown", type: "markdown", content: "Notes" }]); });
     fixture.rerender({ active: true });
-    expect(fixture.result.current.target).toBeUndefined();
-    expect(fixture.result.current.notebook.selectCell("markdown")).toBeNull();
+    expect(fixture.result.current.target).toMatchObject({ notebook: { id: "book" }, sqlActionsAvailable: false });
+    expect(fixture.result.current.target?.readContext?.()).toEqual({});
+    act(() => { expect(fixture.result.current.notebook.selectCell("markdown")?.sqlActionsAvailable).toBe(false); });
+    expect(fixture.result.current.notebook.selectCell("missing")).toBeNull();
+  });
+
+  it("exposes fresh local state without copying the cell array or sending it anywhere", () => {
+    const fixture = setup();
+    const source = fixture.result.current.target?.notebook?.readState?.();
+    expect(source).toMatchObject({ id: "book", focusedCellId: "a", params: [], stopOnError: false, runAllResult: null });
+    expect(source?.cells).toBe(fixture.result.current.cells);
+    act(() => { fixture.result.current.notebook.selectCell("b"); });
+    act(() => { fixture.result.current.setCells((cells) => cells.map((cell) => cell.id === "b" ? { ...cell, content: "fresh query" } : cell)); });
+    const fresh = fixture.result.current.target?.notebook?.readState?.();
+    expect(fresh?.focusedCellId).toBe("b");
+    expect(fresh?.cells[1].content).toBe("fresh query");
+    expect(source?.cells[1].content).toBe("SELECT broken");
+  });
+
+  it("registers an empty notebook and tracks focused Markdown cells", () => {
+    const fixture = setup([]);
+    expect(fixture.result.current.target).toMatchObject({ notebook: { id: "book" }, sqlActionsAvailable: false });
+    expect(fixture.result.current.target?.notebook?.readState?.().focusedCellId).toBeNull();
+    act(() => { fixture.result.current.setCells([{ id: "sql", type: "sql", content: "SELECT 1" }, { id: "notes", type: "markdown", content: "Documentation" }]); });
+    act(() => { fixture.result.current.notebook.selectCell("notes"); });
+    expect(fixture.result.current.target?.notebook?.readState?.()).toMatchObject({ focusedCellId: "notes" });
+    expect(fixture.result.current.target?.sqlActionsAvailable).toBe(false);
   });
 });

@@ -288,7 +288,8 @@ export function NotebookView({
   );
   const aiNotebook = useNotebookAiEditor({ scopeId: commandScopeId, notebookId: tab.notebookId ?? tab.id,
     connectionId, database: tab.database ?? activeDatabaseName ?? null, schema: effectiveSchema,
-    dialect: activeDriver ?? undefined, cells, isActive, updateCell, openConsole: onOpenAiConsole });
+    dialect: activeDriver ?? undefined, cells, title: tab.title, params, stopOnError, runAllResult,
+    isActive, updateCell, openConsole: onOpenAiConsole });
 
   const focusCell = useCallback((cellId: string) => {
     const tryFocus = (attempts: number) => {
@@ -928,6 +929,7 @@ export function NotebookView({
               else cellRefsMap.current.delete(cell.id);
             }}
             onDragOver={handleDragOver(index)}
+            onFocusCapture={() => { aiNotebook.selectCell(cell.id); }}
             onDrop={handleDrop(index)}
             className="relative scroll-mt-4"
           >

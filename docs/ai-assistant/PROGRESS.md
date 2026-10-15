@@ -15,14 +15,14 @@ Keep detailed security reviews and audit findings outside the repository. This l
 | M5 Conversations | in review | `feat/ai-assistant-provider-layer` | History lifecycle, generated titles, prompt editor and Markdown/notebook exports implemented. Automated and in-memory visual checks pass; native persistence/provider/export smoke validation pending. |
 | M6 Context | in review | `feat/ai-assistant-provider-layer` | Schema cache, Rust-resolved sends/previews, typed mentions, scoped drops, encrypted summaries and per-connection instructions implemented. Visual/native/live-provider validation pending. |
 | M7 Editor integration | in review | `feat/ai-assistant-provider-layer` | Slash commands, prompt customization, sidebar migration, cell targets, Fix with AI and context-menu/palette entry points implemented; old modals removed. Automated checks pass; visual/native/provider validation pending. |
-| M8 Notebooks | not started | | |
+| M8 Notebooks | in progress | `feat/ai-assistant-provider-layer` | Notebook-bound conversations, default history filter, reopening and local read-only state bridge implemented. Bounded notebook context and reviewed cell actions pending. |
 | M9 Agent mode | not started | | |
 | M10 Multimodal | not started | | |
 | M11 Extras | not started | | |
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M7 implementation is complete and in review. Next implementation: M8 notebook context, commands and reviewed cell actions. M7 visual/native/provider checks, M6 mixed-mention/instructions visual and native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
+**Current focus:** M8 notebook conversations and the local state bridge are implemented. Next: bounded notebook snapshots and the Rust context layer, followed by cell references, reviewed cell actions and commands. M7 visual/native/provider checks, M6 mixed-mention/instructions visual and native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
 
 ## Open questions
 
@@ -42,6 +42,14 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M8 notebook conversations and state bridge
+- Published the completed M6–M7 changes as `417e1395` on `feat/ai-assistant-provider-layer`, without a co-author trailer.
+- New chats persist their notebook target. Reopening restores the latest conversation for that notebook; editor/legacy conversations and each notebook have separate transcript, draft and failed-save caches. Target switches wait for streaming/persistence; late list/load results cannot replace another notebook's chat. Rename/delete and delayed generated-title updates address the corresponding cached target.
+- Added the default **This notebook** history filter and notebook labels in the list/transcript. Metadata refreshes after notebook changes; confirmed deletion keeps the conversation readable and reports **Notebook no longer available**. Foreign or unavailable targets disable sends/SQL actions; users can start a new chat on an available active target. Added three labels in all 11 locales.
+- Added a local, read-only notebook selector for current title, cells, parameters, focus and Run All errors without copying the cells on each keystroke. Focus includes Markdown cells; empty/Markdown-only notebooks keep their target with SQL actions disabled. The source is not sent to IPC/providers or stored in history yet; bounded snapshots/results opt-in and the Rust context layer are next.
+- Validation: 23 new frontend regressions; complete Vitest suite: 6,343 passed (415 files). Production frontend build, application/scoped-test typechecks, repository ESLint with local worktrees/cache excluded, theme-token/contrast checks, AI-chat locale key parity and diff checks pass. Visual/native/live-provider checks remain pending; backend source is unchanged in this step.
+- Pre-edit impact: HIGH for the notebook hook (one direct caller, two process groups) and shared editor/resume interfaces (17–18 direct dependents); LOW for the other edited application functions. Rebuilt GitNexus with PDG retained. Pre-commit `detect_changes`: 31 files, 58 symbols and five affected flows (MEDIUM), matching chat restoration and notebook scope. M8 remains in progress; the first two implementation steps are checked.
 
 ### 2026-10-15: M7 Fix with AI and contextual entry points completed — ready for review
 - Added Fix with AI to single-query errors and individual failed statements in both multi-result layouts. Single-query execution retains the exact failed SQL in a bounded, transient cache, so later draft edits cannot replace it. Fix sends the complete error with query/error context enabled and unrelated selection/cursor context excluded. Missing or evicted failure context hides Fix instead of substituting the current draft; generic and unavailable/busy surfaces retain their existing behavior.

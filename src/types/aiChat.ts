@@ -138,6 +138,7 @@ export type AiHistoryError = "key_unavailable" | "corrupted" | "wrong_context" |
 export interface AiResumeOptions {
   choices: AiModelChoice[];
   fallback: AiModelChoice | null;
+  target?: AiChatTarget | null;
 }
 
 export interface AiChatHistoryState {
