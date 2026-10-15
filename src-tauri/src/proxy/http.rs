@@ -66,3 +66,7 @@ pub fn ai_http_client(provider: &str) -> Result<Client, String> {
 pub fn direct_http_client() -> Result<Client, String> {
     build_reqwest_client(None)
 }
+
+#[cfg(test)]
+#[path = "http/tests.rs"]
+mod tests;

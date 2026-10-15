@@ -104,7 +104,7 @@ deadpool-postgres = "0.14.1"
 # (which would silently ignore those CAs). The PostgreSQL deadpool path
 # uses rustls + `rustls-platform-verifier` for the same reason.
 tokio-postgres-rustls = "0.13"
-rustls = { version = "0.23", default-features = false, features = ["ring", "logging", "std", "tls12"] }
+rustls = { version = "0.23.46", default-features = false, features = ["ring", "logging", "std", "tls12"] }
 rustls-pemfile = "2"
 rustls-platform-verifier = "0.6"
 notify = "6"

@@ -43,6 +43,13 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: provider HTTP/TLS validation completed
+- Updated provider transport dependencies before starting M3.
+- Updated five resolved TLS/HTTP packages, with a patched minimum for the direct `rustls` dependency. Kept unrelated Windows dependency edges intact and verified the locked Windows graph resolves.
+- Three disposable local TLS regression tests pass, checking untrusted CAs, trusted matching hosts and hostname mismatch. Full Cargo command: 1,802 passed / 221 ignored, including 1,798 library tests passed / 11 ignored. No external providers or OS trust/keychain entries used.
+- Production cargo check passes. Shared HTTP-client upstream risk is CRITICAL for 0.13 (3 direct callers, 26 symbols across AI/updater/plugins) and LOW for 0.12; production client implementations are unchanged.
+- Native keychain/platform checks remain pending. Next: M3 shared tools.
+
 ### 2026-10-15: M2 validation and private MCP diagnostics completed
 - Added a metadata-only MCP logger: dependency/driver diagnostics never format message arguments or dynamic targets, preventing debug SQL/parameter leakage. Installation failure aborts MCP startup instead of falling back to ordinary logging.
 - Three logger regressions pass, including a sensitive argument whose formatting would panic. Final full Rust suite: 1,795 passed / 11 ignored; full frontend suite: 6,089 passed. Production cargo check, typecheck, scoped ESLint, theme-token lint and scoped formatting pass.
