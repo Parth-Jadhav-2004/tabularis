@@ -1,5 +1,5 @@
 //! Shared database tool implementations, extracted from the MCP transport.
-//! The typed chat registry and stricter chat policy are the next M3 step.
+//! The typed chat registry and approval gate are the next M3 step.
 mod audit;
 mod connections;
 mod cooldown;
@@ -7,6 +7,7 @@ mod discovery;
 mod dispatch;
 pub(crate) mod output;
 pub mod preflight;
+pub mod safety;
 mod tools;
 
 pub(crate) use connections::{resolve_db_driver, resolve_default_schema};

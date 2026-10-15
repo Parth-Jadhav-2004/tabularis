@@ -3,7 +3,7 @@ use crate::ai_approval::{self, PendingApproval, PollOutcome};
 use crate::ai_tools::audit::CallAudit;
 use crate::ai_tools::connections::{apply_database_override, database_arg, resolve_db_driver};
 use crate::ai_tools::output::{tool_result, ToolOutputFormat};
-use crate::ai_tools::preflight;
+use crate::ai_tools::{preflight, safety};
 use crate::config::{
     self, AppConfig, DEFAULT_MCP_APPROVAL_MODE, DEFAULT_MCP_APPROVAL_TIMEOUT_SECONDS,
     DEFAULT_MCP_PREFLIGHT_EXPLAIN,
@@ -52,7 +52,7 @@ pub(crate) async fn tool_run_query(
     apply_database_override(&mut db_params, database);
 
     // Read-only enforcement (fail-closed: unknown counts as write).
-    if config::is_connection_readonly(config, &conn.id) && kind != "select" {
+    if safety::blocked_readonly(config::is_connection_readonly(config, &conn.id), kind) {
         audit.status = "blocked_readonly".to_string();
         let msg = "Query blocked by Tabularis read-only mode. Enable writes for this connection in Settings → MCP → Read-only mode.".to_string();
         audit.error = Some(msg.clone());
@@ -68,12 +68,7 @@ pub(crate) async fn tool_run_query(
         .mcp_approval_mode
         .clone()
         .unwrap_or_else(|| DEFAULT_MCP_APPROVAL_MODE.to_string());
-    let needs_approval = match approval_mode.as_str() {
-        "off" => false,
-        "all" => true,
-        // writes_only — anything that isn't a clean select.
-        _ => kind != "select",
-    };
+    let needs_approval = safety::needs_approval(&approval_mode, kind);
 
     let mut effective_query: String = query.to_string();
 
@@ -162,8 +157,10 @@ pub(crate) async fn tool_run_query(
                         audit.query = Some(effective_query.clone());
                         audit.query_kind = Some(new_kind.to_string());
 
-                        if config::is_connection_readonly(config, &conn.id) && new_kind != "select"
-                        {
+                        if safety::blocked_readonly(
+                            config::is_connection_readonly(config, &conn.id),
+                            new_kind,
+                        ) {
                             audit.status = "blocked_readonly".to_string();
                             let msg = "Edited query blocked by Tabularis read-only mode. Enable writes for this connection in Settings → MCP → Read-only mode.".to_string();
                             audit.error = Some(msg.clone());

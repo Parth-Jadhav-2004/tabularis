@@ -78,7 +78,7 @@ pub struct ToolOutput { pub content: String, pub truncated: bool, pub rows: Opti
 - [x] `impact` on the MCP tool handlers, `preflight`, the approval functions and `ai_activity` writers.
 - [x] Extract the 5 existing tools and connection/output/audit helpers into `ai_tools` (pure move, MCP tests green).
 - [ ] Add the `Tool` trait, typed context and registry on top of the extracted implementations.
-- [ ] Extract `safety.rs` from the current read-only / approval checks.
+- [x] Extract `safety.rs` from the current read-only / approval checks, preserving legacy APIs and adding strict chat-tool policy tests.
 - [ ] `ApprovalGate` trait + `FileQueueGate`; the MCP server uses it.
 - [ ] Add `sample_rows`, `explain_query`, `run_statement` (not exposed to MCP unless policy allows it; keep MCP behaviour identical).
 - [ ] `truncate.rs` + tests.

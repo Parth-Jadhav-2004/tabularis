@@ -10,7 +10,7 @@ Keep detailed security reviews and audit findings outside the repository. This l
 |---|---|---|---|
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
 | M2 Secure store | in review | `feat/ai-assistant-provider-layer` | Implementation and automated checks complete. Native keychain/platform validation remains pending. |
-| M3 Tool registry | in progress | `feat/ai-assistant-provider-layer` | Five MCP tool implementations and their helpers extracted unchanged; typed registry and policy integration next. |
+| M3 Tool registry | in progress | `feat/ai-assistant-provider-layer` | Five tools extracted; shared SQL classification and safety policy verified. Typed registry, approval gate and result caps next. |
 | M4 Chat panel | not started | | |
 | M5 Conversations | not started | | |
 | M6 Context | not started | | |
@@ -42,6 +42,14 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M3 shared SQL classification and safety policy completed
+- Validation: complete Cargo command 1,809 passed / 221 ignored; production cargo check passes with the existing sandbox warning. Scoped formatting and diff checks pass.
+- Extracted the existing SQL classifier/scanner to `ai_tools/safety.rs`; all 22 original function bodies are unchanged except whitespace. Re-exports preserve the existing `ai_activity` API used by audit, SQLite/PostgreSQL protections and tests.
+- MCP now uses shared read-only/approval policy helpers for both original and edited queries, preserving existing mode defaults and wire behaviour.
+- Added strict policy functions for upcoming chat tools: one statement under both escaping interpretations, bounded SQL input, typed read/write/DDL/transaction/unknown kinds, read-only enforcement and rejection of transaction/unknown execution.
+- Seven new regression tests cover CTE mutations, SELECT INTO/file writes, quoted side-effect functions, EXPLAIN ANALYZE, PRAGMA mutations, ambiguous escaping, transaction control, size limits and equivalent MCP policy behaviour.
+- Pre-edit scanner impact is HIGH (9 direct callers and 3 affected processes); preserved all old paths. The stricter policy is not yet exposed by a chat execution command: registry/gate and SQLite fixtures remain next.
 
 ### 2026-10-15: M3 existing MCP tools extracted
 - Moved the five existing tool handlers into `ai_tools/tools/`, with shared connection resolution, discovery, dispatch, audit, output, cooldown and preflight modules. MCP keeps transport/resources and re-exports its existing public preflight path.
