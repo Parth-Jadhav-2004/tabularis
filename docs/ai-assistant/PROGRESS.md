@@ -7,7 +7,7 @@ How to resume: read [README.md](./README.md) (decisions + milestone order), find
 | Milestone | Status | Branch / PR | Notes |
 |---|---|---|---|
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
-| M2 Secure store | in progress | `feat/ai-assistant-provider-layer` | Encryption and key lifecycle verified; conversation storage next. |
+| M2 Secure store | in progress | `feat/ai-assistant-provider-layer` | Encrypted conversations and command API verified; blobs next. |
 | M3 Tool registry | not started | | |
 | M4 Chat panel | not started | | |
 | M5 Conversations | not started | | |
@@ -40,6 +40,14 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M2 encrypted conversations completed
+- Added versioned conversations, Ask/Agent mode, editor/notebook targets, summaries and Tauri list/load/save/rename/delete/delete-all commands.
+- Each command addressing a conversation requires its connection ID as well as its conversation ID; equal IDs on different connections remain isolated.
+- Encrypted indexes recover from missing/corrupt/stale state. Unreadable or newer-version conversations cannot be silently overwritten. Saves report a warning above 2 MiB and reject payloads above 16 MiB.
+- Added path traversal/reserved-name/symlink guards and private directories. Cross-process transactions serialize index updates.
+- Ten conversation tests pass, covering storage, index recovery, corruption, unsupported versions, concurrency, size guards and encryption of titles/messages/indexes.
+- Next: encrypted blob storage and conservative garbage collection.
 
 ### 2026-10-15: M2 master key lifecycle completed
 - Added `get/set/delete_ai_store_key` helpers without secret logging, a zeroized in-memory key cache and the public seal/open/file/line APIs.

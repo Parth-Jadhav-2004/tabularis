@@ -92,7 +92,7 @@ pub struct Conversation {
 
 - [x] `secure_store` module + tests (round trip, wrong AAD, tampered ciphertext, wrong key, missing key).
 - [x] Keychain helpers `get/set/delete_ai_store_key` in `keychain_utils.rs` with the cache.
-- [ ] `ai_chat/store.rs` + commands + tests (write, list, load, rename, delete, index rebuild).
+- [x] `ai_chat/store.rs` + commands + tests (write, list, load, rename, delete, index rebuild).
 - [ ] Blob store + GC.
 - [ ] Delete-connection hook.
 - [ ] `impact` on `append_event_in`, `read_events_in`, `read_sessions_in`, `save_session_state_in`, `load_session_state_in` and the approval read/write functions, then switch them to `secure_store`.
