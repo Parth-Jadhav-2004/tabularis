@@ -41,6 +41,12 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: M2 encrypted blobs and GC completed
+- Added content-addressed encrypted blobs (MIME and bytes sealed together), put/get commands, SHA-256 integrity checks, deduplication and a 20 MiB limit.
+- Added debounced startup GC. Referenced image/attachment blobs are retained; uploads younger than one hour are protected; unreadable conversations abort collection without deleting anything.
+- Five blob tests pass: round trips/deduplication, no plaintext payload or MIME, invalid input/size guards, copied/tampered files and conservative collection.
+- Next: connection/group deletion hooks, then seal the existing activity/session/approval files and migrate them.
+
 ### 2026-10-15: M2 encrypted conversations completed
 - Added versioned conversations, Ask/Agent mode, editor/notebook targets, summaries and Tauri list/load/save/rename/delete/delete-all commands.
 - Each command addressing a conversation requires its connection ID as well as its conversation ID; equal IDs on different connections remain isolated.

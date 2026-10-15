@@ -5,6 +5,24 @@ use super::{
 use crate::secure_store::StoreError;
 
 #[tauri::command]
+pub async fn ai_chat_put_blob(bytes: Vec<u8>, mime: String) -> Result<String, StoreError> {
+    tokio::task::spawn_blocking(move || {
+        super::blobs::BlobStore::new(&crate::paths::get_app_config_dir()).put(&bytes, &mime)
+    })
+    .await
+    .map_err(|_| StoreError::Io)?
+}
+
+#[tauri::command]
+pub async fn ai_chat_get_blob(blob_id: String) -> Result<super::blobs::Blob, StoreError> {
+    tokio::task::spawn_blocking(move || {
+        super::blobs::BlobStore::new(&crate::paths::get_app_config_dir()).get(&blob_id)
+    })
+    .await
+    .map_err(|_| StoreError::Io)?
+}
+
+#[tauri::command]
 pub async fn ai_chat_list(
     connection_id: Option<String>,
 ) -> Result<Vec<ConversationSummary>, StoreError> {

@@ -1,3 +1,4 @@
+pub mod blobs;
 mod commands;
 mod events;
 pub mod run;

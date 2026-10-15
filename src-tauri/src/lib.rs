@@ -437,6 +437,7 @@ pub fn run() {
 
             // Watch for pending MCP approval requests and run periodic cleanup.
             ai_approval_watcher::spawn(app.handle().clone());
+            ai_chat::blobs::spawn_startup_gc();
 
             // Periodic encrypted backup of the connections, when enabled.
             backup::spawn_scheduler(app.handle().clone());
@@ -677,6 +678,8 @@ pub fn run() {
             ai_chat::ai_chat_rename,
             ai_chat::ai_chat_delete,
             ai_chat::ai_chat_delete_all,
+            ai_chat::ai_chat_put_blob,
+            ai_chat::ai_chat_get_blob,
             ai::providers::get_ai_model_capabilities,
             ai::explain_ai_query,
             ai::analyze_ai_explain_plan,
