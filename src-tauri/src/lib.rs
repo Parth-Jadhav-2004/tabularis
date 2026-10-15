@@ -1,6 +1,7 @@
 pub mod ai;
 pub mod ai_chat;
 pub mod ai_logger;
+pub mod ai_tools;
 pub mod secure_store;
 pub mod ai_activity;
 #[cfg(test)]

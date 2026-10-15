@@ -10,7 +10,7 @@ Keep detailed security reviews and audit findings outside the repository. This l
 |---|---|---|---|
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
 | M2 Secure store | in review | `feat/ai-assistant-provider-layer` | Implementation and automated checks complete. Native keychain/platform validation remains pending. |
-| M3 Tool registry | not started | | |
+| M3 Tool registry | in progress | `feat/ai-assistant-provider-layer` | Five MCP tool implementations and their helpers extracted unchanged; typed registry and policy integration next. |
 | M4 Chat panel | not started | | |
 | M5 Conversations | not started | | |
 | M6 Context | not started | | |
@@ -22,7 +22,7 @@ Keep detailed security reviews and audit findings outside the repository. This l
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M2 native validation; next implementation is M3. M1 live-provider smoke checks remain pending in [M1-provider-layer.md](./M1-provider-layer.md).
+**Current focus:** M3 shared tools, typed registry and safety policy. M2 native validation remains pending; M1 live-provider smoke checks remain pending in [M1-provider-layer.md](./M1-provider-layer.md).
 
 ## Open questions
 
@@ -42,6 +42,13 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M3 existing MCP tools extracted
+- Moved the five existing tool handlers into `ai_tools/tools/`, with shared connection resolution, discovery, dispatch, audit, output, cooldown and preflight modules. MCP keeps transport/resources and re-exports its existing public preflight path.
+- Compared all 28 original top-level function bodies: unchanged except whitespace. JSON/TOON schemas, errors, limits, database overrides, approval/editing behaviour and audit remain unchanged; no new tool or write access is exposed.
+- Pre-edit impact: HIGH for dispatch, connection resolution, schema defaults and audit; CRITICAL for output encoding (with over-approximated references to other `encode` methods). Reviewed direct callers and preserved their interfaces.
+- Validation: 22 MCP tests pass; complete Cargo command 1,802 passed / 221 ignored, including the moved output/cooldown tests. Scoped formatting and diff checks pass.
+- Next: shared statement classification/read-only policy, bounded results, typed registry and approval gate, followed by SQLite fixture coverage.
 
 ### 2026-10-15: provider HTTP/TLS validation completed
 - Updated provider transport dependencies before starting M3.

@@ -6,7 +6,7 @@
 
 One implementation of the database tools and their safety rules, used by both the MCP server and the in-app assistant.
 
-## Current state
+## Baseline before M3
 
 - `src-tauri/src/mcp/mod.rs` (~1370 lines): JSON-RPC over stdio. Tools `list_connections`, `list_databases`, `list_tables`, `describe_table`, `run_query` (limit, database, `output_format`). Resources `tabularis://connections`, `tabularis://{id}/schema`.
 - Safety:
@@ -75,8 +75,9 @@ pub struct ToolOutput { pub content: String, pub truncated: bool, pub rows: Opti
 
 ## Steps
 
-- [ ] `impact` on the MCP tool handlers, `preflight`, the approval functions and `ai_activity` writers.
-- [ ] Create `ai_tools` with the trait and registry, and move the 5 existing tools (pure move, MCP tests green).
+- [x] `impact` on the MCP tool handlers, `preflight`, the approval functions and `ai_activity` writers.
+- [x] Extract the 5 existing tools and connection/output/audit helpers into `ai_tools` (pure move, MCP tests green).
+- [ ] Add the `Tool` trait, typed context and registry on top of the extracted implementations.
 - [ ] Extract `safety.rs` from the current read-only / approval checks.
 - [ ] `ApprovalGate` trait + `FileQueueGate`; the MCP server uses it.
 - [ ] Add `sample_rows`, `explain_query`, `run_statement` (not exposed to MCP unless policy allows it; keep MCP behaviour identical).
