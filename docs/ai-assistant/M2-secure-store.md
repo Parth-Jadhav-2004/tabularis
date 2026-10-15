@@ -90,8 +90,8 @@ pub struct Conversation {
 
 ## Steps
 
-- [ ] `secure_store` module + tests (round trip, wrong AAD, tampered ciphertext, wrong key, missing key).
-- [ ] Keychain helpers `get/set/delete_ai_store_key` in `keychain_utils.rs` with the cache.
+- [x] `secure_store` module + tests (round trip, wrong AAD, tampered ciphertext, wrong key, missing key).
+- [x] Keychain helpers `get/set/delete_ai_store_key` in `keychain_utils.rs` with the cache.
 - [ ] `ai_chat/store.rs` + commands + tests (write, list, load, rename, delete, index rebuild).
 - [ ] Blob store + GC.
 - [ ] Delete-connection hook.

@@ -7,7 +7,7 @@ How to resume: read [README.md](./README.md) (decisions + milestone order), find
 | Milestone | Status | Branch / PR | Notes |
 |---|---|---|---|
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
-| M2 Secure store | in progress | `feat/ai-assistant-secure-store` | Encryption primitives verified; key lifecycle and shared storage next. |
+| M2 Secure store | in progress | `feat/ai-assistant-provider-layer` | Encryption and key lifecycle verified; conversation storage next. |
 | M3 Tool registry | not started | | |
 | M4 Chat panel | not started | | |
 | M5 Conversations | not started | | |
@@ -40,6 +40,15 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M2 master key lifecycle completed
+- Added `get/set/delete_ai_store_key` helpers without secret logging, a zeroized in-memory key cache and the public seal/open/file/line APIs.
+- Serialized encryption transactions and key creation across threads and processes with an OS file lock. A non-secret key fingerprint detects resets in other processes and invalidates cached keys.
+- Missing/denied/malformed keys never fall back to plaintext. Existing sealed artifacts or an initialized-store marker prevent silent replacement of a lost key.
+- Added explicit directory-scoped in-memory keychain fixtures for tests; tests never access the real OS keychain. Eighteen crypto/lifecycle tests pass.
+- Kept one integration branch after discussing the branch strategy: the M2 foundation commit `af68ce0` is also pushed on `feat/ai-assistant-provider-layer`; the separate M2 branch is no longer used.
+- Pre-migration impact: approval writing CRITICAL (14 direct callers), activity writing/reading and approval decision reading HIGH. Preserve the protocol and fail closed on authentication errors.
+- Next: encrypted conversations, index recovery and commands.
 
 ### 2026-10-15: M2 encryption primitives completed
 - Started `feat/ai-assistant-secure-store` on top of M1; unrelated local files remain untouched.

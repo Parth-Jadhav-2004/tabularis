@@ -4,6 +4,31 @@ use crate::sandbox::{self, Sandbox};
 
 const SERVICE_NAME: &str = "tabularis";
 
+/// The AI storage key is separate from provider credentials and never logged.
+pub fn get_ai_store_key() -> Result<Option<String>, String> {
+    let entry = Entry::new(SERVICE_NAME, "ai_store_key").map_err(keychain_error)?;
+    match entry.get_password() {
+        Ok(key) => Ok(Some(key)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(error) => Err(keychain_error(error)),
+    }
+}
+
+pub fn set_ai_store_key(key: &str) -> Result<(), String> {
+    Entry::new(SERVICE_NAME, "ai_store_key")
+        .map_err(keychain_error)?
+        .set_password(key)
+        .map_err(keychain_error)
+}
+
+pub fn delete_ai_store_key() -> Result<(), String> {
+    let entry = Entry::new(SERVICE_NAME, "ai_store_key").map_err(keychain_error)?;
+    match entry.delete_credential() {
+        Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+        Err(error) => Err(keychain_error(error)),
+    }
+}
+
 /// Advice appended to keychain failures inside the Snap package.
 ///
 /// `password-manager-service` is declared as a plug but is not auto-connected
@@ -301,7 +326,10 @@ pub fn get_proxy_password(slot: &str) -> Result<Option<String>, String> {
         Ok(pwd) => Ok(Some(pwd)),
         Err(keyring::Error::NoEntry) => Ok(None),
         Err(e) => {
-            eprintln!("[Keychain] Error getting proxy password for {}: {}", slot, e);
+            eprintln!(
+                "[Keychain] Error getting proxy password for {}: {}",
+                slot, e
+            );
             Err(e.to_string())
         }
     }

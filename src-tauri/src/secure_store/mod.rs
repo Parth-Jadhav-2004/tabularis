@@ -2,6 +2,48 @@
 
 mod envelope;
 mod io;
+mod key;
+
+#[cfg(test)]
+pub(crate) mod testing;
+
+pub(crate) use key::{exclusive_in, with_store_in};
+
+pub fn seal(plaintext: &[u8], aad: &str) -> Result<Vec<u8>, StoreError> {
+    with_store_in(&crate::paths::get_app_config_dir(), true, |store| {
+        store.seal(plaintext, aad)
+    })
+}
+
+pub fn open(sealed: &[u8], aad: &str) -> Result<Vec<u8>, StoreError> {
+    with_store_in(&crate::paths::get_app_config_dir(), false, |store| {
+        store.open(sealed, aad)
+    })
+}
+
+pub fn write_sealed(path: &Path, plaintext: &[u8], aad: &str) -> Result<(), StoreError> {
+    with_store_in(&crate::paths::get_app_config_dir(), true, |store| {
+        store.write_sealed(path, plaintext, aad)
+    })
+}
+
+pub fn read_sealed(path: &Path, aad: &str) -> Result<Vec<u8>, StoreError> {
+    with_store_in(&crate::paths::get_app_config_dir(), false, |store| {
+        store.read_sealed(path, aad)
+    })
+}
+
+pub fn seal_line(plaintext: &[u8], aad: &str) -> Result<String, StoreError> {
+    with_store_in(&crate::paths::get_app_config_dir(), true, |store| {
+        store.seal_line(plaintext, aad)
+    })
+}
+
+pub fn open_line(line: &str, aad: &str) -> Result<Vec<u8>, StoreError> {
+    with_store_in(&crate::paths::get_app_config_dir(), false, |store| {
+        store.open_line(line, aad)
+    })
+}
 
 use aes_gcm::aead::{rand_core::RngCore, Aead, KeyInit, OsRng, Payload};
 use aes_gcm::{Aes256Gcm, Nonce};
