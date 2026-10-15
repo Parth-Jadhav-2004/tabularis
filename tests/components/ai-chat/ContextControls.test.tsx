@@ -30,4 +30,20 @@ describe("AI context controls", () => {
     expect(screen.getByText("aiChat.context.truncated")).toBeInTheDocument();
     expect(screen.getByText("aiChat.context.kinds.query")).toBeInTheDocument();
   });
+  it("shows table counts, sizes and truncation and lets inferred details be excluded", () => {
+    const onTable = vi.fn(() => true);
+    render(<ContextChips include={defaultAiContextSelection()} onChange={() => {}} disabled={false} hasError={false}
+      tables={{ tables: [], excluded_tables: [] }} onTable={onTable} onRefresh={() => {}} preview={{
+        items: [{ kind: "schema", id: "schema", label: "20000 tables", chars: 12000, table_count: 20000, truncated: true },
+          { kind: "table", id: "users", label: "users", chars: 123, truncated: true }],
+        truncated: true, total_chars: 14000,
+      }} />);
+    expect(screen.getByText(/aiChat.context.tableCount/)).toBeInTheDocument();
+    expect(screen.getByText(/aiChat.context.previewSize/)).toBeInTheDocument();
+    const table = screen.getByRole("button", { name: "aiChat.context.tableDetail" });
+    expect(table).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(table);
+    expect(onTable).toHaveBeenCalledWith("users", false);
+    expect(screen.getAllByText(/aiChat.context.truncated/)).toHaveLength(3);
+  });
 });

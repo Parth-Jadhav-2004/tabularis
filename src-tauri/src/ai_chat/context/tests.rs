@@ -25,6 +25,29 @@ fn input() -> ContextInput<'static> {
     }
 }
 
+#[test]
+fn schema_count_survives_an_incomplete_catalog_and_render_budget() {
+    let mut catalog = catalog(&["users", "orders"]);
+    catalog.total_table_count = 20_000;
+    catalog.truncated = true;
+    let mut input = input();
+    input.catalog = Some(&catalog);
+    let result = build_context(&input, ContextBudgets::default());
+    let summary = result
+        .items
+        .iter()
+        .find(|item| item.kind == "schema")
+        .unwrap();
+    assert_eq!(summary.table_count, Some(20_000));
+    assert!(summary.truncated);
+    assert!(result.schema_truncated);
+    assert!(result
+        .items
+        .iter()
+        .filter(|item| item.kind != "schema")
+        .all(|item| item.table_count.is_none()));
+}
+
 fn catalog(names: &[&str]) -> SchemaCatalog {
     SchemaCatalog {
         tables: names

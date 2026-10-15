@@ -2859,7 +2859,20 @@
         "instructions": "Mga tagubilin",
         "gaps": "Nawawalang metadata",
         "other": "Konteksto"
-      }
+      },
+      "refreshPreview": "I-refresh ang preview ng konteksto",
+      "tableCount": "Mga talahanayan: {{count}}",
+      "tableDetails": "Mga detalye ng talahanayan",
+      "tableDetail": "Mga detalye ng talahanayan: {{table}}",
+      "detailNotSent": "Wala ang mga detalye sa pinakabagong preview",
+      "previewLoading": "Inihahanda ang preview ng konteksto…",
+      "previewError": "Hindi available ang preview. I-refresh ang schema o bawasan ang konteksto at subukan muli.",
+      "previewSize": "Preview: {{count}} character",
+      "mentionTables": "Mga talahanayan sa saklaw na ito",
+      "noMentionTables": "Walang katugmang talahanayan sa na-load na schema. I-refresh ang explorer.",
+      "mentionHint": "I-type ang @ para magdagdag ng talahanayan, o i-drag ito rito mula sa explorer.",
+      "tableLimit": "Maaari kang pumili o magbukod ng hanggang 100 talahanayan bawat mensahe.",
+      "notInPreview": "Hindi kasama"
     }
   }
 }

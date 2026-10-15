@@ -203,6 +203,9 @@ pub fn build_context(input: &ContextInput<'_>, budgets: ContextBudgets) -> Built
                     id: part.id,
                     label: part.label,
                     chars: rendered.chars,
+                    table_count: (part.kind == "schema")
+                        .then(|| input.catalog.map(|catalog| catalog.total_table_count))
+                        .flatten(),
                     truncated: part_truncated,
                 });
             }

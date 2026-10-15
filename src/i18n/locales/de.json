@@ -2837,7 +2837,20 @@
         "instructions": "Anweisungen",
         "gaps": "Fehlende Metadaten",
         "other": "Kontext"
-      }
+      },
+      "refreshPreview": "Kontextvorschau aktualisieren",
+      "tableCount": "Tabellen: {{count}}",
+      "tableDetails": "Tabellendetails",
+      "tableDetail": "Tabellendetails: {{table}}",
+      "detailNotSent": "Details fehlen in der letzten Vorschau",
+      "previewLoading": "Kontextvorschau wird vorbereitet…",
+      "previewError": "Vorschau nicht verfügbar. Schema aktualisieren oder Kontext reduzieren und erneut versuchen.",
+      "previewSize": "Vorschau: {{count}} Zeichen",
+      "mentionTables": "Tabellen in diesem Bereich",
+      "noMentionTables": "Keine passenden Tabellen im geladenen Schema. Explorer aktualisieren.",
+      "mentionHint": "@ eingeben, um eine Tabelle hinzuzufügen, oder eine aus dem Explorer hierher ziehen.",
+      "tableLimit": "Pro Nachricht können bis zu 100 Tabellen ausgewählt oder ausgeschlossen werden.",
+      "notInPreview": "Nicht enthalten"
     }
   }
 }

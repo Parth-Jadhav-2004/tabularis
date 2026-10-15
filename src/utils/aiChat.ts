@@ -2,12 +2,13 @@ import type {
   AiBlock, AiChatEvent, AiChatFailure, AiChatHistoryState, AiChatSaveResult, AiChatState,
   AiConversation, AiConversationSummary, AiMessage, AiModelChoice, AiNewConversation,
 } from "../types/aiChat";
-import type { AiContextSelection } from "../types/aiContext";
+import type { AiContextSelection, AiContextTableChoices } from "../types/aiContext";
 import { defaultAiContextSelection } from "./aiContext";
 
 export function createAiChatState(conversation: AiConversation | null = null): AiChatState {
   return {
     contextInclude: defaultAiContextSelection(),
+    contextTables: null,
     ready: false, conversation, draft: "", runState: "idle", activeRun: null,
     finish: null, error: null, notices: [], saveState: "idle", saveResult: null,
     history: { scope: null, items: [], loading: false, busy: false, restoring: false, error: null, modelFallback: false },
@@ -33,6 +34,7 @@ export function createAiMessage(role: AiMessage["role"], blocks: AiBlock[] = [])
 
 export type AiChatAction =
   | { type: "context_include"; include: AiContextSelection }
+  | { type: "context_tables"; tables: AiContextTableChoices | null }
   | { type: "ready"; ready: boolean }
   | { type: "select"; conversation: AiConversation | null }
   | { type: "draft"; draft: string }
@@ -85,6 +87,8 @@ export function aiChatReducer(state: AiChatState, action: AiChatAction): AiChatS
   switch (action.type) {
     case "context_include":
       return { ...state, contextInclude: action.include };
+    case "context_tables":
+      return { ...state, contextTables: action.tables };
     case "generated_title": {
       const { summary } = action;
       const conversation = state.conversation;
@@ -121,6 +125,7 @@ export function aiChatReducer(state: AiChatState, action: AiChatAction): AiChatS
       return {
         ...state, draft: "", runState: "streaming", error: null, finish: null,
         contextInclude: defaultAiContextSelection(),
+        contextTables: null,
         activeRun: { id: action.runId, assistantId: action.assistant.id },
         saveState: "idle", saveResult: null,
         conversation: {

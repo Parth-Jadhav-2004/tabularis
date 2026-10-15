@@ -13,7 +13,7 @@ Keep detailed security reviews and audit findings outside the repository. This l
 | M3 Tool registry | in review | `feat/ai-assistant-provider-layer` | Typed registry, shared approval transport, eight chat tools and bounded results implemented. Automated checks pass; native MCP smoke check pending. |
 | M4 Chat panel | in review | `feat/ai-assistant-provider-layer` | Sidebar, Markdown/SQL actions, active-editor bridge, shared availability, model picker and entry points implemented. Automated and in-memory visual checks pass; native/provider smoke validation pending. |
 | M5 Conversations | in review | `feat/ai-assistant-provider-layer` | History lifecycle, generated titles, prompt editor and Markdown/notebook exports implemented. Automated and in-memory visual checks pass; native persistence/provider/export smoke validation pending. |
-| M6 Context | in progress | `feat/ai-assistant-provider-layer` | Schema cache, Rust-resolved sends, fresh editor snapshots, layer chips and encrypted context summaries implemented. Table previews/chips, mentions and connection instructions pending. |
+| M6 Context | in progress | `feat/ai-assistant-provider-layer` | Schema cache, Rust-resolved sends/previews, table counts/chips, table mentions, scoped explorer drops and encrypted summaries implemented. View/saved-query mentions and connection instructions pending. |
 | M7 Editor integration | not started | | |
 | M8 Notebooks | not started | | |
 | M9 Agent mode | not started | | |
@@ -22,7 +22,7 @@ Keep detailed security reviews and audit findings outside the repository. This l
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M6 context is wired through chat sends and encrypted history. Next: schema/table preview counts and individual table chips, table/view/saved-query mentions, explorer drag and drop and per-connection instructions. M6 native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
+**Current focus:** M6 previews, per-table controls, `@` table mentions and scoped explorer drag and drop are implemented. Next: view/saved-query mentions and per-connection instructions. M6 native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
 
 ## Open questions
 
@@ -42,6 +42,15 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M6 table previews, mentions and explorer drops implemented
+- Added a read-only context-preview command using the same Rust resolver, cache and character budgets as sends. IPC exposes only names, sizes, counts and truncation. Structured schema table counts also survive encrypted history, while older summaries remain compatible.
+- Added debounced, refreshable previews and per-table inclusion/exclusion controls. Table chips show actual sizes, incomplete metadata and details absent from the preview. Scoped choices survive panel remounts and connection switches, then reset after sending or starting a new chat. Late preview responses cannot replace newer scope/selection state; sends still read the editor and resolve context afresh.
+- Added `@` table suggestions from the active cache, with arrows, Enter/Tab, Escape, pointer selection, IME handling and accessible active-option state. Added explorer table drops through the existing pointer-drag mechanism, preserving query-builder compatibility and rejecting cross-connection/database/schema or unknown-table drops. Translated controls in all 11 locales.
+- Validation: 26 new frontend regressions and three new Rust regressions pass. Complete Vitest suite: 6,235 passed (400 files); complete Cargo suite: 1,888 passed / 221 ignored, run serially. Production cargo check/build, application/scoped test typechecks, repository ESLint with local worktrees/cache excluded, theme-token checks and scoped Rust formatting pass (pre-existing module ordering retained).
+- Visually verified Italian counts, removal/restoration, keyboard picking, real explorer pointer drops and stored summaries in Light, Dark and High Contrast, including square corners and visible focus. Fixed the active mention option to use the primary/inverse contrast pair. Removed the temporary in-memory fixture/server; no real provider, database, history or keychain was used for UI verification.
+- Pre-edit GitNexus impact: HIGH for the shared builder (nine direct callers, resolver flows), CRITICAL for the state initializer (three direct callers, no indexed flows); both changes only add metadata/next-turn choices. Other edited application targets are LOW. Refreshed the index with PDG retained. Final staged `detect_changes`: 44 files, 88 symbols and nine startup flows (HIGH); the startup function changes only register the preview command. Scope matches the expected context/UI changes.
+- M6 remains in progress. Next: view/saved-query mentions and per-connection instructions, followed by native/live-provider context validation.
 
 ### 2026-10-15: M6 schema cache, chat context and layer controls connected
 - Added a 30-second scoped schema cache with bounded scope/batch counts, shared concurrent loads and retry of unavailable metadata. Schema refresh and successful connection-file saves detach old entries; cancelled or stale loads cannot repopulate refreshed scopes.

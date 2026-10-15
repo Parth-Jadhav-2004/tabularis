@@ -2886,7 +2886,20 @@
         "instructions": "Instruções",
         "gaps": "Metadados ausentes",
         "other": "Contexto"
-      }
+      },
+      "refreshPreview": "Atualizar prévia do contexto",
+      "tableCount": "Tabelas: {{count}}",
+      "tableDetails": "Detalhes das tabelas",
+      "tableDetail": "Detalhes da tabela: {{table}}",
+      "detailNotSent": "Detalhes ausentes da última prévia",
+      "previewLoading": "Preparando prévia do contexto…",
+      "previewError": "Prévia indisponível. Atualize o esquema ou reduza o contexto e tente novamente.",
+      "previewSize": "Prévia: {{count}} caracteres",
+      "mentionTables": "Tabelas neste escopo",
+      "noMentionTables": "Nenhuma tabela correspondente no esquema carregado. Atualize o explorador.",
+      "mentionHint": "Digite @ para adicionar uma tabela ou arraste-a do explorador para cá.",
+      "tableLimit": "Você pode selecionar ou excluir até 100 tabelas por mensagem.",
+      "notInPreview": "Não incluído"
     }
   }
 }

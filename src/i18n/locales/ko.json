@@ -2789,7 +2789,20 @@
         "instructions": "지침",
         "gaps": "누락된 메타데이터",
         "other": "컨텍스트"
-      }
+      },
+      "refreshPreview": "컨텍스트 미리보기 새로 고침",
+      "tableCount": "테이블: {{count}}개",
+      "tableDetails": "테이블 세부 정보",
+      "tableDetail": "테이블 세부 정보: {{table}}",
+      "detailNotSent": "최신 미리보기에 세부 정보가 없습니다",
+      "previewLoading": "컨텍스트 미리보기 준비 중…",
+      "previewError": "미리보기를 사용할 수 없습니다. 스키마를 새로 고치거나 컨텍스트를 줄인 후 다시 시도하세요.",
+      "previewSize": "미리보기: {{count}}자",
+      "mentionTables": "이 범위의 테이블",
+      "noMentionTables": "불러온 스키마에 일치하는 테이블이 없습니다. 탐색기를 새로 고치세요.",
+      "mentionHint": "@를 입력하여 테이블을 추가하거나 탐색기에서 여기로 드래그하세요.",
+      "tableLimit": "메시지당 최대 100개의 테이블을 선택하거나 제외할 수 있습니다.",
+      "notInPreview": "포함되지 않음"
     }
   }
 }

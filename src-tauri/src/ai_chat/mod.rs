@@ -3,6 +3,7 @@ mod commands;
 pub mod context;
 mod events;
 mod exports;
+mod preview;
 mod request_context;
 pub mod run;
 pub(crate) mod schema_cache;
@@ -14,6 +15,7 @@ pub mod types;
 
 pub use commands::*;
 pub use exports::*;
+pub use preview::*;
 pub use run::*;
 pub use titles::*;
 

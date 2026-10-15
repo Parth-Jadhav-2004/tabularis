@@ -1,6 +1,6 @@
 // Wire types mirror ai/message.rs, ai/provider.rs and ai_chat/types.rs.
 // Fields and discriminators intentionally retain Rust's snake_case format.
-import type { AiContextOptions, AiContextSelection, AiContextSpec } from "./aiContext";
+import type { AiContextOptions, AiContextSelection, AiContextSpec, AiContextTableChoices } from "./aiContext";
 export type AiJsonValue = null | boolean | number | string | AiJsonValue[] | {
   [key: string]: AiJsonValue;
 };
@@ -17,6 +17,7 @@ export interface AiContextItemRef {
   id: string;
   label: string;
   chars?: number | null;
+  table_count?: number | null;
   truncated?: boolean;
 }
 
@@ -162,6 +163,7 @@ export type AiChatFailure =
 
 export interface AiChatState {
   contextInclude: AiContextSelection;
+  contextTables: AiContextTableChoices | null;
   ready: boolean;
   conversation: AiConversation | null;
   draft: string;
@@ -177,6 +179,7 @@ export interface AiChatState {
 
 export interface AiChatActions {
   setContextInclude: (include: AiContextSelection) => void;
+  setContextTables: (tables: AiContextTableChoices | null) => void;
   setDraft: (draft: string) => void;
   newConversation: (options: AiNewConversation) => void;
   selectConversation: (conversation: AiConversation | null) => void;

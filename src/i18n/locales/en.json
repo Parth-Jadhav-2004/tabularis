@@ -2925,7 +2925,20 @@
         "instructions": "Instructions",
         "gaps": "Missing metadata",
         "other": "Context"
-      }
+      },
+      "refreshPreview": "Refresh context preview",
+      "tableCount": "Tables: {{count}}",
+      "tableDetails": "Table details",
+      "tableDetail": "Table details: {{table}}",
+      "detailNotSent": "Details absent from the latest preview",
+      "previewLoading": "Preparing context preview…",
+      "previewError": "Preview unavailable. Refresh the schema or reduce the context, then retry.",
+      "previewSize": "Preview: {{count}} characters",
+      "mentionTables": "Tables in this scope",
+      "noMentionTables": "No matching tables in the loaded schema. Refresh the explorer.",
+      "mentionHint": "Type @ to add a table, or drag one here from the explorer.",
+      "tableLimit": "You can select or exclude up to 100 tables per message.",
+      "notInPreview": "Not included"
     }
   }
 }

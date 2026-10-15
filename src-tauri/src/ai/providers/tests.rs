@@ -51,6 +51,7 @@ fn persisted_context_summaries_are_omitted_from_every_provider_protocol() {
             id: "private-context-marker".into(),
             label: "private-context-marker".into(),
             chars: Some(123),
+            table_count: Some(42),
             truncated: true,
         }],
     });

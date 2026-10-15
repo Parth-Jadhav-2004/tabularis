@@ -88,8 +88,28 @@ describe("AI chat panel", () => {
     localStorage.clear();
     vi.mocked(invoke).mockReset().mockImplementation(async (command) => command === "get_ai_models"
       ? { openai: ["example"], anthropic: ["other"] }
+      : command === "ai_chat_preview_context" ? { items: [], truncated: false, total_chars: 1000 }
       : { tools: false, images: false, reasoning: true, context_window: null });
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: vi.fn().mockResolvedValue(undefined) } });
+  });
+
+  it("previews table details, keeps exclusions across remounts and sends them on the first turn", async () => {
+    const original = vi.mocked(invoke).getMockImplementation()!;
+    vi.mocked(invoke).mockImplementation(async (command, args) => command === "ai_chat_preview_context" ? {
+      items: [{ kind: "table", id: "users", label: "users", chars: 200 }, { kind: "schema", id: "schema", label: "1 tables", table_count: 1, chars: 100 }],
+      truncated: false, total_chars: 1400,
+    } : original(command, args));
+    const fixture = setup();
+    const detail = await screen.findByRole("button", { name: "aiChat.context.tableDetail" });
+    expect(detail).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(detail);
+    fixture.rerender(fixture.tree(false));
+    fixture.rerender(fixture.tree());
+    expect(screen.getByRole("button", { name: "aiChat.context.tableDetail" })).toHaveAttribute("aria-pressed", "false");
+    await send("Explain users");
+    await waitFor(() => expect(fixture.transport.send).toHaveBeenCalledTimes(1));
+    expect(fixture.transport.send.mock.calls[0][2]).toMatchObject({ tables: [], excluded_tables: ["users"], connection_id: "one", database: "db", schema: "public" });
+    expect(screen.queryByRole("button", { name: "aiChat.context.tableDetail" })).not.toBeInTheDocument();
   });
 
   it("streams Markdown, suppresses remote images/HTML, and enables exact SQL actions only on completion", async () => {

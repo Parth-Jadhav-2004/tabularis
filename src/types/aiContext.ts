@@ -28,3 +28,22 @@ export interface AiContextSpec extends AiContextOptions {
   database: string | null;
   schema: string | null;
 }
+
+export interface AiContextScope {
+  connection_id: string;
+  database: string | null;
+  schema: string | null;
+}
+
+export interface AiContextTables {
+  tables: string[];
+  excluded_tables: string[];
+}
+
+export interface AiContextTableChoices extends AiContextTables, AiContextScope {}
+
+export interface AiContextPreview {
+  items: import("./aiChat").AiContextItemRef[];
+  truncated: boolean;
+  total_chars: number;
+}

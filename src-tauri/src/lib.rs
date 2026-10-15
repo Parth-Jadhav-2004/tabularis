@@ -690,6 +690,7 @@ pub fn run() {
             ai::generate_ai_query,
             ai_chat::ai_chat_send,
             ai_chat::ai_chat_cancel,
+            ai_chat::ai_chat_preview_context,
             ai_chat::ai_chat_list,
             ai_chat::ai_chat_load,
             ai_chat::ai_chat_save,

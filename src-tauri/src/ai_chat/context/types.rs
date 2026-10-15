@@ -76,6 +76,8 @@ pub struct ContextItemSummary {
     pub id: String,
     pub label: String,
     pub chars: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_count: Option<usize>,
     pub truncated: bool,
 }
 

@@ -2848,7 +2848,20 @@
         "instructions": "Istruzioni",
         "gaps": "Metadati mancanti",
         "other": "Contesto"
-      }
+      },
+      "refreshPreview": "Aggiorna anteprima contesto",
+      "tableCount": "Tabelle: {{count}}",
+      "tableDetails": "Dettagli delle tabelle",
+      "tableDetail": "Dettagli tabella: {{table}}",
+      "detailNotSent": "Dettagli assenti dall’ultima anteprima",
+      "previewLoading": "Preparazione anteprima contesto…",
+      "previewError": "Anteprima non disponibile. Aggiorna lo schema o riduci il contesto e riprova.",
+      "previewSize": "Anteprima: {{count}} caratteri",
+      "mentionTables": "Tabelle in questo ambito",
+      "noMentionTables": "Nessuna tabella corrispondente nello schema caricato. Aggiorna l’explorer.",
+      "mentionHint": "Digita @ per aggiungere una tabella o trascinala qui dall’explorer.",
+      "tableLimit": "Puoi selezionare o escludere fino a 100 tabelle per messaggio.",
+      "notInPreview": "Non incluso"
     }
   }
 }

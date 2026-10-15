@@ -2771,7 +2771,20 @@
         "instructions": "Instrucciones",
         "gaps": "Metadatos faltantes",
         "other": "Contexto"
-      }
+      },
+      "refreshPreview": "Actualizar vista previa del contexto",
+      "tableCount": "Tablas: {{count}}",
+      "tableDetails": "Detalles de tablas",
+      "tableDetail": "Detalles de tabla: {{table}}",
+      "detailNotSent": "Los detalles no aparecen en la última vista previa",
+      "previewLoading": "Preparando vista previa del contexto…",
+      "previewError": "Vista previa no disponible. Actualiza el esquema o reduce el contexto e inténtalo de nuevo.",
+      "previewSize": "Vista previa: {{count}} caracteres",
+      "mentionTables": "Tablas en este ámbito",
+      "noMentionTables": "No hay tablas coincidentes en el esquema cargado. Actualiza el explorador.",
+      "mentionHint": "Escribe @ para añadir una tabla o arrástrala aquí desde el explorador.",
+      "tableLimit": "Puedes seleccionar o excluir hasta 100 tablas por mensaje.",
+      "notInPreview": "No incluido"
     }
   }
 }

@@ -2916,7 +2916,20 @@
         "instructions": "Instructions",
         "gaps": "Métadonnées manquantes",
         "other": "Contexte"
-      }
+      },
+      "refreshPreview": "Actualiser l’aperçu du contexte",
+      "tableCount": "Tables : {{count}}",
+      "tableDetails": "Détails des tables",
+      "tableDetail": "Détails de la table : {{table}}",
+      "detailNotSent": "Détails absents du dernier aperçu",
+      "previewLoading": "Préparation de l’aperçu du contexte…",
+      "previewError": "Aperçu indisponible. Actualisez le schéma ou réduisez le contexte, puis réessayez.",
+      "previewSize": "Aperçu : {{count}} caractères",
+      "mentionTables": "Tables dans ce périmètre",
+      "noMentionTables": "Aucune table correspondante dans le schéma chargé. Actualisez l’explorateur.",
+      "mentionHint": "Saisissez @ pour ajouter une table ou faites-la glisser ici depuis l’explorateur.",
+      "tableLimit": "Vous pouvez sélectionner ou exclure jusqu’à 100 tables par message.",
+      "notInPreview": "Non inclus"
     }
   }
 }

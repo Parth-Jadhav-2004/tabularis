@@ -105,6 +105,8 @@ pub struct ContextItemRef {
     pub label: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chars: Option<usize>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub table_count: Option<usize>,
     #[serde(default)]
     pub truncated: bool,
 }

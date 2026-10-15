@@ -2779,7 +2779,20 @@
         "instructions": "指令",
         "gaps": "缺失的元数据",
         "other": "上下文"
-      }
+      },
+      "refreshPreview": "刷新上下文预览",
+      "tableCount": "表数量：{{count}}",
+      "tableDetails": "表详情",
+      "tableDetail": "表详情：{{table}}",
+      "detailNotSent": "最近的预览中没有这些详情",
+      "previewLoading": "正在准备上下文预览…",
+      "previewError": "预览不可用。请刷新架构或减少上下文后重试。",
+      "previewSize": "预览：{{count}} 个字符",
+      "mentionTables": "此范围内的表",
+      "noMentionTables": "已加载的架构中没有匹配的表。请刷新资源管理器。",
+      "mentionHint": "输入 @ 添加表，或从资源管理器将表拖到此处。",
+      "tableLimit": "每条消息最多可以选择或排除 100 张表。",
+      "notInPreview": "未包含"
     }
   }
 }

@@ -229,13 +229,7 @@ pub(crate) fn apply(
     let items = built
         .items
         .into_iter()
-        .map(|item| ContextItemRef {
-            kind: item.kind,
-            id: item.id,
-            label: item.label,
-            chars: Some(item.chars),
-            truncated: item.truncated,
-        })
+        .map(ContextItemRef::from)
         .collect::<Vec<_>>();
     let last = req.messages.last_mut().unwrap();
     last.blocks

@@ -17,6 +17,7 @@ export const AiChatProvider = ({ children, transport = aiChatTransport }: {
     ...state,
     setDraft: session.setDraft,
     setContextInclude: session.setContextInclude,
+    setContextTables: session.setContextTables,
     newConversation: session.newConversation,
     selectConversation: session.selectConversation,
     selectModel: session.selectModel,

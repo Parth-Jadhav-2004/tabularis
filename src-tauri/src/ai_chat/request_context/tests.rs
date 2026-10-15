@@ -205,6 +205,7 @@ fn sent_context_metadata_round_trips_through_encrypted_conversation_storage() {
             id: "private-table-marker".into(),
             label: "private-table-marker".into(),
             chars: Some(123),
+            table_count: None,
             truncated: true,
         }],
     });
@@ -219,4 +220,67 @@ fn sent_context_metadata_round_trips_through_encrypted_conversation_storage() {
     let sealed =
         std::fs::read_to_string(directory.path().join("ai_chats/connection/chat.chat")).unwrap();
     assert!(!sealed.contains("private-table-marker"));
+}
+
+#[tokio::test]
+async fn preview_matches_sent_summaries_without_prompt_or_editor_contents() {
+    let (_directory, params, driver) = fixture().await;
+    let cache = SchemaCache::default();
+    let mut selected = spec();
+    selected.editor.query = Some("SELECT * FROM users -- private-editor-marker 界".into());
+    let built = resolve_with_driver(&selected, &params, &driver, false, &cache)
+        .await
+        .unwrap();
+    let expected_size = built.system.chars().count();
+    let preview = super::super::preview::ContextPreview::from(built);
+    assert_eq!(preview.total_chars, expected_size);
+    assert_eq!(
+        preview
+            .items
+            .iter()
+            .find(|item| item.kind == "schema")
+            .unwrap()
+            .table_count,
+        Some(1)
+    );
+    let mut req = request();
+    let built = resolve_with_driver(&selected, &params, &driver, false, &cache)
+        .await
+        .unwrap();
+    let ContextEvent::Context { items, .. } = apply(&mut req, built).unwrap();
+    assert_eq!(preview.items, items);
+    let wire = serde_json::to_string(&preview).unwrap();
+    for excluded in [
+        "SELECT",
+        "private-editor-marker",
+        "private-password-marker",
+        "PRIMARY",
+        "untrusted_data",
+        "system",
+    ] {
+        assert!(!wire.contains(excluded));
+    }
+}
+
+#[tokio::test]
+async fn preview_exposes_budget_truncation_and_respects_table_and_schema_exclusion() {
+    let (_directory, params, driver) = fixture().await;
+    let mut selected = spec();
+    selected.editor.query = Some(format!("SELECT * FROM users; -- {}", "界".repeat(60_000)));
+    selected.excluded_tables = vec!["users".into()];
+    let built = resolve_with_driver(&selected, &params, &driver, false, &SchemaCache::default())
+        .await
+        .unwrap();
+    let preview = super::super::preview::ContextPreview::from(built);
+    assert!(preview.truncated);
+    assert!(preview
+        .items
+        .iter()
+        .any(|item| item.kind == "query" && item.truncated));
+    assert!(!preview.items.iter().any(|item| item.kind == "table"));
+    selected.include.schema = false;
+    let built = resolve_with_driver(&selected, &params, &driver, false, &SchemaCache::default())
+        .await
+        .unwrap();
+    assert!(built.items.iter().all(|item| item.table_count.is_none()));
 }

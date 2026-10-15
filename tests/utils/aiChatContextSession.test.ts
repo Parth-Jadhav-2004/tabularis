@@ -63,3 +63,31 @@ describe("AI resolved context lifecycle", () => {
     unmount();
   });
 });
+
+describe("AI table context lifecycle", () => {
+  it("retains scoped choices through connection switches and resets them for the next message", async () => {
+    const { session, transport, unmount } = await fixture();
+    const options = { choices: [{ provider: "openai", model: "model" }], fallback: { provider: "openai", model: "model" } };
+    await session.activateConnection("connection", options);
+    const tables = { connection_id: "connection", database: "app", schema: "public", tables: ["orders"], excluded_tables: ["users"] };
+    session.setContextTables(tables);
+    await session.activateConnection("other", options);
+    expect(session.getSnapshot().contextTables).toBeNull();
+    await session.activateConnection("connection", options);
+    expect(session.getSnapshot().contextTables).toEqual(tables);
+    const context = createAiContextOptions({}, defaultAiContextSelection(), "en", tables);
+    await session.send("question", { context });
+    expect(vi.mocked(transport.send).mock.calls[0][2]).toMatchObject(tables);
+    expect(session.getSnapshot().contextTables).toBeNull();
+    session.setContextTables(tables);
+    expect(session.getSnapshot().contextTables).toBeNull();
+    unmount();
+  });
+  it("new chats discard all table choices", async () => {
+    const { session, unmount } = await fixture();
+    session.setContextTables({ connection_id: "connection", database: "app", schema: "public", tables: ["users"], excluded_tables: [] });
+    session.newConversation({ connection_id: "connection", provider: "openai", model: "model" });
+    expect(session.getSnapshot().contextTables).toBeNull();
+    unmount();
+  });
+});

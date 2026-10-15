@@ -341,6 +341,7 @@ export function createAiChatSession(transport: AiChatTransport): AiChatSession {
     },
     setDraft: (draft) => { if (mounted) dispatch({ type: "draft", draft }); },
     setContextInclude: (include) => { if (mounted && !active) dispatch({ type: "context_include", include }); },
+    setContextTables: (tables) => { if (mounted && !active) dispatch({ type: "context_tables", tables }); },
     selectConversation,
     newConversation: (options) => selectConversation(createAiConversation(options)),
     selectModel: (choice) => {

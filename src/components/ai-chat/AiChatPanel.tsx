@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAiChat } from "../../hooks/useAiChat";
 import { useAiAvailability } from "../../hooks/useAiAvailability";
@@ -16,7 +16,10 @@ import { ChatComposer } from "./ChatComposer";
 import { ModelPicker } from "./ModelPicker";
 import { ConversationList } from "./ConversationList";
 import { ContextChips } from "./ContextChips";
-import { createAiContextOptions } from "../../utils/aiContext";
+import { changeAiContextTable, createAiContextOptions, sameAiContextScope } from "../../utils/aiContext";
+import { aiContextCatalogTables, aiContextDroppedTable } from "../../utils/aiContextMentions";
+import { useAiContextPreview } from "../../hooks/useAiContextPreview";
+import { dragState } from "../../utils/dragState";
 
 export function AiChatPanel() {
   const { t, i18n } = useTranslation();
@@ -43,6 +46,28 @@ export function AiChatPanel() {
   const sameTarget = !!target && (!conversation || (conversation.connection_id === target.connectionId
     && conversation.database === target.database && conversation.schema === target.schema));
   const historyPending = chat.history.restoring || chat.history.busy;
+  const contextEnabled = availability.available && usableChoice && chat.ready && !models.loading && !chat.activeRun
+    && sameTarget && !historyPending && chat.saveState !== "saving";
+  const targetConnectionId = target?.connectionId;
+  const targetDatabase = target?.database ?? null;
+  const targetSchema = target?.schema ?? null;
+  const scope = useMemo(() => targetConnectionId ? { connection_id: targetConnectionId, database: targetDatabase, schema: targetSchema } : null,
+    [targetConnectionId, targetDatabase, targetSchema]);
+  const tables = useMemo(() => sameAiContextScope(chat.contextTables, scope) && chat.contextTables
+    ? chat.contextTables : { tables: [], excluded_tables: [] }, [chat.contextTables, scope]);
+  const getContext = useCallback(() => scope ? { ...scope,
+    ...createAiContextOptions(target?.readContext?.() ?? {}, chat.contextInclude, i18n.resolvedLanguage ?? "en", tables),
+  } : null, [scope, target, chat.contextInclude, i18n.resolvedLanguage, tables]);
+  const preview = useAiContextPreview(getContext, contextEnabled && !historyOpen);
+  const data = scope ? database?.connectionDataMap[scope.connection_id] : undefined;
+  const mentionTables = useMemo(() => aiContextCatalogTables(data, scope), [data, scope]);
+  const onTable = (name: string, selected: boolean) => {
+    if (!contextEnabled || !scope) return false;
+    const next = changeAiContextTable(tables, name, selected);
+    if (next === tables) return false;
+    chat.setContextTables({ ...scope, ...next });
+    return true;
+  };
   const createConversation = (next = choice) => {
     if (!target || !next) return;
     chat.newConversation({ connection_id: target.connectionId, database: target.database,
@@ -62,8 +87,10 @@ export function AiChatPanel() {
   const send = () => {
     if (!availability.available || !usableChoice || !sameTarget || !chat.ready || chat.activeRun || chat.saveState === "saving" || historyPending) return;
     const draft = chat.draft;
+    const context = getContext();
+    if (!context) return;
     if (!conversation) createConversation();
-    void chat.send(draft, { context: createAiContextOptions(target?.readContext?.() ?? {}, chat.contextInclude, i18n.resolvedLanguage ?? "en") });
+    void chat.send(draft, { context });
   };
   return <section className="flex min-h-0 flex-1 flex-col" aria-label={t("aiChat.title")}>
     <ChatHeader onNew={() => createConversation()} onClose={close} onHistory={() => setHistoryOpen((open) => !open)} historyOpen={historyOpen}
@@ -94,9 +121,15 @@ export function AiChatPanel() {
       </p>}
     </div>
     <ContextChips include={chat.contextInclude} onChange={chat.setContextInclude}
-      hasError={!!target?.hasError} disabled={!chat.ready || models.loading || !!chat.activeRun || !sameTarget || historyPending} />
+      hasError={!!target?.hasError} disabled={!contextEnabled} tables={tables} onTable={onTable}
+      preview={preview.preview} loading={preview.loading} error={preview.error} onRefresh={() => void preview.refresh()} />
     <ChatComposer draft={chat.draft} onDraft={chat.setDraft} onSend={send} onStop={() => void chat.stop()}
       onEscape={() => target?.actions.focus()} streaming={!!chat.activeRun}
+      mentionTables={mentionTables} onTable={onTable} onFocus={() => void preview.refresh()}
+      onDropTable={() => {
+        const name = aiContextDroppedTable(dragState.context, data, scope);
+        if (name) onTable(name, true);
+      }}
       disabled={!availability.available || !usableChoice || !sameTarget || !chat.ready || chat.saveState === "saving" || historyPending}>
       <ModelPicker choice={choice} choices={models.choices} onChange={selectModel} onRefresh={models.refresh} loading={models.loading} disabled={chat.saveState === "saving" || historyPending} />
       {models.error && <p className="text-xs text-accent-error">{t("aiChat.modelsError")}</p>}

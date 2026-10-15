@@ -2854,7 +2854,20 @@
         "instructions": "指示",
         "gaps": "不足しているメタデータ",
         "other": "コンテキスト"
-      }
+      },
+      "refreshPreview": "コンテキストのプレビューを更新",
+      "tableCount": "テーブル数: {{count}}",
+      "tableDetails": "テーブルの詳細",
+      "tableDetail": "テーブルの詳細: {{table}}",
+      "detailNotSent": "最新のプレビューには詳細がありません",
+      "previewLoading": "コンテキストのプレビューを準備中…",
+      "previewError": "プレビューを表示できません。スキーマを更新するかコンテキストを減らして再試行してください。",
+      "previewSize": "プレビュー: {{count}} 文字",
+      "mentionTables": "この範囲のテーブル",
+      "noMentionTables": "読み込まれたスキーマに一致するテーブルがありません。エクスプローラーを更新してください。",
+      "mentionHint": "@ を入力してテーブルを追加するか、エクスプローラーからここにドラッグしてください。",
+      "tableLimit": "メッセージごとに最大100テーブルを選択または除外できます。",
+      "notInPreview": "含まれていません"
     }
   }
 }
