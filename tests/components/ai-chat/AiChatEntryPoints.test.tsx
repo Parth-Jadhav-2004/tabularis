@@ -134,6 +134,7 @@ describe("AI sidebar entry points", () => {
     fireEvent.click(ask);
     await waitFor(() => expect(screen.getByLabelText("aiChat.message")).toHaveFocus());
     expect(screen.getByLabelText("aiChat.message")).toHaveValue("");
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.context.options" }));
     expect(screen.getByRole("button", { name: "aiChat.context.kinds.query" })).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByRole("button", { name: "aiChat.context.kinds.selection" })).toHaveAttribute("aria-pressed", "true");
     expect(fixture.transport.send).not.toHaveBeenCalled();
@@ -149,7 +150,7 @@ describe("AI sidebar entry points", () => {
     await waitFor(() => expect(ask).toBeEnabled());
     fireEvent.click(ask);
     await waitFor(() => expect(screen.getByLabelText("aiChat.message")).toHaveFocus());
-    expect(screen.getByRole("button", { name: "aiChat.context.tableDetail" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "aiChat.context.removeReference" })).toBeInTheDocument();
     expect(fixture.transport.send).not.toHaveBeenCalled();
     fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "Explain this table" } });
     fireEvent.click(screen.getByRole("button", { name: "aiChat.send" }));

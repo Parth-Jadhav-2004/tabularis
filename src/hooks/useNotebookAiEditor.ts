@@ -6,21 +6,27 @@ import { createAiNotebookEditors, createAiNotebookReadOnlyTarget, createAiNotebo
 import { getNotebookTitle } from "../utils/notebookStore";
 import { useRegisterAiEditor } from "./useAiEditor";
 
-export function useNotebookAiEditor({ scopeId, notebookId, connectionId, database, schema, dialect, cells, title, params, stopOnError, runAllResult, isActive, updateCell, openConsole }: {
+export function useNotebookAiEditor({ scopeId, notebookId, connectionId, database, schema, dialect, cells, title, params, stopOnError, runAllResult, isActive, updateCell, openConsole, onRevealCell }: {
   scopeId: string; notebookId: string; connectionId: string; database: string | null; schema: string | null;
   dialect?: string; cells: NotebookCell[]; isActive: boolean;
   title?: string; params?: NotebookParam[]; stopOnError?: boolean; runAllResult?: RunAllResult | null;
   updateCell: (cellId: string, partial: Partial<NotebookCell>) => void;
   openConsole?: (sql: string, schema: string | null) => void;
+  onRevealCell?: (cellId: string) => boolean;
 }): AiNotebookContextValue {
   const [editors] = useState(createAiNotebookEditors);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = cells.find((cell) => cell.id === selectedId) ?? cells.find((cell) => cell.type === "sql") ?? cells[0];
-  const notebook = useMemo(() => ({ id: notebookId, readState: () => ({
+  const revealCell = useCallback((cellId: string) => {
+    if (!isActive || !cells.some((cell) => cell.id === cellId) || !onRevealCell?.(cellId)) return false;
+    setSelectedId(cellId);
+    return true;
+  }, [isActive, cells, onRevealCell]);
+  const notebook = useMemo(() => ({ id: notebookId, revealCell, readState: () => ({
     id: notebookId, title: getNotebookTitle(notebookId) ?? title ?? "Notebook", cells,
     params: params ?? [], stopOnError: stopOnError ?? false, focusedCellId: selected?.id ?? null,
     runAllResult: runAllResult ?? null,
-  }) }), [notebookId, title, cells, params, stopOnError, selected?.id, runAllResult]);
+  }) }), [notebookId, title, cells, params, stopOnError, selected?.id, runAllResult, revealCell]);
   const buildTarget = useCallback((cellId: string): AiEditorTarget | null => {
     const cell = cells.find((item) => item.id === cellId);
     if (!cell || !connectionId || !isActive) return null;

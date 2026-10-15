@@ -2878,7 +2878,9 @@
       "viewDetail": "Dettagli vista: {{name}}",
       "savedQuery": "Query salvata: {{name}}",
       "viewCount": "Viste: {{count}}",
-      "notebookResultsDescription": "Invia nomi delle colonne, conteggi e fino a 5 righe dei risultati delle celle attive e citate. Disattivato per ogni nuovo messaggio."
+      "notebookResultsDescription": "Invia nomi delle colonne, conteggi e fino a 5 righe dei risultati delle celle attive e citate. Disattivato per ogni nuovo messaggio.",
+      "options": "Contesto",
+      "removeReference": "Rimuovi {{name}}"
     },
     "commands": {
       "title": "Comandi",
@@ -2899,6 +2901,19 @@
       "askTable": "Chiedi all’AI di questa tabella",
       "explainQuery": "Spiega la query corrente con AI",
       "optimizeQuery": "Ottimizza la query corrente con AI"
-    }
+    },
+    "notebook": {
+      "cells": "Celle del notebook",
+      "cell": "Cella {{index}}",
+      "selectedCells": "Celle citate",
+      "removeCell": "Rimuovi {{cell}} dal contesto",
+      "cellUnavailable": "Cella non più disponibile",
+      "noCells": "Nessuna cella corrispondente nel notebook.",
+      "cellLimit": "Puoi selezionare fino a 20 celle per messaggio.",
+      "mentionHint": "Digita # per includere una cella del notebook.",
+      "goToCell": "Vai alla cella {{index}}"
+    },
+    "welcome": "Cosa vuoi esplorare?",
+    "modelOptions": "Scegli modello"
   }
 }

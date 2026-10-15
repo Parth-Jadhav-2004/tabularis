@@ -2801,7 +2801,9 @@
       "viewDetail": "Detalles de vista: {{name}}",
       "savedQuery": "Consulta guardada: {{name}}",
       "viewCount": "Vistas: {{count}}",
-      "notebookResultsDescription": "Envía los nombres de columnas, el número de filas y hasta 5 filas de resultados de las celdas activas y referenciadas. Desactivado por defecto en cada mensaje."
+      "notebookResultsDescription": "Envía los nombres de columnas, el número de filas y hasta 5 filas de resultados de las celdas activas y referenciadas. Desactivado por defecto en cada mensaje.",
+      "options": "Contexto",
+      "removeReference": "Quitar {{name}}"
     },
     "commands": {
       "title": "Comandos",
@@ -2822,6 +2824,19 @@
       "askTable": "Preguntar a la IA sobre esta tabla",
       "explainQuery": "Explicar consulta actual con IA",
       "optimizeQuery": "Optimizar consulta actual con IA"
-    }
+    },
+    "notebook": {
+      "cells": "Celdas del notebook",
+      "cell": "Celda {{index}}",
+      "selectedCells": "Celdas referenciadas",
+      "removeCell": "Quitar {{cell}} del contexto",
+      "cellUnavailable": "Celda ya no disponible",
+      "noCells": "No hay celdas coincidentes en este notebook.",
+      "cellLimit": "Selecciona hasta 20 celdas por mensaje.",
+      "mentionHint": "Escribe # para incluir una celda del notebook.",
+      "goToCell": "Ir a la celda {{index}}"
+    },
+    "welcome": "¿Qué quieres explorar?",
+    "modelOptions": "Elegir modelo"
   }
 }

@@ -11,18 +11,18 @@ Keep detailed security reviews and audit findings outside the repository. This l
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
 | M2 Secure store | in review | `feat/ai-assistant-provider-layer` | Implementation and automated checks complete. Native keychain/platform validation remains pending. |
 | M3 Tool registry | in review | `feat/ai-assistant-provider-layer` | Typed registry, shared approval transport, eight chat tools and bounded results implemented. Automated checks pass; native MCP smoke check pending. |
-| M4 Chat panel | in review | `feat/ai-assistant-provider-layer` | Sidebar, Markdown/SQL actions, active-editor bridge, shared availability, model picker and entry points implemented. Automated and in-memory visual checks pass; native/provider smoke validation pending. |
+| M4 Chat panel | in review | `feat/ai-assistant-provider-layer` | Calmer sidebar with compact composer and collapsed context/model controls; Markdown/SQL actions, editor bridge and entry points implemented. Automated and in-memory visual checks pass; native/provider smoke validation pending. |
 | M5 Conversations | in review | `feat/ai-assistant-provider-layer` | History lifecycle, generated titles, prompt editor and Markdown/notebook exports implemented. Automated and in-memory visual checks pass; native persistence/provider/export smoke validation pending. |
 | M6 Context | in review | `feat/ai-assistant-provider-layer` | Schema cache, Rust-resolved sends/previews, typed mentions, scoped drops, encrypted summaries and per-connection instructions implemented. Visual/native/live-provider validation pending. |
 | M7 Editor integration | in review | `feat/ai-assistant-provider-layer` | Slash commands, prompt customization, sidebar migration, cell targets, Fix with AI and context-menu/palette entry points implemented; old modals removed. Automated checks pass; visual/native/provider validation pending. |
-| M8 Notebooks | in progress | `feat/ai-assistant-provider-layer` | Notebook-bound conversations, state bridge and bounded Rust notebook context implemented, with removable context/results chips. Cell references, reviewed cell actions and notebook commands pending. |
+| M8 Notebooks | in progress | `feat/ai-assistant-provider-layer` | Notebook-bound conversations, bounded context/results opt-in, `#` picker/chips and stable clickable cell references implemented. Reviewed cell actions, multi-cell proposals and notebook commands pending. |
 | M9 Agent mode | not started | | |
 | M10 Multimodal | not started | | |
 | M11 Extras | not started | | |
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M8 bounded notebook snapshots and the Rust context layer are implemented. Next: `#` cell picker/chips and clickable references, followed by reviewed cell actions, the multi-cell envelope and notebook commands. M8 visual/native/provider checks, M7 visual/native/provider checks, M6 mixed-mention/instructions visual and native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
+**Current focus:** M8 context and stable cell references are implemented, alongside the M4 sidebar redesign. Next: reviewed notebook cell actions, the multi-cell envelope and notebook commands. In-memory sidebar visual checks pass; M8 native/provider checks, M7 visual/native/provider checks, M6 mixed-mention/instructions visual and native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
 
 ## Open questions
 
@@ -42,6 +42,16 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: Calmer sidebar and stable notebook cell references
+- Published the bounded notebook context/results work as `f6bd1fe4` on `feat/ai-assistant-provider-layer`, without a co-author trailer.
+- Redesigned the sidebar following the requested ChatGPT/Claude direction: quiet header, subtle user bubbles, flowing assistant replies, compact auto-growing composer and icon SQL actions. Context layers/previews and model search/capabilities are hidden behind compact disclosures; only explicit `@`/`#` choices stay in the composer. Successful save/completion notices remain accessible without adding permanent visual rows. Errors remain visible.
+- Added the `#` picker with index/name/first-line search, arrows, Enter/Tab, pointer and IME support, removable chips and a 20-cell limit. Choices use stable IDs in the scoped conversation cache, reset after send and report deleted choices without substituting another cell. Rust validates unavailable IDs and persists bounded ID/index metadata with the existing encrypted context summaries.
+- Assistant prose references now scroll to, focus and highlight the corresponding cell, including Markdown cells. Per-turn mappings survive reorder and conversation resume; deleted/unknown references remain text, and code/existing links are excluded. Navigation respects the active notebook and does not edit or execute SQL. Added all new strings in 11 locales.
+- Validation: 21 new frontend regressions and two new Rust regressions. Complete Vitest suite: 6,375 passed (420 files); complete Cargo suite: 1,925 passed / 221 ignored, run serially. Production frontend build/cargo check, application/scoped-test typechecks, repository ESLint with local worktrees/cache excluded, theme-token/contrast checks, AI-chat locale key parity, scoped Rust formatting and diff checks pass.
+- Visual validation: real chat components in an Italian, in-memory browser fixture at 384/320 px; Light, Dark and High Contrast reviewed, including context disclosure and compact model controls. Removed the temporary fixture/server afterward. Native Tauri/live-provider/notebook-history validation remains pending; no real provider, saved notebook/history or OS keychain was used.
+- Pre-edit GitNexus impact: HIGH for the notebook hook (one direct caller / three process groups), shared context choices (17 dependents) and Rust notebook renderer (one direct caller / resolver group); LOW/MEDIUM for other resolved application symbols. Unresolved graph boundaries were checked against source references. A full index rebuild with PDG retained avoids stale incremental symbol data. Final staged `detect_changes`: 49 files, 137 symbols and 11 flows (HIGH), confined to expected chat/context sends, notebook navigation and panel dependencies; the source diff and complete suites confirm this scope.
+- M8 remains in progress; the fourth implementation step is checked. Next: reviewed notebook cell actions, multi-cell proposals and notebook commands.
 
 ### 2026-10-15: M8 bounded notebook context and results opt-in
 - Added fresh notebook snapshots for previews and sends, replacing full editor-query/cursor context while preserving explicit selections and exact entry-point failure SQL. Snapshots include title, stop-on-error, bounded parameters, outline, focused/neighbour/mentioned cells and optional errors/results; cells are not copied on each keystroke. Empty and Markdown notebooks remain valid. Mentioned-ID support is ready for the next step's picker.

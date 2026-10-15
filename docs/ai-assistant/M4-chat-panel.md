@@ -103,7 +103,7 @@ Every AI surface (panel, toolbar button, palette entries, shortcut, slash comman
 
 ### Provider and model picker
 
-Switching provider/model happens directly in the chat, under the composer, like a standard chat client.
+Switching provider/model happens through a compact selected-model disclosure in the composer toolbar. Search, the grouped selector, capabilities, refresh and setup entries appear only when it is opened. Selection and Escape close it and restore focus; clicking outside also dismisses it.
 
 - Lists **every usable provider** (not just the global one), each with its models from `get_ai_models` (cached; refresh button). Grouped by provider, searchable, with capability badges (tools, images, reasoning) from M1.
 - New conversation: defaults to the last provider/model used in the chat; the first time, to the global `aiProvider` / `aiModel` from Settings.
@@ -114,6 +114,13 @@ Switching provider/model happens directly in the chat, under the composer, like 
   - tools, if the new model has no tool support (Agent/Ask tool use disabled for the conversation until switching back)
   - provider-specific reasoning signatures (dropped when the provider changes)
 - Providers that are configured but not usable right now (for example Ollama not reachable) are shown disabled with the reason; unconfigured providers are listed at the bottom as "Set up in Settings".
+
+### Sidebar layout
+
+- A quiet header contains the title, an optional notebook subtitle and icon controls for history, new chat and close.
+- User turns use a subtle bubble; assistant content flows directly in the transcript. Sent-context summaries stay collapsed, model provenance appears in a muted footer and successful saves/completions are announced to screen readers. Errors remain visible.
+- One auto-growing composer contains explicit `@`/`#` reference chips, the Context/model controls and a circular send/stop button. Context layers and preview details live in a collapsed, keyboard-accessible Context disclosure. Hints remain available inside it and to screen readers.
+- SQL block actions use labelled icon buttons. Theme tokens preserve light, dark, high-contrast and square-corner appearances.
 
 ### Accessibility
 
@@ -142,7 +149,9 @@ Switching provider/model happens directly in the chat, under the composer, like 
 - Covered: undoable insert/replace, no-editor fallback, guarded console-navigation delegation and active split-scope registration/cleanup.
 - Covered: model preference/defaults, provider switching with full history, credential/settings refresh isolation, disabled/offline providers, keyboard/IME handling and gated shortcuts.
 - Covered: component streaming/stop/save retry/reset, panel remount, changed targets and loss of the final provider.
+- Covered: collapsed Context/model controls, keyboard dismissal and focus restoration, explicit-reference chips and unchanged context/send behavior.
 - Visual fixture: Italian UI, Light/Dark/High Contrast themes, square corners, keyboard focus and SQL insertion; transport, storage and editor actions are in-memory fixtures.
+- Sidebar redesign checked with real components at 384/320 px in Light, Dark and High Contrast; native/provider validation remains pending.
 
 ## Done when
 

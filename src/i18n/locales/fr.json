@@ -2946,7 +2946,9 @@
       "viewDetail": "Détails de la vue : {{name}}",
       "savedQuery": "Requête enregistrée : {{name}}",
       "viewCount": "Vues : {{count}}",
-      "notebookResultsDescription": "Envoyer les noms des colonnes, le nombre de lignes et jusqu’à 5 lignes de résultats des cellules actives et citées. Désactivé par défaut pour chaque message."
+      "notebookResultsDescription": "Envoyer les noms des colonnes, le nombre de lignes et jusqu’à 5 lignes de résultats des cellules actives et citées. Désactivé par défaut pour chaque message.",
+      "options": "Contexte",
+      "removeReference": "Retirer {{name}}"
     },
     "commands": {
       "title": "Commandes",
@@ -2967,6 +2969,19 @@
       "askTable": "Interroger l’IA sur cette table",
       "explainQuery": "Expliquer la requête actuelle avec l’IA",
       "optimizeQuery": "Optimiser la requête actuelle avec l’IA"
-    }
+    },
+    "notebook": {
+      "cells": "Cellules du notebook",
+      "cell": "Cellule {{index}}",
+      "selectedCells": "Cellules citées",
+      "removeCell": "Retirer {{cell}} du contexte",
+      "cellUnavailable": "Cellule indisponible",
+      "noCells": "Aucune cellule correspondante dans ce notebook.",
+      "cellLimit": "Sélectionnez jusqu’à 20 cellules par message.",
+      "mentionHint": "Tapez # pour inclure une cellule du notebook.",
+      "goToCell": "Aller à la cellule {{index}}"
+    },
+    "welcome": "Que souhaitez-vous explorer ?",
+    "modelOptions": "Choisir un modèle"
   }
 }

@@ -246,3 +246,49 @@ fn empty_and_markdown_notebooks_are_valid_contexts() {
     assert!(snapshot.validate());
     assert!(snapshot.reference_sql(None).is_empty());
 }
+
+#[test]
+fn cell_reference_metadata_retains_indexes_and_ids_without_cell_content() {
+    let mut snapshot = snapshot();
+    snapshot.outline.push(NotebookCellSnapshot {
+        id: "notes".into(),
+        index: 2,
+        r#type: NotebookCellType::Markdown,
+        name: Some("private-name-is-not-needed".into()),
+        schema: None,
+        content: "private-documentation-marker".into(),
+        truncated: false,
+    });
+    let built = build(&snapshot, false, false, NOTEBOOK_BUDGET);
+    let refs = built
+        .items
+        .iter()
+        .filter(|item| item.kind == "notebook_cell_ref")
+        .collect::<Vec<_>>();
+    assert_eq!(refs.len(), 2);
+    assert_eq!(refs[0].id, "sql");
+    assert_eq!(refs[0].label, "#1");
+    assert_eq!(refs[1].id, "notes");
+    assert_eq!(refs[1].label, "#2");
+    assert!(refs.iter().all(|item| item.chars == 0));
+    assert!(!serde_json::to_string(&refs).unwrap().contains("private-"));
+    assert_eq!(
+        built.items.iter().map(|item| item.chars).sum::<usize>(),
+        built.context_chars
+    );
+}
+
+#[test]
+fn unavailable_selected_cells_are_explicit_and_bounded() {
+    let mut snapshot = snapshot();
+    snapshot.unavailable_cells = vec!["deleted-cell".into()];
+    snapshot.truncated = true;
+    assert!(snapshot.validate());
+    let built = build(&snapshot, false, false, NOTEBOOK_BUDGET);
+    assert!(built
+        .system
+        .contains("\"unavailable_cells\":[\"deleted-cell\"]"));
+    assert!(built.truncated);
+    snapshot.unavailable_cells = vec!["missing".into(); 21];
+    assert!(!snapshot.validate());
+}

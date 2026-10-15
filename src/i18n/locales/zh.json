@@ -2809,7 +2809,9 @@
       "viewDetail": "视图详情：{{name}}",
       "savedQuery": "已保存查询：{{name}}",
       "viewCount": "视图数量：{{count}}",
-      "notebookResultsDescription": "发送当前及引用单元格的列名、行数和最多 5 行结果。每条消息默认关闭。"
+      "notebookResultsDescription": "发送当前及引用单元格的列名、行数和最多 5 行结果。每条消息默认关闭。",
+      "options": "上下文",
+      "removeReference": "移除{{name}}"
     },
     "commands": {
       "title": "命令",
@@ -2830,6 +2832,19 @@
       "askTable": "向 AI 询问此表",
       "explainQuery": "使用 AI 解释当前查询",
       "optimizeQuery": "使用 AI 优化当前查询"
-    }
+    },
+    "notebook": {
+      "cells": "笔记本单元格",
+      "cell": "单元格 {{index}}",
+      "selectedCells": "引用的单元格",
+      "removeCell": "从上下文移除{{cell}}",
+      "cellUnavailable": "单元格已不可用",
+      "noCells": "没有匹配的单元格。",
+      "cellLimit": "每条消息最多选择 20 个单元格。",
+      "mentionHint": "输入 # 以包含笔记本单元格。",
+      "goToCell": "跳转到单元格 {{index}}"
+    },
+    "welcome": "想探索什么？",
+    "modelOptions": "选择模型"
   }
 }

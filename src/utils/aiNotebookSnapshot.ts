@@ -3,6 +3,7 @@ import type { AiNotebookCellSnapshot, AiNotebookSnapshot } from "../types/aiNote
 import type { AiContextOptions, AiContextSelection, AiContextTables, AiEditorSnapshot } from "../types/aiContext";
 import type { AiEditorTarget } from "../types/aiEditor";
 import { createAiContextOptions } from "./aiContext";
+import { selectedAiNotebookCells } from "./aiNotebookMentions";
 
 // Bound before IPC, without first allocating an array of every code point.
 function cut(text: string, limit: number): { text: string; truncated: boolean } {
@@ -48,6 +49,8 @@ export function buildAiNotebookSnapshot(source: AiNotebookSource, options: {
   const focusedIndex = source.cells.findIndex((item) => item.id === source.focusedCellId);
   const focused = focusedIndex < 0 ? null : cell(focusedIndex, 6_000, options.focusedContent);
   const mentionedIds = new Set(options.mentionedCellIds?.slice(0, 20));
+  const unavailableCells = [...mentionedIds].filter((id) => !source.cells.some((cell) => cell.id === id));
+  truncated ||= unavailableCells.length > 0;
   const mentioned: AiNotebookCellSnapshot[] = [];
   let mentionedRemaining = 8_000;
   for (let index = 0; index < source.cells.length; index++) {
@@ -124,7 +127,7 @@ export function buildAiNotebookSnapshot(source: AiNotebookSource, options: {
   }
   truncated ||= source.cells.length > outline.length || source.params.length > params.length || (options.mentionedCellIds?.length ?? 0) > 20;
   return { id: source.id, title, cell_count: source.cells.length, stop_on_error: source.stopOnError,
-    params, outline, focused, neighbours, mentioned, errors, results, truncated };
+    params, outline, focused, neighbours, mentioned, errors, results, truncated, unavailable_cells: unavailableCells };
 }
 
 // Capture current state for both preview and send; the transcript retains only
@@ -141,6 +144,7 @@ export function createAiTargetContextOptions(target: AiEditorTarget | undefined,
   if (include.notebook !== false) options.notebook = buildAiNotebookSnapshot(source, {
     includeResults: include.notebook_results === true, includeErrors: include.error,
     focusedContent: override?.query, focusedError: override?.last_error,
+    mentionedCellIds: tables ? selectedAiNotebookCells(tables, source.id) : [],
   });
   return options;
 }

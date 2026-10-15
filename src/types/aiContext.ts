@@ -44,6 +44,7 @@ export interface AiContextScope {
 }
 
 export interface AiContextTables {
+  notebook?: import("./aiNotebookReferences").AiNotebookCellSelection;
   tables: string[];
   excluded_tables: string[];
   views?: string[];

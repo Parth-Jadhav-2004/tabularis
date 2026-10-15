@@ -133,6 +133,7 @@ export function NotebookView({
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   // Gap-based insertion point in [0, cells.length]; `null` while not dragging.
   const [dropPos, setDropPos] = useState<number | null>(null);
+  const [highlightedAiCellId, setHighlightedAiCellId] = useState<string | null>(null);
   const cellsRef = useRef<NotebookCell[]>(notebook?.cells ?? []);
   const cellRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -286,10 +287,18 @@ export function NotebookView({
     },
     [updateNotebook],
   );
+  const revealAiCell = useCallback((cellId: string) => {
+    const element = cellRefsMap.current.get(cellId);
+    if (!element) return false;
+    element.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlightedAiCellId(cellId);
+    element.focus({ preventScroll: true });
+    return true;
+  }, []);
   const aiNotebook = useNotebookAiEditor({ scopeId: commandScopeId, notebookId: tab.notebookId ?? tab.id,
     connectionId, database: tab.database ?? activeDatabaseName ?? null, schema: effectiveSchema,
     dialect: activeDriver ?? undefined, cells, title: tab.title, params, stopOnError, runAllResult,
-    isActive, updateCell, openConsole: onOpenAiConsole });
+    isActive, updateCell, openConsole: onOpenAiConsole, onRevealCell: revealAiCell });
 
   const focusCell = useCallback((cellId: string) => {
     const tryFocus = (attempts: number) => {
@@ -924,14 +933,15 @@ export function NotebookView({
         {cells.map((cell, index) => (
           <div
             key={cell.id}
+            role="group" tabIndex={-1} aria-label={t("aiChat.notebook.cell", { index: index + 1 })}
             ref={(el) => {
               if (el) cellRefsMap.current.set(cell.id, el);
               else cellRefsMap.current.delete(cell.id);
             }}
             onDragOver={handleDragOver(index)}
-            onFocusCapture={() => { aiNotebook.selectCell(cell.id); }}
+            onFocusCapture={() => { aiNotebook.selectCell(cell.id); setHighlightedAiCellId((current) => current === cell.id ? current : null); }}
             onDrop={handleDrop(index)}
-            className="relative scroll-mt-4"
+            className={`relative scroll-mt-4 rounded-lg focus-ring ${highlightedAiCellId === cell.id ? "ring-2 ring-focus" : ""}`}
           >
             {showLineAt(index) && renderDropLine("top")}
             <NotebookCellWrapper

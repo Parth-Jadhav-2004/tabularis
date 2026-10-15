@@ -10,7 +10,7 @@ import { useRightSidebar } from "../../hooks/useRightSidebar";
 import type { AiModelChoice } from "../../types/aiChat";
 import { DatabaseContext } from "../../contexts/DatabaseContext";
 import { SavedQueriesContext } from "../../contexts/SavedQueriesContext";
-import type { AiMentionItem } from "../../types/aiContext";
+import type { AiContextTables, AiMentionItem } from "../../types/aiContext";
 import { defaultAiChatModel, readAiChatModel, rememberAiChatModel } from "../../utils/aiChatModels";
 import { ChatHeader } from "./ChatHeader";
 import { ChatTranscript } from "./ChatTranscript";
@@ -20,6 +20,10 @@ import { ConversationList } from "./ConversationList";
 import { ContextChips } from "./ContextChips";
 import { changeAiContextMention, changeAiContextTable, defaultAiContextSelection, sameAiContextScope } from "../../utils/aiContext";
 import { createAiTargetContextOptions } from "../../utils/aiNotebookSnapshot";
+import { aiNotebookCellChoices, changeAiNotebookCell, selectedAiNotebookCells } from "../../utils/aiNotebookMentions";
+import { NotebookCellChips } from "./NotebookCellChips";
+import { ChatContextMenu } from "./ChatContextMenu";
+import { ComposerReferenceChips } from "./ComposerReferenceChips";
 import { aiContextCatalogTables, aiContextDroppedTable, aiContextMentionItems } from "../../utils/aiContextMentions";
 import { useAiContextPreview } from "../../hooks/useAiContextPreview";
 import { dragState } from "../../utils/dragState";
@@ -52,6 +56,7 @@ export function AiChatPanel() {
   const fallback = defaultAiChatModel(models.choices, settings, null);
   const notebookId = target?.notebook?.id;
   const notebookState = target?.notebook?.readState?.();
+  const notebookCells = useMemo(() => aiNotebookCellChoices(notebookState?.cells), [notebookState?.cells]);
   const resumeOptions = useMemo(() => ({ choices: models.choices, fallback,
     target: notebookId ? { type: "notebook" as const, notebook_id: notebookId } : { type: "editor" as const },
   }), [models.choices, fallback, notebookId]);
@@ -84,7 +89,7 @@ export function AiChatPanel() {
   const targetSchema = target?.schema ?? null;
   const scope = useMemo(() => targetConnectionId ? { connection_id: targetConnectionId, database: targetDatabase, schema: targetSchema } : null,
     [targetConnectionId, targetDatabase, targetSchema]);
-  const tables = useMemo(() => sameAiContextScope(chat.contextTables, scope) && chat.contextTables
+  const tables = useMemo<AiContextTables>(() => sameAiContextScope(chat.contextTables, scope) && chat.contextTables
     ? chat.contextTables : { tables: [], excluded_tables: [] }, [chat.contextTables, scope]);
   const getContext = useCallback(() => scope && !localCommand ? { ...scope,
     ...createAiTargetContextOptions(target, chat.contextInclude, i18n.resolvedLanguage ?? "en", tables),
@@ -94,6 +99,15 @@ export function AiChatPanel() {
   const data = scope ? database?.connectionDataMap[scope.connection_id] : undefined;
   const mentionTables = useMemo(() => aiContextCatalogTables(data, scope), [data, scope]);
   const mentionItems = useMemo(() => aiContextMentionItems(data, scope, savedQueries?.queries ?? []), [data, scope, savedQueries?.queries]);
+  const selectedCells = selectedAiNotebookCells(tables, notebookId);
+  const onCell = (id: string, selected: boolean) => {
+    if (!contextEnabled || !scope || !notebookId || !notebookState || (selected && !notebookCells.some((cell) => cell.id === id))) return false;
+    const next = changeAiNotebookCell(tables, notebookId, id, selected);
+    if (next === tables) return false;
+    chat.setContextTables({ ...scope, ...next });
+    if (selected) chat.setContextInclude({ ...chat.contextInclude, notebook: true });
+    return true;
+  };
   const onMention = (item: AiMentionItem, selected: boolean) => {
     if (!contextEnabled || !scope) return false;
     const next = changeAiContextMention(tables, item, selected);
@@ -185,15 +199,14 @@ export function AiChatPanel() {
   };
   return <section className="flex min-h-0 flex-1 flex-col" aria-label={t("aiChat.title")}>
     <ChatHeader onNew={() => createConversation()} onClose={close} onHistory={() => setHistoryOpen((open) => !open)} historyOpen={historyOpen}
+      subtitle={displayTarget?.type === "notebook" ? <NotebookConversationTarget target={displayTarget} notebooks={boundNotebooks} /> : undefined}
       disabled={!target || !usableChoice || activeNotebookUnavailable || !!chat.activeRun || chat.saveState === "saving" || chat.saveState === "error" || historyPending} />
     {historyOpen ? <ConversationList key={aiChatTargetKey(connectionId, resumeOptions.target)} chat={chat} connectionId={connectionId}
       notebookId={notebookId} resumeOptions={resumeOptions}
       connectionNames={Object.fromEntries(database?.connections.map((connection) => [connection.id, connection.name]) ?? [])}
       onClose={() => setHistoryOpen(false)} /> : <>
-    {displayTarget?.type === "notebook" && <div role="status" className="border-b border-default px-4 py-2">
-      <NotebookConversationTarget target={displayTarget} notebooks={boundNotebooks} />
-    </div>}
     <ChatTranscript chat={chat} target={target} targetKey={aiEditorTargetKey(target, activeScopeId)}
+      canNavigateNotebook={sameTarget && !historyPending}
       canAct={sameTarget && !historyPending && target?.sqlActionsAvailable !== false} />
     {chat.history.restoring && <p role="status" className="px-4 py-2 text-xs text-secondary">{t("common.loading")}</p>}
     {chat.history.modelFallback && <p role="status" className="px-4 py-2 text-xs text-secondary">{t("aiChat.history.modelFallback")}</p>}
@@ -219,32 +232,39 @@ export function AiChatPanel() {
         <code className="text-primary">/{item}</code>{" — "}{t(`aiChat.commands.${item}`)}
       </li>)}</ul>
     </section>}
-    <div role="status" className="px-4 text-xs text-muted">
+    <div role="status" className={chat.saveState === "error" || chat.saveState === "saved" && chat.saveResult?.large ? "px-4 text-xs text-muted" : "sr-only"}>
       {chat.saveState === "saving" && t("aiChat.saving")}
       {chat.saveState === "saved" && t(chat.saveResult?.large ? "aiChat.savedLarge" : "aiChat.saved")}
       {chat.saveState === "error" && <p className="py-2 text-accent-error">{t("aiChat.saveError")}{" "}
         <button type="button" onClick={() => void chat.retrySave()} className="rounded underline focus-ring">{t("aiChat.retrySave")}</button>
       </p>}
     </div>
-    <ContextChips include={chat.contextInclude} onChange={chat.setContextInclude}
-      notebook={!!target?.notebook?.readState}
-      hasInstructions={!!database?.connections.find((connection) => connection.id === connectionId)?.ai_instructions?.trim()}
-      hasError={!!target?.hasError || !!notebookState?.runAllResult?.errors.length
-        || !!notebookState?.cells.some((cell) => cell.error)} disabled={!contextEnabled} tables={tables} onTable={onTable}
-      onMention={onMention}
-      preview={preview.preview} loading={preview.loading} error={preview.error} onRefresh={() => void preview.refresh()} />
+    {models.error && <p role="alert" className="px-4 py-2 text-xs text-accent-error">{t("aiChat.modelsError")}</p>}
     <ChatComposer draft={chat.draft} onDraft={onDraft} onSend={send} onStop={() => void chat.stop()}
+      references={<>
+        <ComposerReferenceChips choices={tables} disabled={!contextEnabled} onRemove={(item) => { onMention(item, false); }} />
+        <NotebookCellChips ids={selectedCells} cells={notebookCells} disabled={!contextEnabled} onRemove={(id) => { onCell(id, false); }} />
+      </>}
       focusRequest={focusRequest}
       onEscape={() => target?.actions.focus()} streaming={!!chat.activeRun}
       mentionTables={mentionTables} onTable={onTable} onFocus={() => void preview.refresh()}
       mentionItems={mentionItems} onMention={onMention}
+      notebookCells={notebookCells} onCell={notebookState ? onCell : undefined}
       onDropTable={() => {
         const name = aiContextDroppedTable(dragState.context, data, scope);
         if (name) onTable(name, true);
       }}
       disabled={!availability.available || (command !== "help" && (!usableChoice || !sameTarget)) || !chat.ready || chat.saveState === "saving" || historyPending}>
+      <ChatContextMenu count={tables.tables.length + (tables.views?.length ?? 0) + (tables.saved_queries?.length ?? 0) + selectedCells.length}>
+        <ContextChips include={chat.contextInclude} onChange={chat.setContextInclude}
+          notebook={!!target?.notebook?.readState}
+          hasInstructions={!!database?.connections.find((connection) => connection.id === connectionId)?.ai_instructions?.trim()}
+          hasError={!!target?.hasError || !!notebookState?.runAllResult?.errors.length || !!notebookState?.cells.some((cell) => cell.error)}
+          disabled={!contextEnabled} tables={tables} onTable={onTable} onMention={onMention}
+          preview={preview.preview} loading={preview.loading} error={preview.error} onRefresh={() => void preview.refresh()} />
+        <p className="px-3 pb-3 text-xs leading-relaxed text-muted">{t("aiChat.context.mentionHint")}{notebookState && <> {t("aiChat.notebook.mentionHint")}</>}</p>
+      </ChatContextMenu>
       <ModelPicker choice={choice} choices={models.choices} onChange={selectModel} onRefresh={models.refresh} loading={models.loading} disabled={chat.saveState === "saving" || historyPending} />
-      {models.error && <p className="text-xs text-accent-error">{t("aiChat.modelsError")}</p>}
     </ChatComposer>
     </>}
   </section>;

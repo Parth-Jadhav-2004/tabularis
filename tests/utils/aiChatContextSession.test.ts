@@ -85,6 +85,23 @@ describe("AI resolved context lifecycle", () => {
 });
 
 describe("AI table context lifecycle", () => {
+  it("retains cell choices per notebook across target switches and clears them after send", async () => {
+    const { session, unmount } = await fixture();
+    const options = { choices: [{ provider: "openai", model: "model" }], fallback: { provider: "openai", model: "model" },
+      target: { type: "notebook" as const, notebook_id: "one" } };
+    await session.activateConnection("connection", options);
+    session.newConversation({ connection_id: "connection", provider: "openai", model: "model", target: options.target });
+    const choices = { connection_id: "connection", database: null, schema: null, tables: [], excluded_tables: [],
+      notebook: { notebook_id: "one", cell_ids: ["cell-a"] } };
+    session.setContextTables(choices);
+    await session.activateConnection("connection", { ...options, target: { type: "notebook", notebook_id: "two" } });
+    expect(session.getSnapshot().contextTables).toBeNull();
+    await session.activateConnection("connection", options);
+    expect(session.getSnapshot().contextTables).toEqual(choices);
+    await session.send("Compare cells", { context: createAiContextOptions({}, defaultAiContextSelection(), "en") });
+    expect(session.getSnapshot().contextTables).toBeNull();
+    unmount();
+  });
   it("retains scoped choices through connection switches and resets them for the next message", async () => {
     const { session, transport, unmount } = await fixture();
     const options = { choices: [{ provider: "openai", model: "model" }], fallback: { provider: "openai", model: "model" } };

@@ -25,6 +25,8 @@ impl NotebookSnapshot {
                     .is_none_or(|schema| bounded(schema, 128))
         };
         if !id(&self.id)
+            || self.unavailable_cells.len() > 20
+            || self.unavailable_cells.iter().any(|value| !id(value))
             || !bounded(&self.title, 200)
             || self.cell_count > 1_000_000
             || self.params.len() > 40
@@ -165,6 +167,7 @@ pub(super) fn append(
         serde_json::json!({
             "id":snapshot.id, "title":snapshot.title, "cell_count":snapshot.cell_count,
             "stop_on_error":snapshot.stop_on_error, "params":snapshot.params,
+            "unavailable_cells":snapshot.unavailable_cells,
         })
         .to_string(),
         2_000,
@@ -239,6 +242,32 @@ pub(super) fn append(
             6_000,
             snapshot.results.iter().any(|result| result.truncated),
         );
+    }
+    // Persist only the bounded identity/index mapping used by this request.
+    // Zero-sized entries are internal navigation metadata, not prompt layers.
+    if items
+        .iter()
+        .any(|item| item.kind == "notebook" && item.id == snapshot.id)
+    {
+        let mut seen = HashSet::new();
+        for cell in snapshot
+            .outline
+            .iter()
+            .chain(snapshot.focused.iter())
+            .chain(&snapshot.mentioned)
+        {
+            if seen.insert(&cell.id) {
+                items.push(ContextItemSummary {
+                    kind: "notebook_cell_ref".into(),
+                    id: cell.id.clone(),
+                    label: format!("#{}", cell.index),
+                    chars: 0,
+                    table_count: None,
+                    view_count: None,
+                    truncated: false,
+                });
+            }
+        }
     }
     truncated
 }

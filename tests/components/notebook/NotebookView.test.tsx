@@ -10,6 +10,8 @@ import type { NotebookCell, NotebookState } from "../../../src/types/notebook";
 import { resolveParams } from "../../../src/utils/notebookParams";
 import { resolveQueryVariables, type ResolvedQuery } from "../../../src/utils/notebookVariables";
 import { loadNotebook, setNotebookState } from "../../../src/utils/notebookStore";
+import { AiEditorContext } from "../../../src/contexts/AiEditorContext";
+import { createAiEditorStore } from "../../../src/utils/aiEditor";
 
 const fixtures = vi.hoisted(() => ({
   notebooks: new Map<string, NotebookState>(),
@@ -152,6 +154,22 @@ async function settle() {
 }
 
 describe("NotebookView", () => {
+  it("scrolls to and highlights the referenced cell after a reorder without running SQL", () => {
+    fixtures.notebooks.set(notebookId, { cells: [sqlCell("a", "SELECT 1"), sqlCell("b", "SELECT 2")] });
+    const store = createAiEditorStore();
+    const tab: Tab = { id: "tab-1", title: "Notebook", type: "notebook", notebookId, connectionId,
+      query: "", result: null, error: "", executionTime: null, page: 1, activeTable: null, pkColumns: null };
+    render(<AiEditorContext.Provider value={store}><NotebookView tab={tab} updateTab={vi.fn()} connectionId={connectionId} isActive /></AiEditorContext.Provider>);
+    fireEvent.click(screen.getByRole("button", { name: "Move down a" }));
+    const wrapper = screen.getByTestId("cell-b").closest('[role="group"]');
+    act(() => { expect(store.get("root")?.notebook?.revealCell?.("b")).toBe(true); });
+    expect(wrapper).toHaveFocus();
+    expect(wrapper).toHaveClass("ring-2", "ring-focus");
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "smooth", block: "center" });
+    expect(mockInvoke).not.toHaveBeenCalled();
+    fireEvent.focus(screen.getByLabelText("SQL a"));
+    expect(wrapper).not.toHaveClass("ring-2");
+  });
   beforeEach(() => {
     vi.clearAllMocks();
     fixtures.notebooks.clear();

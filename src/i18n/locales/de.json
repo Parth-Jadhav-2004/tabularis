@@ -2867,7 +2867,9 @@
       "viewDetail": "Ansichtsdetails: {{name}}",
       "savedQuery": "Gespeicherte Abfrage: {{name}}",
       "viewCount": "Ansichten: {{count}}",
-      "notebookResultsDescription": "Spaltennamen, Zeilenzahlen und bis zu 5 Ergebniszeilen der aktiven und referenzierten Zellen senden. Für jede Nachricht standardmäßig deaktiviert."
+      "notebookResultsDescription": "Spaltennamen, Zeilenzahlen und bis zu 5 Ergebniszeilen der aktiven und referenzierten Zellen senden. Für jede Nachricht standardmäßig deaktiviert.",
+      "options": "Kontext",
+      "removeReference": "{{name}} entfernen"
     },
     "commands": {
       "title": "Befehle",
@@ -2888,6 +2890,19 @@
       "askTable": "KI zu dieser Tabelle fragen",
       "explainQuery": "Aktuelle Abfrage mit KI erklären",
       "optimizeQuery": "Aktuelle Abfrage mit KI optimieren"
-    }
+    },
+    "notebook": {
+      "cells": "Notebook-Zellen",
+      "cell": "Zelle {{index}}",
+      "selectedCells": "Referenzierte Zellen",
+      "removeCell": "{{cell}} aus dem Kontext entfernen",
+      "cellUnavailable": "Zelle nicht mehr verfügbar",
+      "noCells": "Keine passenden Zellen in diesem Notebook.",
+      "cellLimit": "Bis zu 20 Zellen pro Nachricht auswählen.",
+      "mentionHint": "Mit # eine Notebook-Zelle einbeziehen.",
+      "goToCell": "Zu Zelle {{index}} springen"
+    },
+    "welcome": "Was möchtest du erkunden?",
+    "modelOptions": "Modell auswählen"
   }
 }

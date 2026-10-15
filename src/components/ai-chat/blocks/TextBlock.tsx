@@ -3,15 +3,27 @@ import ReactMarkdown from "react-markdown";
 import type { AiSqlActions } from "../../../types/aiEditor";
 import { isAiSqlCode } from "../../../utils/aiChatMarkdown";
 import { SqlBlock } from "./SqlBlock";
+import type { AiNotebookReferences } from "../../../types/aiNotebookReferences";
+import { AI_NOTEBOOK_REFERENCE_PREFIX, aiNotebookReferencePlugin } from "../../../utils/aiNotebookReferences";
+import { useTranslation } from "react-i18next";
 
-export function TextBlock({ text, actions, dialect }: { text: string; actions?: AiSqlActions; dialect?: string }) {
+export function TextBlock({ text, actions, dialect, notebookReferences }: { text: string; actions?: AiSqlActions; dialect?: string; notebookReferences?: AiNotebookReferences }) {
+  const { t } = useTranslation();
   return (
     <div className="break-words text-sm leading-relaxed text-primary [&_p]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold [&_blockquote]:border-l-2 [&_blockquote]:border-strong [&_blockquote]:pl-3 [&_a]:text-accent [&_code]:font-mono">
-      <ReactMarkdown skipHtml components={{
+      <ReactMarkdown skipHtml remarkPlugins={notebookReferences?.cells.size ? [aiNotebookReferencePlugin(notebookReferences.cells)] : []} components={{
         // Remote images are omitted: rendering a model-supplied URL would make
         // an unsolicited network request. Blob-backed images arrive in M10.
         img: () => null,
-        a: ({ children, href }) => <a href={href} target="_blank" rel="noopener noreferrer" className="focus-ring">{children}</a>,
+        a: ({ children, href }) => {
+          if (href?.startsWith(AI_NOTEBOOK_REFERENCE_PREFIX)) {
+            const index = Number(href.slice(AI_NOTEBOOK_REFERENCE_PREFIX.length));
+            const cellId = notebookReferences?.cells.get(index);
+            return cellId ? <button type="button" className="rounded text-accent underline focus-ring"
+              aria-label={t("aiChat.notebook.goToCell", { index })} onClick={() => { notebookReferences?.reveal(cellId); }}>{children}</button> : <>{children}</>;
+          }
+          return <a href={href} target="_blank" rel="noopener noreferrer" className="focus-ring">{children}</a>;
+        },
         pre: ({ children }) => {
           if (isValidElement<{ children?: unknown; className?: string }>(children)) {
             const code = children.props.children;

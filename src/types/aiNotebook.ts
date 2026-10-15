@@ -16,4 +16,5 @@ export interface AiNotebookSource {
 export interface AiNotebookTarget {
   id: string;
   readState?: () => AiNotebookSource;
+  revealCell?: (cellId: string) => boolean;
 }

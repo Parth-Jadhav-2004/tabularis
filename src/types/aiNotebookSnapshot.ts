@@ -17,6 +17,7 @@ export interface AiNotebookResultSnapshot {
 }
 
 export interface AiNotebookSnapshot {
+  unavailable_cells?: string[];
   id: string;
   title: string;
   cell_count: number;

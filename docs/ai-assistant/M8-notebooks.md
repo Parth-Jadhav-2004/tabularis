@@ -51,7 +51,7 @@ When the active tab is a notebook, M6's "Editor state" layer (6) is replaced by 
 ### Cell references
 
 - `#` in the composer opens a picker of cells (by name, or `#index` + first line). The pick becomes a chip: "Cell 4 · monthly_revenue".
-- Clicking a cell reference in an assistant answer scrolls to and highlights that cell. The model is instructed to refer to cells as `#<index>` or by name, and the renderer links them.
+- Clicking a `#<index>` reference in an assistant answer scrolls to, focuses and highlights that cell. References resolve through the IDs captured for that turn, so reordering cells or resuming a conversation preserves their meaning. Deleted cells and references without a known ID remain plain text; code and existing Markdown links are excluded.
 
 ### Actions on answers
 
@@ -107,7 +107,7 @@ Added to the slash command registry (M7), only shown in notebook context:
 - [x] `ChatTarget` on `Conversation` + "This notebook" filter + reopen behaviour.
 - [x] Expose the active notebook state to the AI provider (a read-only selector from `NotebookView` state; avoid copying cells on every keystroke: snapshot at send time).
 - [x] Notebook context layer in `context.rs` (the frontend sends a `NotebookSnapshot`: outline + focused/neighbour/mentioned cells + errors + optional results).
-- [ ] `#` cell picker + chips + clickable cell references in answers.
+- [x] `#` cell picker + chips + clickable cell references in answers.
 - [ ] Notebook actions on SQL/markdown/chart blocks (cell insert/replace via the bridge from M7).
 - [ ] `tabularis-notebook` envelope: parser, validation, review card, apply with the stale-content check.
 - [ ] Notebook slash commands + default prompts (overridable like the others).
@@ -120,11 +120,16 @@ Added to the slash command registry (M7), only shown in notebook context:
 - The bridge exposes a local, read-only `readState()` source with title, cells, parameters, focused cell and latest Run All result. It reads current arrays without copying them on each edit. Empty and Markdown-only notebooks retain their own target; SQL actions are disabled without a focused SQL cell.
 - Preview and send now capture a fresh, bounded `NotebookSnapshot`. Rust validates section sizes and the total packet, renders separate untrusted-data envelopes within the notebook's 36k-character allocation, and replaces full-query/cursor context with the notebook layer while retaining explicit editor selections. Header/parameters, outline, focused cell, neighbours, mentioned cells, errors and results have independent caps; previews and encrypted message summaries retain names, indexes, sizes and truncation, never cell contents, parameter values or rows.
 - Notebook and Include results chips control each message. Results remain off by default, reset after sending and include only the focused/mentioned cells (up to five rows, 40 columns and 200 characters per value, sharing a 6k-character allocation). Errors use the existing opt-in Error chip, including `/fix` defaults. Entry-point snapshots preserve the exact failed/selected SQL. Parameter instructions document both `@name` and `${name}` syntax and verbatim substitution.
-- Focused and mentioned SQL feeds the detailed-schema resolver; cells with a different schema override do not select metadata from the current scope. The snapshot already supports mentioned IDs; the `#` picker and mention-choice state are the next step, followed by reviewed cell actions and notebook commands. New context labels and result descriptions are translated in all 11 locales; later M8 controls still need translations.
+- Focused and mentioned SQL feeds the detailed-schema resolver; cells with a different schema override do not select metadata from the current scope. The `#` picker searches indexes, names and bounded first lines, with keyboard, pointer and IME handling. Up to 20 explicit cell choices are stored by ID in the existing scoped conversation cache and reset after sending. Missing choices remain removable warning chips and are reported in the bounded snapshot; choosing a cell also enables Notebook context.
+- Rust adds bounded, zero-character `notebook_cell_ref` summaries containing only IDs and the indexes used by that turn. Existing encrypted history preserves these mappings without sending context summaries to providers. Answer navigation checks the conversation/notebook scope and current IDs, supports Markdown cells, and never edits or runs a cell. Legacy focused-cell summaries remain readable. New controls and labels are translated in all 11 locales; later M8 controls still need translations.
+- The calmer M4 sidebar keeps notebook choices next to explicit `@` references in the composer. Notebook/results switches and preview details are available through the collapsed Context menu.
 
 ## Tests
 
 - Snapshot builder: outline truncation, focused/neighbour selection, results excluded unless opted in.
+- Covered: `#` search/picker keyboard and pointer selection, IME, limits, missing IDs, per-notebook choice isolation and reset after send.
+- Covered: persisted/legacy reference mappings, reorder/delete handling, Markdown exclusions, notebook/scope gating and actual notebook scroll/focus/highlight without execution.
+- Visual fixture: real chat components in Italian at 384/320 px with Light, Dark and High Contrast themes; transport, history and notebook data are in memory. Native notebook/provider checks remain pending.
 - Envelope parser: valid ops, `$prev` chaining, unknown op rejected, stale `replace` becomes an insert.
 - Apply: ops applied in order, undo restores the notebook.
 - `/fix` after a Run All with 2 failing cells proposes 2 `replace` ops with the right ids.
@@ -137,5 +142,4 @@ Added to the slash command registry (M7), only shown in notebook context:
 
 ## Good first issue candidates
 
-- Clickable `#cell` references in answers (scroll + highlight), once the renderer exists.
 - `/document` command prompt and wiring, once the command registry and envelope exist.

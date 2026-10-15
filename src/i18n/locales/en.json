@@ -2955,7 +2955,9 @@
       "viewDetail": "View details: {{name}}",
       "savedQuery": "Saved query: {{name}}",
       "viewCount": "Views: {{count}}",
-      "notebookResultsDescription": "Send column names, row counts and up to 5 result rows from the focused and referenced cells. Off by default for each message."
+      "notebookResultsDescription": "Send column names, row counts and up to 5 result rows from the focused and referenced cells. Off by default for each message.",
+      "options": "Context",
+      "removeReference": "Remove {{name}}"
     },
     "commands": {
       "title": "Commands",
@@ -2976,6 +2978,19 @@
       "askTable": "Ask AI about this table",
       "explainQuery": "Explain current query with AI",
       "optimizeQuery": "Optimize current query with AI"
-    }
+    },
+    "notebook": {
+      "cells": "Notebook cells",
+      "cell": "Cell {{index}}",
+      "selectedCells": "Referenced cells",
+      "removeCell": "Remove {{cell}} from context",
+      "cellUnavailable": "Cell no longer available",
+      "noCells": "No matching cells in this notebook.",
+      "cellLimit": "Select up to 20 cells per message.",
+      "mentionHint": "Type # to include a notebook cell.",
+      "goToCell": "Go to cell {{index}}"
+    },
+    "welcome": "What would you like to explore?",
+    "modelOptions": "Choose model"
   }
 }

@@ -2889,7 +2889,9 @@
       "viewDetail": "Mga detalye ng view: {{name}}",
       "savedQuery": "Naka-save na query: {{name}}",
       "viewCount": "Mga view: {{count}}",
-      "notebookResultsDescription": "Ipadala ang mga pangalan ng column, bilang ng row at hanggang 5 row ng resulta mula sa aktibo at tinukoy na mga cell. Naka-off bilang default sa bawat mensahe."
+      "notebookResultsDescription": "Ipadala ang mga pangalan ng column, bilang ng row at hanggang 5 row ng resulta mula sa aktibo at tinukoy na mga cell. Naka-off bilang default sa bawat mensahe.",
+      "options": "Konteksto",
+      "removeReference": "Alisin ang {{name}}"
     },
     "commands": {
       "title": "Mga command",
@@ -2910,6 +2912,19 @@
       "askTable": "Tanungin ang AI tungkol sa talahanayang ito",
       "explainQuery": "Ipaliwanag ang kasalukuyang query gamit ang AI",
       "optimizeQuery": "I-optimize ang kasalukuyang query gamit ang AI"
-    }
+    },
+    "notebook": {
+      "cells": "Mga cell ng notebook",
+      "cell": "Cell {{index}}",
+      "selectedCells": "Mga tinukoy na cell",
+      "removeCell": "Alisin ang {{cell}} sa konteksto",
+      "cellUnavailable": "Hindi na available ang cell",
+      "noCells": "Walang tumutugmang cell sa notebook na ito.",
+      "cellLimit": "Pumili ng hanggang 20 cell bawat mensahe.",
+      "mentionHint": "I-type ang # para magsama ng cell ng notebook.",
+      "goToCell": "Pumunta sa cell {{index}}"
+    },
+    "welcome": "Ano ang gusto mong tuklasin?",
+    "modelOptions": "Pumili ng modelo"
   }
 }

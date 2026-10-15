@@ -16,7 +16,7 @@ function source(): AiNotebookSource {
 
 describe("bounded notebook snapshots", () => {
   it("captures the outline, focused cell, neighbours and mentioned cells with original indexes", () => {
-    const snapshot = buildAiNotebookSnapshot(source(), { mentionedCellIds: ["four", "two", "four", "missing"] });
+    const snapshot = buildAiNotebookSnapshot(source(), { mentionedCellIds: ["four", "two", "four"] });
     expect(snapshot).toMatchObject({ id: "notebook", title: "Revenue", cell_count: 4, stop_on_error: true, params: [{ name: "region", value: "'EU'" }],
       focused: { id: "two", index: 2, schema: "sales", name: "Revenue" } });
     expect(snapshot.outline.map((cell) => cell.id)).toEqual(["one", "two", "three", "four"]);
@@ -92,6 +92,17 @@ describe("bounded notebook snapshots", () => {
 });
 
 describe("notebook target context", () => {
+  it("includes selected cells by ID only for the matching notebook and reports unavailable selections", () => {
+    const original = source();
+    const target: AiEditorTarget = { connectionId: "connection", database: null, schema: null,
+      notebook: { id: "notebook", readState: () => original }, actions: { insert: vi.fn(), replace: vi.fn(), run: vi.fn(), focus: vi.fn() } };
+    const choices = { tables: [], excluded_tables: [], notebook: { notebook_id: "notebook", cell_ids: ["three", "deleted"] } };
+    const context = createAiTargetContextOptions(target, defaultAiContextSelection(), "en", choices);
+    expect(context.notebook?.mentioned.map((cell) => cell.id)).toEqual(["three"]);
+    expect(context.notebook?.unavailable_cells).toEqual(["deleted"]);
+    expect(context.notebook?.truncated).toBe(true);
+    expect(createAiTargetContextOptions(target, defaultAiContextSelection(), "en", { ...choices, notebook: { ...choices.notebook, notebook_id: "other" } }).notebook?.mentioned).toEqual([]);
+  });
   it("reads fresh state for preview/send and replaces full editor context with the notebook layer", () => {
     let original = source();
     const target: AiEditorTarget = { connectionId: "connection", database: "app", schema: "sales",

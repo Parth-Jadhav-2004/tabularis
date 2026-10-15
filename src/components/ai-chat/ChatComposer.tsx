@@ -1,23 +1,34 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { activeAiMention, filterAiMentions, removeAiMention } from "../../utils/aiContextMentions";
 import type { AiMentionItem } from "../../types/aiContext";
 import { aiContextLabelKey } from "../../utils/aiContext";
 import { activeAiCommands } from "../../utils/aiCommands";
 import type { AiSlashCommand } from "../../types/aiCommands";
+import type { AiNotebookCellChoice } from "../../types/aiNotebookReferences";
+import { activeAiCellMention, filterAiNotebookCells } from "../../utils/aiNotebookMentions";
+import { ArrowUp, Square } from "lucide-react";
 
-export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streaming, disabled, children, mentionTables = [], onTable, onDropTable, onFocus, mentionItems, onMention, focusRequest = 0 }: {
+export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streaming, disabled, children, mentionTables = [], onTable, onDropTable, onFocus, mentionItems, onMention, focusRequest = 0, notebookCells, onCell, references }: {
   draft: string; onDraft: (text: string) => void; onSend: () => void; onStop: () => void; onEscape: () => void;
   streaming: boolean; disabled: boolean; children: ReactNode;
   mentionTables?: string[]; onTable?: (name: string, selected: boolean) => boolean;
   onDropTable?: () => void; onFocus?: () => void;
   mentionItems?: AiMentionItem[]; onMention?: (item: AiMentionItem, selected: boolean) => boolean;
   focusRequest?: number;
+  notebookCells?: readonly AiNotebookCellChoice[]; onCell?: (id: string, selected: boolean) => boolean;
+  references?: ReactNode;
 }) {
   const { t } = useTranslation();
   const id = useId();
   const listId = `${id}-mentions`;
   const textarea = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const input = textarea.current;
+    if (!input) return;
+    input.style.height = "auto";
+    input.style.height = `${Math.max(80, Math.min(input.scrollHeight, 192))}px`;
+  }, [draft]);
   const lastFocusRequest = useRef(0);
   useEffect(() => {
     if (!focusRequest || focusRequest === lastFocusRequest.current || disabled) return;
@@ -33,12 +44,16 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
   const [focused, setFocused] = useState(false);
   const range = caret.text === draft ? activeAiMention(draft, caret.start, caret.end) : null;
   const commands = caret.text === draft ? activeAiCommands(draft, caret.start, caret.end) : null;
-  const key = range ? `${range.start}:${range.end}:${range.search}` : commands ? `command:${draft}` : "";
+  const cellRange = caret.text === draft && onCell ? activeAiCellMention(draft, caret.start, caret.end) : null;
+  const key = cellRange ? `cell:${cellRange.start}:${cellRange.end}:${cellRange.search}`
+    : range ? `${range.start}:${range.end}:${range.search}` : commands ? `command:${draft}` : "";
   const commandOpen = focused && commands !== null && dismissed !== key && !disabled && !streaming;
   const mentionOpen = focused && !!range && !!(onMention || onTable) && dismissed !== key && !disabled && !streaming;
-  const open = commandOpen || mentionOpen;
+  const cellOpen = focused && !!cellRange && !!onCell && dismissed !== key && !disabled && !streaming;
+  const open = commandOpen || mentionOpen || cellOpen;
   const options = mentionOpen ? filterAiMentions(mentionItems ?? mentionTables.map((name) => ({ kind: "table", id: name, label: name })), range.search) : [];
-  const optionCount = commandOpen ? commands.length : options.length;
+  const cellOptions = cellOpen ? filterAiNotebookCells(notebookCells ?? [], cellRange.search) : [];
+  const optionCount = commandOpen ? commands.length : cellOpen ? cellOptions.length : options.length;
   const index = highlight.key === key ? Math.min(highlight.index, Math.max(0, optionCount - 1)) : 0;
   useEffect(() => {
     if (open) document.getElementById(`${listId}-${index}`)?.scrollIntoView?.({ block: "nearest" });
@@ -72,15 +87,33 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
       }
     });
   };
-  return <form className="space-y-3 border-t border-default bg-base p-3" onSubmit={(event) => {
+  const pickCell = (cell: AiNotebookCellChoice) => {
+    if (!cellRange || disabled || streaming || !onCell) return;
+    if (!onCell(cell.id, true)) { setLimitReached(true); return; }
+    const text = removeAiMention(draft, cellRange);
+    onDraft(text);
+    setCaret({ text, start: cellRange.start, end: cellRange.start });
+    setDismissed(null);
+    setLimitReached(false);
+    setHighlight({ key: "", index: 0 });
+    requestAnimationFrame(() => {
+      if (textarea.current?.value === text) {
+        textarea.current.focus();
+        textarea.current.setSelectionRange(cellRange.start, cellRange.start);
+      }
+    });
+  };
+  return <form className="shrink-0 px-3 pb-3 pt-2" onSubmit={(event) => {
     event.preventDefault();
     if (!disabled && !streaming && draft.trim()) onSend();
   }}>
+    <div className="rounded-xl border border-strong bg-base p-2.5 shadow-sm transition-colors focus-within:border-focus">
+    {references}
     <label htmlFor={id} className="sr-only">{t("aiChat.message")}</label>
     <div className="relative">
     {open && <div className="absolute bottom-full left-0 right-0 z-10 mb-1 rounded-lg border border-strong bg-elevated p-1 shadow-lg">
-      <p className="px-2 py-1 text-xs text-muted">{t(commandOpen ? "aiChat.commands.title" : "aiChat.context.mentions")}</p>
-      <div id={listId} role="listbox" aria-label={t(commandOpen ? "aiChat.commands.title" : "aiChat.context.mentionItems")} className="max-h-48 overflow-y-auto">
+      <p className="px-2 py-1 text-xs text-muted">{t(commandOpen ? "aiChat.commands.title" : cellOpen ? "aiChat.notebook.cells" : "aiChat.context.mentions")}</p>
+      <div id={listId} role="listbox" aria-label={t(commandOpen ? "aiChat.commands.title" : cellOpen ? "aiChat.notebook.cells" : "aiChat.context.mentionItems")} className="max-h-48 overflow-y-auto">
         {commandOpen && commands.map((command, option) => <button key={command} id={`${listId}-${option}`} type="button" role="option" aria-selected={index === option}
           aria-label={`/${command} · ${t(`aiChat.commands.${command}`)}`}
           onMouseDown={(event) => event.preventDefault()} onClick={() => pickCommand(command)}
@@ -95,9 +128,16 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
           <span className="min-w-0 flex-1 truncate font-mono">{item.label}</span>
           {mentionItems && <span aria-hidden="true" className="shrink-0 text-xs">{t(aiContextLabelKey(item.kind))}</span>}
         </button>)}
+        {cellOptions.map((cell, option) => <button key={cell.id} id={`${listId}-${option}`} type="button" role="option" aria-selected={index === option}
+          aria-label={`${t("aiChat.notebook.cell", { index: cell.index })} · ${cell.name || cell.preview}`}
+          onMouseDown={(event) => event.preventDefault()} onClick={() => pickCell(cell)}
+          className={`flex w-full flex-col rounded px-2 py-1.5 text-left text-sm focus-ring ${index === option ? "bg-accent-primary text-inverse" : "text-primary hover:bg-surface-secondary"}`}>
+          <span className="truncate">#{cell.index}{cell.name ? ` · ${cell.name}` : ""}</span>
+          <span className="truncate text-xs">{cell.preview || t(cell.type === "sql" ? "editor.notebook.sqlCell" : "editor.notebook.markdownCell")}</span>
+        </button>)}
       </div>
-      {optionCount === 0 && <p role="status" className="px-2 py-2 text-xs text-secondary">{t(commandOpen ? "aiChat.commands.unknown" : mentionItems ? "aiChat.context.noMentions" : "aiChat.context.noMentionTables")}</p>}
-      {limitReached && <p role="status" className="px-2 py-1 text-xs text-accent-warning">{t(mentionItems ? "aiChat.context.mentionLimit" : "aiChat.context.tableLimit")}</p>}
+      {optionCount === 0 && <p role="status" className="px-2 py-2 text-xs text-secondary">{t(commandOpen ? "aiChat.commands.unknown" : cellOpen ? "aiChat.notebook.noCells" : mentionItems ? "aiChat.context.noMentions" : "aiChat.context.noMentionTables")}</p>}
+      {limitReached && <p role="status" className="px-2 py-1 text-xs text-accent-warning">{t(cellOpen ? "aiChat.notebook.cellLimit" : mentionItems ? "aiChat.context.mentionLimit" : "aiChat.context.tableLimit")}</p>}
     </div>}
     <textarea ref={textarea} id={id} value={draft} role="combobox" aria-autocomplete="list" aria-haspopup="listbox"
       aria-expanded={open} aria-controls={open ? listId : undefined}
@@ -117,7 +157,7 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
         setLimitReached(false);
         setHighlight({ key: "", index: 0 });
       }} rows={3}
-      placeholder={t("aiChat.placeholder")} className="w-full resize-y rounded-lg border border-strong bg-elevated p-3 text-sm text-primary placeholder:text-muted focus:border-focus focus-ring"
+      placeholder={t("aiChat.placeholder")} className="max-h-48 min-h-20 w-full resize-none rounded-lg bg-transparent px-1.5 py-2 text-sm leading-relaxed text-primary placeholder:text-muted focus-ring"
       onKeyDown={(event) => {
         if (event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
         if (open) {
@@ -130,6 +170,7 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
           if ((event.key === "Enter" || event.key === "Tab") && !event.shiftKey && !event.ctrlKey && !event.metaKey && !event.altKey && optionCount > 0) {
             event.preventDefault(); event.stopPropagation();
             if (commandOpen) pickCommand(commands[index]);
+            else if (cellOpen) pickCell(cellOptions[index]);
             else pick(options[index]);
             return;
           }
@@ -144,14 +185,17 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
         }
       }} />
     </div>
-    {(onMention || onTable) && <p className="text-xs text-muted">{t("aiChat.context.mentionHint")}</p>}
-    <p className="text-xs text-muted">{t("aiChat.commands.hint")}</p>
-    {children}
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-muted">{t("aiChat.askMode")}</span>
+    <div className="flex items-center justify-between gap-2 pt-1">
+      <div className="flex min-w-0 items-center gap-1">{children}</div>
       {streaming
-        ? <button type="button" onClick={onStop} className="rounded-lg border border-strong px-3 py-1.5 text-sm text-primary focus-ring">{t("aiChat.stop")}</button>
-        : <button type="submit" disabled={disabled || !draft.trim()} className="rounded-lg bg-accent-primary px-3 py-1.5 text-sm text-inverse disabled:opacity-40 focus-ring">{t("aiChat.send")}</button>}
+        ? <button type="button" onClick={onStop} aria-label={t("aiChat.stop")} title={t("aiChat.stop")}
+          className="shrink-0 rounded-full border border-strong p-2 text-primary hover:bg-surface-secondary focus-ring"><Square size={16} aria-hidden="true" /></button>
+        : <button type="submit" disabled={disabled || !draft.trim()} aria-label={t("aiChat.send")} title={t("aiChat.send")}
+          className="shrink-0 rounded-full bg-accent-primary p-2 text-inverse disabled:opacity-40 focus-ring"><ArrowUp size={18} aria-hidden="true" /></button>}
     </div>
+    </div>
+    <p className="sr-only">{t("aiChat.askMode")} · {t("aiChat.commands.hint")}
+      {(onMention || onTable) && <> · {t("aiChat.context.mentionHint")}</>}{onCell && <> · {t("aiChat.notebook.mentionHint")}</>}
+    </p>
   </form>;
 }

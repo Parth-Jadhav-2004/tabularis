@@ -4,10 +4,11 @@ import { aiContextLabelKey, aiContextSize, aiContextTableCount, aiContextViewCou
 
 export function ContextBlock({ items }: { items: AiContextItemRef[] }) {
   const { t } = useTranslation();
-  return <details className="mt-2 rounded border border-default bg-base p-2 text-xs text-secondary">
-    <summary className="cursor-pointer rounded focus-ring">{t("aiChat.context.sent")}</summary>
-    {items.length === 0 ? <p className="mt-2">{t("aiChat.context.empty")}</p> : <ul className="mt-2 space-y-1">
-      {items.map((item, index) => {
+  const visibleItems = items.filter((item) => item.kind !== "notebook_cell_ref");
+  return <details className="mt-2 text-xs text-muted">
+    <summary className="cursor-pointer rounded py-1 hover:text-primary focus-ring">{t("aiChat.context.sent")}</summary>
+    {visibleItems.length === 0 ? <p className="mt-2">{t("aiChat.context.empty")}</p> : <ul className="mt-2 space-y-1">
+      {visibleItems.map((item, index) => {
         const size = aiContextSize(item);
         const count = aiContextTableCount(item);
         const viewCount = aiContextViewCount(item);

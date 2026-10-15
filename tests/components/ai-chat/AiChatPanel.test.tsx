@@ -51,6 +51,8 @@ function setup(saved?: SavedQueriesContextType) {
   return { ...rendered, transport, target, store, actions, availability, tree, emit, clear: () => act(clear) };
 }
 
+function openContext() { fireEvent.click(screen.getByRole("button", { name: "aiChat.context.options" })); }
+
 async function send(text = "Write a query") {
   await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.send" })).toBeDisabled());
   fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: text } });
@@ -76,6 +78,7 @@ describe("AI chat panel", () => {
   it("defaults /fix to the last error and lets the user remove it before sending", async () => {
     const fixture = setup();
     act(() => { fixture.store.register("root", { ...fixture.target, hasError: true, readContext: () => ({ query: "SELECT broken", last_error: "private-error" }) }); });
+    openContext();
     await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.error" })).toBeEnabled());
     const input = screen.getByLabelText("aiChat.message");
     fireEvent.change(input, { target: { value: "/fix " } });
@@ -107,6 +110,7 @@ describe("AI chat panel", () => {
   it("restores ordinary context defaults when a command is removed", async () => {
     const fixture = setup();
     act(() => { fixture.store.register("root", { ...fixture.target, hasError: true, readContext: () => ({ query: "SELECT 1", last_error: "private-error" }) }); });
+    openContext();
     await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.error" })).toBeEnabled());
     fireEvent.change(screen.getByLabelText("aiChat.message"), { target: { value: "/fix " } });
     expect(screen.getByRole("button", { name: "aiChat.context.kinds.error" })).toHaveAttribute("aria-pressed", "true");
@@ -117,16 +121,17 @@ describe("AI chat panel", () => {
     const id = "ab1f316f-e0c8-4681-9bf3-e56cba339ce0";
     const fixture = setup({ queries: [{ id, name: "Revenue", sql: "private-cached-sql-marker", connection_id: "one", database: "db", created_at: null, updated_at: null }], isLoading: false,
       saveQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), refreshQueries: vi.fn() });
+    openContext();
     await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.query" })).toBeEnabled());
     const input = screen.getByRole("combobox", { name: "aiChat.message" });
     fireEvent.focus(input);
     fireEvent.change(input, { target: { value: "@Rev" } });
     fireEvent.click(screen.getByRole("option", { name: "Revenue · aiChat.context.kinds.saved_query" }));
-    expect(screen.getByRole("button", { name: "aiChat.context.savedQuery" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "aiChat.context.removeReference" })).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("aiChat.model"), { target: { value: JSON.stringify(["anthropic", "other"]) } });
     fixture.rerender(fixture.tree(false));
     fixture.rerender(fixture.tree());
-    expect(screen.getByRole("button", { name: "aiChat.context.savedQuery" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "aiChat.context.removeReference" })).toBeInTheDocument();
     await send("Explain the saved query");
     await waitFor(() => expect(fixture.transport.send).toHaveBeenCalledTimes(1));
     const [request, , context] = fixture.transport.send.mock.calls[0];
@@ -138,10 +143,12 @@ describe("AI chat panel", () => {
     const fixture = setup();
     const readContext = vi.fn(() => ({ query: "SELECT * FROM users", selection: "name", cursor_statement: "SELECT * FROM users", last_error: "private-error" }));
     act(() => { fixture.store.register("root", { ...fixture.target, readContext }); });
+    openContext();
     await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.query" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "aiChat.context.kinds.query" }));
     fixture.rerender(fixture.tree(false));
     fixture.rerender(fixture.tree());
+    openContext();
     expect(screen.getByRole("button", { name: "aiChat.context.kinds.query" })).toHaveAttribute("aria-pressed", "false");
     readContext.mockReturnValue({ query: "new current query", selection: "fresh selection", cursor_statement: "new current query", last_error: "new error" });
     await send();
@@ -176,11 +183,13 @@ describe("AI chat panel", () => {
       truncated: false, total_chars: 1400,
     } : original(command, args));
     const fixture = setup();
+    openContext();
     const detail = await screen.findByRole("button", { name: "aiChat.context.tableDetail" });
     expect(detail).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(detail);
     fixture.rerender(fixture.tree(false));
     fixture.rerender(fixture.tree());
+    openContext();
     expect(screen.getByRole("button", { name: "aiChat.context.tableDetail" })).toHaveAttribute("aria-pressed", "false");
     await send("Explain users");
     await waitFor(() => expect(fixture.transport.send).toHaveBeenCalledTimes(1));

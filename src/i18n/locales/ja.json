@@ -2884,7 +2884,9 @@
       "viewDetail": "ビューの詳細: {{name}}",
       "savedQuery": "保存済みクエリ: {{name}}",
       "viewCount": "ビュー数: {{count}}",
-      "notebookResultsDescription": "選択中および参照されたセルの列名、行数、最大5行の結果を送信します。メッセージごとに既定で無効です。"
+      "notebookResultsDescription": "選択中および参照されたセルの列名、行数、最大5行の結果を送信します。メッセージごとに既定で無効です。",
+      "options": "コンテキスト",
+      "removeReference": "{{name}}を削除"
     },
     "commands": {
       "title": "コマンド",
@@ -2905,6 +2907,19 @@
       "askTable": "このテーブルについてAIに質問",
       "explainQuery": "現在のクエリをAIで説明",
       "optimizeQuery": "現在のクエリをAIで最適化"
-    }
+    },
+    "notebook": {
+      "cells": "ノートブックのセル",
+      "cell": "セル {{index}}",
+      "selectedCells": "参照されたセル",
+      "removeCell": "{{cell}}をコンテキストから削除",
+      "cellUnavailable": "セルは利用できません",
+      "noCells": "一致するセルがありません。",
+      "cellLimit": "メッセージごとに最大20セルを選択できます。",
+      "mentionHint": "#でノートブックのセルを含めます。",
+      "goToCell": "セル {{index}} に移動"
+    },
+    "welcome": "何を調べますか？",
+    "modelOptions": "モデルを選択"
   }
 }

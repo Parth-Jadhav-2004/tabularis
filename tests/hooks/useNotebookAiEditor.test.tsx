@@ -14,6 +14,7 @@ function setup(initialCells: NotebookCell[] = [
 ]) {
   const store = createAiEditorStore();
   const openConsole = vi.fn();
+  const onRevealCell = vi.fn(() => true);
   const wrapper = ({ children }: { children: ReactNode }) => <AiEditorContext.Provider value={store}>{children}</AiEditorContext.Provider>;
   const rendered = renderHook(({ active = true }: { active?: boolean }) => {
     const [cells, setCells] = useState(initialCells);
@@ -21,14 +22,28 @@ function setup(initialCells: NotebookCell[] = [
       setCells((items) => items.map((cell) => cell.id === id ? { ...cell, ...partial } : cell)), []);
     const notebook = useNotebookAiEditor({ scopeId: "root", notebookId: "book", connectionId: "connection", database: "db", schema: "public",
       cells, isActive: active, openConsole,
+      onRevealCell,
       updateCell,
     });
     return { notebook, cells, setCells, target: useAiEditor() };
   }, { wrapper, initialProps: { active: true } });
-  return { ...rendered, store, openConsole };
+  return { ...rendered, store, openConsole, onRevealCell };
 }
 
 describe("notebook AI editor target", () => {
+  it("reveals and selects existing cells by stable ID without executing or modifying them", () => {
+    const fixture = setup();
+    act(() => { fixture.result.current.setCells((cells) => [...cells].reverse()); });
+    act(() => { expect(fixture.result.current.target?.notebook?.revealCell?.("b")).toBe(true); });
+    expect(fixture.onRevealCell).toHaveBeenCalledWith("b");
+    expect(fixture.result.current.target?.id).toBe("notebook:book:b");
+    expect(fixture.openConsole).not.toHaveBeenCalled();
+    expect(fixture.result.current.cells.find((cell) => cell.id === "b")?.content).toBe("SELECT broken");
+    act(() => { expect(fixture.result.current.target?.notebook?.revealCell?.("missing")).toBe(false); });
+    expect(fixture.onRevealCell).toHaveBeenCalledOnce();
+    fixture.rerender({ active: false });
+    expect(fixture.store.get("root")).toBeUndefined();
+  });
   it("tracks the selected cell's scope and error and writes to its stable ID after reordering", () => {
     const fixture = setup();
     act(() => { fixture.result.current.notebook.selectCell("b"); });

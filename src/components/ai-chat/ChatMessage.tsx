@@ -6,16 +6,18 @@ import { ReasoningBlock } from "./blocks/ReasoningBlock";
 import { ErrorBlock } from "./blocks/ErrorBlock";
 import { ContextBlock } from "./blocks/ContextBlock";
 import { parseAiCommand } from "../../utils/aiCommands";
+import type { AiNotebookReferences } from "../../types/aiNotebookReferences";
 
-export function ChatMessage({ message, actions, dialect }: { message: AiMessage; actions?: AiSqlActions; dialect?: string }) {
+export function ChatMessage({ message, actions, dialect, notebookReferences }: { message: AiMessage; actions?: AiSqlActions; dialect?: string; notebookReferences?: AiNotebookReferences }) {
   const { t } = useTranslation();
   const assistant = message.role === "assistant";
-  return <article className="border-b border-default px-4 py-4" aria-label={t(assistant ? "aiChat.assistant" : "aiChat.you")}>
-    <p className="mb-2 text-xs font-semibold text-secondary">{t(assistant ? "aiChat.assistant" : "aiChat.you")}</p>
+  return <article className={assistant ? "px-5 py-5" : "px-4 pb-1 pt-5"} aria-label={t(assistant ? "aiChat.assistant" : "aiChat.you")}>
+    <p className={assistant ? "mb-2 text-xs font-medium text-secondary" : "sr-only"}>{t(assistant ? "aiChat.assistant" : "aiChat.you")}</p>
+    <div className={assistant ? "" : "ml-6 rounded-xl bg-surface-secondary px-3 py-2.5"}>
     {message.blocks.map((block, index) => {
       switch (block.type) {
         case "text": {
-          if (assistant) return <TextBlock key={index} text={block.text} actions={actions} dialect={dialect} />;
+          if (assistant) return <TextBlock key={index} text={block.text} actions={actions} dialect={dialect} notebookReferences={notebookReferences} />;
           const parsed = message.role === "user" && index === 0 ? parseAiCommand(block.text) : null;
           return parsed?.kind === "command"
             ? <div key={index} className="space-y-2">
@@ -31,6 +33,7 @@ export function ChatMessage({ message, actions, dialect }: { message: AiMessage;
         default: return null;
       }
     })}
-    {assistant && message.model && <p className="mt-2 text-xs text-muted">{message.provider} · {message.model}</p>}
+    </div>
+    {assistant && message.model && <p className="mt-3 text-xs text-muted">{message.provider} · {message.model}</p>}
   </article>;
 }

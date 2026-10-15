@@ -2916,7 +2916,9 @@
       "viewDetail": "Detalhes da visualização: {{name}}",
       "savedQuery": "Consulta salva: {{name}}",
       "viewCount": "Visualizações: {{count}}",
-      "notebookResultsDescription": "Envia nomes das colunas, contagens e até 5 linhas de resultados das células ativas e referenciadas. Desativado por padrão em cada mensagem."
+      "notebookResultsDescription": "Envia nomes das colunas, contagens e até 5 linhas de resultados das células ativas e referenciadas. Desativado por padrão em cada mensagem.",
+      "options": "Contexto",
+      "removeReference": "Remover {{name}}"
     },
     "commands": {
       "title": "Comandos",
@@ -2937,6 +2939,19 @@
       "askTable": "Perguntar à IA sobre esta tabela",
       "explainQuery": "Explicar consulta atual com IA",
       "optimizeQuery": "Otimizar consulta atual com IA"
-    }
+    },
+    "notebook": {
+      "cells": "Células do notebook",
+      "cell": "Célula {{index}}",
+      "selectedCells": "Células referenciadas",
+      "removeCell": "Remover {{cell}} do contexto",
+      "cellUnavailable": "Célula não disponível",
+      "noCells": "Nenhuma célula correspondente neste notebook.",
+      "cellLimit": "Selecione até 20 células por mensagem.",
+      "mentionHint": "Digite # para incluir uma célula do notebook.",
+      "goToCell": "Ir para a célula {{index}}"
+    },
+    "welcome": "O que você quer explorar?",
+    "modelOptions": "Escolher modelo"
   }
 }

@@ -47,6 +47,8 @@ pub struct NotebookResultSnapshot {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct NotebookSnapshot {
+    #[serde(default)]
+    pub unavailable_cells: Vec<String>,
     pub id: String,
     pub title: String,
     pub cell_count: usize,

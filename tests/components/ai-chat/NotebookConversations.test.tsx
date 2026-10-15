@@ -162,6 +162,7 @@ describe("notebook-bound chat UI", () => {
 
   it("previews notebook context and reads the current cells again when sending", async () => {
     const f = setup([], "one");
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.context.options" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook" })).toBeEnabled());
     await waitFor(() => expect(vi.mocked(invoke).mock.calls.some(([command, args]) => command === "ai_chat_preview_context"
       && (args as { context?: { notebook?: { id: string } } })?.context?.notebook?.id === "one")).toBe(true));
@@ -177,6 +178,7 @@ describe("notebook-bound chat UI", () => {
 
   it("sends results only after explicit inclusion and resets that choice for the next message", async () => {
     const f = setup([], "one");
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.context.options" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook_results" })).toBeEnabled());
     const readState = vi.mocked(f.initialTarget.notebook!.readState!);
     const original = readState();
@@ -201,6 +203,7 @@ describe("notebook-bound chat UI", () => {
 
   it("removes the entire notebook layer and disables result inclusion with it", async () => {
     const f = setup([], "one");
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.context.options" }));
     await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook" })).toBeEnabled());
     fireEvent.click(screen.getByRole("button", { name: "aiChat.context.kinds.notebook" }));
     expect(screen.getByRole("button", { name: "aiChat.context.kinds.notebook_results" })).toBeDisabled();
