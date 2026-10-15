@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ContextChips } from "../../../src/components/ai-chat/ContextChips";
 import { ContextBlock } from "../../../src/components/ai-chat/blocks/ContextBlock";
+import { ContextReferenceChips } from "../../../src/components/ai-chat/ContextReferenceChips";
 import { defaultAiContextSelection } from "../../../src/utils/aiContext";
 
 vi.mock("lucide-react", () => vi.importActual("lucide-react"));
@@ -45,5 +46,32 @@ describe("AI context controls", () => {
     fireEvent.click(table);
     expect(onTable).toHaveBeenCalledWith("users", false);
     expect(screen.getAllByText(/aiChat.context.truncated/)).toHaveLength(3);
+  });
+});
+
+describe("AI view and saved-query controls", () => {
+  it("removes view details and saved-query text independently using typed IDs", () => {
+    const onMention = vi.fn(() => true);
+    render(<ContextReferenceChips choices={{ tables: [], excluded_tables: [], views: ["users"], saved_queries: [{ id: "query-id", label: "users" }] }}
+      preview={{ items: [{ kind: "view", id: "users", label: "users", chars: 123 }, { kind: "saved_query", id: "query-id", label: "Renamed query", chars: 456, truncated: true }], total_chars: 2000, truncated: true }} disabled={false} onMention={onMention} />);
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.context.viewDetail" }));
+    expect(onMention).toHaveBeenCalledWith({ kind: "view", id: "users", label: "users" }, false);
+    fireEvent.click(screen.getByRole("button", { name: "aiChat.context.savedQuery" }));
+    expect(onMention).toHaveBeenLastCalledWith({ kind: "saved_query", id: "query-id", label: "users" }, false);
+    expect(screen.getByText("Renamed query")).toBeInTheDocument();
+    expect(screen.getByText("aiChat.context.truncated")).toBeInTheDocument();
+  });
+  it("shows unavailable saved queries without inserting label HTML and disables editing while busy", () => {
+    render(<ContextReferenceChips choices={{ tables: [], excluded_tables: [], saved_queries: [{ id: "id", label: "<img src=x onerror=alert(1)>" }] }}
+      preview={{ items: [], total_chars: 1000, truncated: false }} disabled onMention={() => true} />);
+    expect(document.querySelector("img")).toBeNull();
+    expect(screen.getByRole("button", { name: "aiChat.context.savedQuery" })).toBeDisabled();
+    expect(screen.getByText("aiChat.context.notInPreview")).toBeInTheDocument();
+  });
+  it("retains both view names and saved-query names in historical summaries", () => {
+    render(<ContextBlock items={[{ kind: "view", id: "v_users", label: "v_users", chars: 100 }, { kind: "saved_query", id: "query-id", label: "Revenue", chars: 200 }, { kind: "schema", id: "schema", label: "Schema", table_count: 5, view_count: 2 }]} />);
+    expect(screen.getByText(/v_users/)).toBeInTheDocument();
+    expect(screen.getByText(/Revenue/)).toBeInTheDocument();
+    expect(screen.getByText(/aiChat.context.viewCount/)).toBeInTheDocument();
   });
 });

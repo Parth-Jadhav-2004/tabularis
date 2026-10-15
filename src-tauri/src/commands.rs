@@ -5724,6 +5724,7 @@ pub async fn get_views<R: Runtime>(
     database: Option<String>,
 ) -> Result<Vec<crate::models::ViewInfo>, String> {
     log::info!("Fetching views for connection: {}", connection_id);
+    crate::ai_chat::schema_cache::shared().invalidate_connection(&connection_id);
 
     let saved_conn = find_connection_by_id(&app, &connection_id)?;
     let expanded_params = expand_ssh_connection_params(&app, &saved_conn.params).await?;

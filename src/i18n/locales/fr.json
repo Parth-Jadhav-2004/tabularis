@@ -2915,7 +2915,9 @@
         "error": "Erreur",
         "instructions": "Instructions",
         "gaps": "Métadonnées manquantes",
-        "other": "Contexte"
+        "other": "Contexte",
+        "view": "Vue",
+        "saved_query": "Requête enregistrée"
       },
       "refreshPreview": "Actualiser l’aperçu du contexte",
       "tableCount": "Tables : {{count}}",
@@ -2927,9 +2929,17 @@
       "previewSize": "Aperçu : {{count}} caractères",
       "mentionTables": "Tables dans ce périmètre",
       "noMentionTables": "Aucune table correspondante dans le schéma chargé. Actualisez l’explorateur.",
-      "mentionHint": "Saisissez @ pour ajouter une table ou faites-la glisser ici depuis l’explorateur.",
+      "mentionHint": "Saisissez @ pour ajouter une table, une vue ou une requête enregistrée. Faites glisser les tables ici depuis l’explorateur.",
       "tableLimit": "Vous pouvez sélectionner ou exclure jusqu’à 100 tables par message.",
-      "notInPreview": "Non inclus"
+      "notInPreview": "Non inclus",
+      "mentions": "Ajouter du contexte",
+      "mentionItems": "Tables, vues et requêtes enregistrées",
+      "noMentions": "Aucun contexte correspondant dans ce périmètre. Actualisez l’explorateur ou les requêtes enregistrées.",
+      "mentionLimit": "Sélectionnez jusqu’à 100 tables/vues et 20 requêtes enregistrées par message.",
+      "references": "Vues et requêtes enregistrées",
+      "viewDetail": "Détails de la vue : {{name}}",
+      "savedQuery": "Requête enregistrée : {{name}}",
+      "viewCount": "Vues : {{count}}"
     }
   }
 }

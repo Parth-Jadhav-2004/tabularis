@@ -1,22 +1,23 @@
 //! Resolve user-selected context in Rust. Model history cannot choose a driver,
 //! credentials, mode or tools, and only metadata summaries go back over IPC.
+mod saved_queries;
+mod selection;
 mod spec;
 use spec::context_error;
 pub use spec::ContextSpec;
 
 use super::context::{
-    build_context, references::extract_referenced_tables, BuiltContext, ConnectionContext,
-    ContextBudgets, ContextInput, EditorContext,
+    build_context, BuiltContext, ConnectionContext, ContextBudgets, ContextInput, EditorContext,
+    SavedQueryContexts,
 };
 use super::schema_cache::{SchemaCache, ScopeKey};
 use super::types::ChatMode;
 use crate::ai::message::{Block, ContextItemRef, Role};
 use crate::ai::provider::{ChatRequest, ProviderError};
-use crate::ai_schema_context::detailed::{load_catalog, load_detailed_from_driver};
+use crate::ai_schema_context::detailed::{load_catalog, load_detailed_objects_from_driver};
 use crate::drivers::driver_trait::{DatabaseDriver, SqlDialect};
 use crate::models::{ConnectionParams, DatabaseSelection};
 use serde::Serialize;
-use std::collections::HashSet;
 use tauri::{AppHandle, Runtime};
 
 #[derive(Clone, Debug, Serialize)]
@@ -50,7 +51,7 @@ pub(crate) async fn resolve<R: Runtime>(
     if let Some(database) = &spec.database {
         params.database = DatabaseSelection::Single(database.clone());
     }
-    let needs_metadata = spec.include.schema || !spec.tables.is_empty();
+    let needs_metadata = spec.include.schema || !spec.tables.is_empty() || !spec.views.is_empty();
     let driver = if needs_metadata {
         let expanded = crate::commands::expand_ssh_connection_params(app, &params)
             .await
@@ -71,12 +72,28 @@ pub(crate) async fn resolve<R: Runtime>(
     let config = crate::config::load_config_internal(app);
     let readonly = crate::config::is_connection_readonly(&config, &spec.connection_id)
         || driver.manifest().capabilities.readonly;
+    let saved = if spec.saved_queries.is_empty() {
+        SavedQueryContexts::default()
+    } else {
+        let database =
+            selection::effective_database(spec, &params, &driver.manifest().capabilities)
+                .map(str::to_string);
+        let ids = spec.saved_queries.clone();
+        let connection_id = spec.connection_id.clone();
+        let dir = crate::paths::get_app_config_dir().join("saved_queries");
+        tauri::async_runtime::spawn_blocking(move || {
+            saved_queries::load_from_dir(&dir, &connection_id, database.as_deref(), &ids)
+        })
+        .await
+        .map_err(|_| context_error())?
+    };
     resolve_with_driver(
         spec,
         &params,
         driver.as_ref(),
         readonly,
         super::schema_cache::shared(),
+        Some(&saved),
     )
     .await
 }
@@ -87,6 +104,7 @@ async fn resolve_with_driver(
     driver: &dyn DatabaseDriver,
     readonly: bool,
     cache: &SchemaCache,
+    saved_queries: Option<&SavedQueryContexts>,
 ) -> Result<BuiltContext, ProviderError> {
     spec.validate()?;
     let capabilities = &driver.manifest().capabilities;
@@ -98,17 +116,15 @@ async fn resolve_with_driver(
             } else {
                 None
             });
-    let database = spec.database.as_deref().or_else(|| {
-        let primary = params.database.primary();
-        (!primary.is_empty()).then_some(primary)
-    });
+    let database = selection::effective_database(spec, params, capabilities);
+    let prompt_schema = capabilities.schemas.then_some(schema).flatten();
     let scope = cache.scope(ScopeKey {
         connection_id: spec.connection_id.clone(),
         database: database.map(str::to_string),
         schema: schema.map(str::to_string),
         driver: params.driver.clone(),
     });
-    let catalog = if spec.include.schema || !spec.tables.is_empty() {
+    let catalog = if spec.include.schema || !spec.tables.is_empty() || !spec.views.is_empty() {
         Some(
             scope
                 .catalog(|| async {
@@ -127,28 +143,25 @@ async fn resolve_with_driver(
         .then_some(spec.editor.query.as_deref())
         .flatten();
     let selected = if let Some(catalog) = &catalog {
-        let references = if spec.include.schema {
-            extract_referenced_tables(query.unwrap_or_default(), &catalog.tables, database, schema)
-                .tables
-        } else {
-            Vec::new()
-        };
-        let mut seen = HashSet::new();
-        spec.tables
-            .iter()
-            .chain(&references)
-            .filter(|name| !spec.excluded_tables.contains(name) && seen.insert((*name).clone()))
-            .take(100)
-            .cloned()
-            .collect::<Vec<_>>()
+        selection::selected_objects(
+            spec,
+            catalog,
+            query.unwrap_or_default(),
+            database,
+            prompt_schema,
+        )
     } else {
         Vec::new()
     };
     let detailed = if let Some(catalog) = &catalog {
+        let keys = selected
+            .iter()
+            .map(|item| format!("{}:{}", item.kind.as_str(), item.name))
+            .collect::<Vec<_>>();
         Some(
             scope
-                .details(&selected, || {
-                    load_detailed_from_driver(
+                .details(&keys, || {
+                    load_detailed_objects_from_driver(
                         driver,
                         params,
                         schema,
@@ -171,7 +184,7 @@ async fn resolve_with_driver(
                 dialect: dialect_name(capabilities.sql_dialect),
                 identifier_quote: &capabilities.identifier_quote,
                 database,
-                schema,
+                schema: prompt_schema,
                 server_version: None,
                 readonly,
             }),
@@ -195,6 +208,7 @@ async fn resolve_with_driver(
                     .then_some(spec.editor.cursor_statement.as_deref())
                     .flatten(),
             },
+            saved_queries,
             last_error: if spec.include.error {
                 spec.last_error.as_deref()
             } else {

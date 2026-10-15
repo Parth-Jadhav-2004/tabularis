@@ -2788,7 +2788,9 @@
         "error": "오류",
         "instructions": "지침",
         "gaps": "누락된 메타데이터",
-        "other": "컨텍스트"
+        "other": "컨텍스트",
+        "view": "뷰",
+        "saved_query": "저장된 쿼리"
       },
       "refreshPreview": "컨텍스트 미리보기 새로 고침",
       "tableCount": "테이블: {{count}}개",
@@ -2800,9 +2802,17 @@
       "previewSize": "미리보기: {{count}}자",
       "mentionTables": "이 범위의 테이블",
       "noMentionTables": "불러온 스키마에 일치하는 테이블이 없습니다. 탐색기를 새로 고치세요.",
-      "mentionHint": "@를 입력하여 테이블을 추가하거나 탐색기에서 여기로 드래그하세요.",
+      "mentionHint": "@를 입력하여 테이블, 뷰 또는 저장된 쿼리를 추가하세요. 탐색기에서 테이블을 여기로 드래그할 수 있습니다.",
       "tableLimit": "메시지당 최대 100개의 테이블을 선택하거나 제외할 수 있습니다.",
-      "notInPreview": "포함되지 않음"
+      "notInPreview": "포함되지 않음",
+      "mentions": "컨텍스트 추가",
+      "mentionItems": "테이블, 뷰 및 저장된 쿼리",
+      "noMentions": "이 범위에 일치하는 컨텍스트가 없습니다. 탐색기 또는 저장된 쿼리를 새로 고치세요.",
+      "mentionLimit": "메시지당 최대 100개의 테이블/뷰와 20개의 저장된 쿼리를 선택할 수 있습니다.",
+      "references": "뷰 및 저장된 쿼리",
+      "viewDetail": "뷰 세부 정보: {{name}}",
+      "savedQuery": "저장된 쿼리: {{name}}",
+      "viewCount": "뷰: {{count}}개"
     }
   }
 }

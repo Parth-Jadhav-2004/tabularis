@@ -92,3 +92,25 @@ describe("AI composer table mentions", () => {
     expect(onDropTable).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("AI composer mixed mentions", () => {
+  it("distinguishes equal names by kind and sends the typed selection without submitting", () => {
+    const onMention = vi.fn(() => true);
+    const onSend = vi.fn();
+    function Harness() {
+      const [draft, setDraft] = useState("@");
+      return <ChatComposer draft={draft} onDraft={setDraft} onSend={onSend} onStop={() => {}} onEscape={() => {}} streaming={false} disabled={false}
+        mentionItems={[{ kind: "table", id: "users", label: "users" }, { kind: "view", id: "users", label: "users" }, { kind: "saved_query", id: "query-id", label: "users" }]} onMention={onMention}>{null}</ChatComposer>;
+    }
+    render(<Harness />);
+    const input = screen.getByRole("combobox") as HTMLTextAreaElement;
+    input.setSelectionRange(1, 1);
+    fireEvent.focus(input);
+    expect(screen.getAllByRole("option")).toHaveLength(3);
+    expect(screen.getByRole("option", { name: "users · aiChat.context.kinds.table" })).toBeInTheDocument();
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onMention).toHaveBeenCalledWith({ kind: "view", id: "users", label: "users" }, true);
+    expect(onSend).not.toHaveBeenCalled();
+  });
+});

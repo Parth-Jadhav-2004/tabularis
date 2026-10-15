@@ -19,6 +19,9 @@ export interface AiContextOptions {
   include: AiContextSelection;
   tables: string[];
   excluded_tables: string[];
+  views: string[];
+  excluded_views: string[];
+  saved_queries: string[];
   editor: Omit<AiEditorSnapshot, "last_error">;
   last_error: string | null;
 }
@@ -38,6 +41,15 @@ export interface AiContextScope {
 export interface AiContextTables {
   tables: string[];
   excluded_tables: string[];
+  views?: string[];
+  excluded_views?: string[];
+  saved_queries?: { id: string; label: string }[];
+}
+
+export interface AiMentionItem {
+  kind: "table" | "view" | "saved_query";
+  id: string;
+  label: string;
 }
 
 export interface AiContextTableChoices extends AiContextTables, AiContextScope {}

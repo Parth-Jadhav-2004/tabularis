@@ -47,6 +47,12 @@ pub struct ContextSpec {
     #[serde(default)]
     pub excluded_tables: Vec<String>,
     #[serde(default)]
+    pub views: Vec<String>,
+    #[serde(default)]
+    pub excluded_views: Vec<String>,
+    #[serde(default)]
+    pub saved_queries: Vec<String>,
+    #[serde(default)]
     pub(crate) editor: EditorSnapshot,
     #[serde(default)]
     pub last_error: Option<String>,
@@ -68,10 +74,20 @@ impl ContextSpec {
             || self.language.len() > 32
             || self.tables.len() > 100
             || self.excluded_tables.len() > 100
+            || self.views.len() > 100
+            || self.tables.len().saturating_add(self.views.len()) > 100
+            || self.excluded_views.len() > 100
+            || self.saved_queries.len() > 20
+            || self
+                .saved_queries
+                .iter()
+                .any(|id| !uuid::Uuid::parse_str(id).is_ok_and(|parsed| parsed.to_string() == *id))
             || self
                 .tables
                 .iter()
                 .chain(&self.excluded_tables)
+                .chain(&self.views)
+                .chain(&self.excluded_views)
                 .any(|name| !valid_name(name))
             || [
                 &self.editor.query,

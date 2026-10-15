@@ -1,12 +1,14 @@
 import { RefreshCw, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { AiContextPreview, AiContextSelection, AiContextTables } from "../../types/aiContext";
-import { aiContextLabelKey, aiContextSize, aiContextTableCount } from "../../utils/aiContext";
+import type { AiContextPreview, AiContextSelection, AiContextTables, AiMentionItem } from "../../types/aiContext";
+import { aiContextLabelKey, aiContextSize, aiContextTableCount, aiContextViewCount } from "../../utils/aiContext";
+import { ContextReferenceChips } from "./ContextReferenceChips";
 
-export function ContextChips({ include, onChange, disabled, hasError, tables, onTable, preview, loading, error, onRefresh }: {
+export function ContextChips({ include, onChange, disabled, hasError, tables, onTable, preview, loading, error, onRefresh, onMention }: {
   include: AiContextSelection; onChange: (include: AiContextSelection) => void; disabled: boolean; hasError: boolean;
   tables?: AiContextTables; onTable?: (name: string, selected: boolean) => boolean;
   preview?: AiContextPreview | null; loading?: boolean; error?: boolean; onRefresh?: () => void;
+  onMention?: (item: AiMentionItem, selected: boolean) => boolean;
 }) {
   const { t } = useTranslation();
   const kinds = ["connection", "schema", "query", "selection", "cursor_statement", ...(hasError ? ["error" as const] : [])] as const;
@@ -14,6 +16,7 @@ export function ContextChips({ include, onChange, disabled, hasError, tables, on
   const names = [...new Set([...(tables?.tables ?? []), ...details.map((item) => item.id), ...(tables?.excluded_tables ?? [])])];
   const schema = preview?.items.find((item) => item.kind === "schema");
   const count = schema ? aiContextTableCount(schema) : null;
+  const viewCount = schema ? aiContextViewCount(schema) : null;
   return <div role="group" aria-label={t("aiChat.context.nextMessage")} className="space-y-1 border-t border-default px-3 py-2">
     <div className="flex items-center justify-between gap-2">
       <p className="text-xs text-muted">{t("aiChat.context.nextMessage")}</p>
@@ -27,6 +30,7 @@ export function ContextChips({ include, onChange, disabled, hasError, tables, on
         className={`inline-flex items-center gap-1 rounded border px-2 py-1 text-xs disabled:opacity-40 focus-ring ${include[kind] ? "border-strong bg-surface-secondary text-primary" : "border-default bg-base text-muted"}`}>
         {t(aiContextLabelKey(kind))}
         {kind === "schema" && count !== null && <span>({t("aiChat.context.tableCount", { count })})</span>}
+        {kind === "schema" && viewCount !== null && viewCount > 0 && <span>· {t("aiChat.context.viewCount", { count: viewCount })}</span>}
         {kind === "schema" && schema?.truncated && <span className="text-accent-warning">{t("aiChat.context.truncated")}</span>}
         {include[kind] && <X size={10} aria-hidden="true" />}
       </button>)}
@@ -48,6 +52,7 @@ export function ContextChips({ include, onChange, disabled, hasError, tables, on
         </button>;
       })}
     </div>}
+    {onMention && tables && <ContextReferenceChips choices={tables} preview={preview} disabled={disabled} onMention={onMention} />}
     {onRefresh && <p role="status" className={`text-xs ${error ? "text-accent-warning" : "text-muted"}`}>
       {loading ? t("aiChat.context.previewLoading") : error ? t("aiChat.context.previewError") : preview
         ? <>{t("aiChat.context.previewSize", { count: preview.total_chars })}{preview.truncated && <> · {t("aiChat.context.truncated")}</>}</> : null}

@@ -30,8 +30,24 @@ pub struct ContextInput<'a> {
     pub catalog: Option<&'a SchemaCatalog>,
     pub detailed: Option<&'a DetailedSchemaContext>,
     pub editor: EditorContext<'a>,
+    pub saved_queries: Option<&'a SavedQueryContexts>,
     /// The caller includes this only for a relevant error or an explicit choice.
     pub last_error: Option<&'a str>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SavedQueryContext {
+    pub id: String,
+    pub name: String,
+    pub sql: String,
+    #[serde(skip)]
+    pub truncated: bool,
+}
+
+#[derive(Debug, Default)]
+pub struct SavedQueryContexts {
+    pub queries: Vec<SavedQueryContext>,
+    pub unavailable: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -78,6 +94,8 @@ pub struct ContextItemSummary {
     pub chars: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub table_count: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub view_count: Option<usize>,
     pub truncated: bool,
 }
 

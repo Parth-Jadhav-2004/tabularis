@@ -2885,7 +2885,9 @@
         "error": "Erro",
         "instructions": "Instruções",
         "gaps": "Metadados ausentes",
-        "other": "Contexto"
+        "other": "Contexto",
+        "view": "Visualização",
+        "saved_query": "Consulta salva"
       },
       "refreshPreview": "Atualizar prévia do contexto",
       "tableCount": "Tabelas: {{count}}",
@@ -2897,9 +2899,17 @@
       "previewSize": "Prévia: {{count}} caracteres",
       "mentionTables": "Tabelas neste escopo",
       "noMentionTables": "Nenhuma tabela correspondente no esquema carregado. Atualize o explorador.",
-      "mentionHint": "Digite @ para adicionar uma tabela ou arraste-a do explorador para cá.",
+      "mentionHint": "Digite @ para adicionar uma tabela, visualização ou consulta salva. Arraste as tabelas do explorador para cá.",
       "tableLimit": "Você pode selecionar ou excluir até 100 tabelas por mensagem.",
-      "notInPreview": "Não incluído"
+      "notInPreview": "Não incluído",
+      "mentions": "Adicionar contexto",
+      "mentionItems": "Tabelas, visualizações e consultas salvas",
+      "noMentions": "Nenhum contexto correspondente neste escopo. Atualize o explorador ou as consultas salvas.",
+      "mentionLimit": "Selecione até 100 tabelas/visualizações e 20 consultas salvas por mensagem.",
+      "references": "Visualizações e consultas salvas",
+      "viewDetail": "Detalhes da visualização: {{name}}",
+      "savedQuery": "Consulta salva: {{name}}",
+      "viewCount": "Visualizações: {{count}}"
     }
   }
 }

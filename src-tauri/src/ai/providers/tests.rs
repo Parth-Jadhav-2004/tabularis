@@ -47,6 +47,8 @@ fn persisted_context_summaries_are_omitted_from_every_provider_protocol() {
     let mut req = request("fixture");
     req.messages[0].blocks.push(Block::Context {
         items: vec![crate::ai::message::ContextItemRef {
+            view_count: None,
+
             kind: "table".into(),
             id: "private-context-marker".into(),
             label: "private-context-marker".into(),

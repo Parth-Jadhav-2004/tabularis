@@ -9,6 +9,8 @@ import { useSettings } from "../../hooks/useSettings";
 import { useRightSidebar } from "../../hooks/useRightSidebar";
 import type { AiModelChoice } from "../../types/aiChat";
 import { DatabaseContext } from "../../contexts/DatabaseContext";
+import { SavedQueriesContext } from "../../contexts/SavedQueriesContext";
+import type { AiMentionItem } from "../../types/aiContext";
 import { defaultAiChatModel, readAiChatModel, rememberAiChatModel } from "../../utils/aiChatModels";
 import { ChatHeader } from "./ChatHeader";
 import { ChatTranscript } from "./ChatTranscript";
@@ -16,8 +18,8 @@ import { ChatComposer } from "./ChatComposer";
 import { ModelPicker } from "./ModelPicker";
 import { ConversationList } from "./ConversationList";
 import { ContextChips } from "./ContextChips";
-import { changeAiContextTable, createAiContextOptions, sameAiContextScope } from "../../utils/aiContext";
-import { aiContextCatalogTables, aiContextDroppedTable } from "../../utils/aiContextMentions";
+import { changeAiContextMention, changeAiContextTable, createAiContextOptions, sameAiContextScope } from "../../utils/aiContext";
+import { aiContextCatalogTables, aiContextDroppedTable, aiContextMentionItems } from "../../utils/aiContextMentions";
 import { useAiContextPreview } from "../../hooks/useAiContextPreview";
 import { dragState } from "../../utils/dragState";
 
@@ -30,6 +32,7 @@ export function AiChatPanel() {
   const { settings } = useSettings();
   const { close } = useRightSidebar();
   const database = useContext(DatabaseContext);
+  const savedQueries = useContext(SavedQueriesContext);
   const [historyOpen, setHistoryOpen] = useState(false);
   const connectionId = target?.connectionId ?? database?.activeConnectionId ?? null;
   const fallback = defaultAiChatModel(models.choices, settings, null);
@@ -61,6 +64,14 @@ export function AiChatPanel() {
   const preview = useAiContextPreview(getContext, contextEnabled && !historyOpen);
   const data = scope ? database?.connectionDataMap[scope.connection_id] : undefined;
   const mentionTables = useMemo(() => aiContextCatalogTables(data, scope), [data, scope]);
+  const mentionItems = useMemo(() => aiContextMentionItems(data, scope, savedQueries?.queries ?? []), [data, scope, savedQueries?.queries]);
+  const onMention = (item: AiMentionItem, selected: boolean) => {
+    if (!contextEnabled || !scope) return false;
+    const next = changeAiContextMention(tables, item, selected);
+    if (next === tables) return false;
+    chat.setContextTables({ ...scope, ...next });
+    return true;
+  };
   const onTable = (name: string, selected: boolean) => {
     if (!contextEnabled || !scope) return false;
     const next = changeAiContextTable(tables, name, selected);
@@ -81,6 +92,8 @@ export function AiChatPanel() {
     else {
       createConversation(next);
       chat.setDraft(chat.draft);
+      chat.setContextInclude(chat.contextInclude);
+      chat.setContextTables(chat.contextTables);
     }
     rememberAiChatModel(next);
   };
@@ -122,10 +135,12 @@ export function AiChatPanel() {
     </div>
     <ContextChips include={chat.contextInclude} onChange={chat.setContextInclude}
       hasError={!!target?.hasError} disabled={!contextEnabled} tables={tables} onTable={onTable}
+      onMention={onMention}
       preview={preview.preview} loading={preview.loading} error={preview.error} onRefresh={() => void preview.refresh()} />
     <ChatComposer draft={chat.draft} onDraft={chat.setDraft} onSend={send} onStop={() => void chat.stop()}
       onEscape={() => target?.actions.focus()} streaming={!!chat.activeRun}
       mentionTables={mentionTables} onTable={onTable} onFocus={() => void preview.refresh()}
+      mentionItems={mentionItems} onMention={onMention}
       onDropTable={() => {
         const name = aiContextDroppedTable(dragState.context, data, scope);
         if (name) onTable(name, true);

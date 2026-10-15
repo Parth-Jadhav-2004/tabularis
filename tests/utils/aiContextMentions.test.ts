@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeAiMention, aiContextCatalogTables, aiContextDroppedTable, filterAiMentionTables, removeAiMention, type AiContextCatalogData } from "../../src/utils/aiContextMentions";
+import { activeAiMention, aiContextCatalogTables, aiContextDroppedTable, aiContextMentionItems, filterAiMentions, filterAiMentionTables, removeAiMention, type AiContextCatalogData } from "../../src/utils/aiContextMentions";
 import type { SchemaData } from "../../src/contexts/DatabaseContext";
 import { dragState } from "../../src/utils/dragState";
 
@@ -75,5 +75,38 @@ describe("AI table mentions", () => {
     expect(dragState.context).toBeNull();
     expect(dragState.table).toBeNull();
     expect(dragState.schema).toBeNull();
+  });
+});
+
+describe("AI mixed mentions", () => {
+  it("takes views from the exact schema and saved queries from the exact connection/database", () => {
+    const catalog = data();
+    catalog.schemaDataMap.public.views = [{ name: "v_users" }];
+    const saved = ["app", "other", null].map((database, i) => ({ id: `q${i}`, name: `query${i}`, connection_id: "connection", database, sql: "private-sql-marker", created_at: null, updated_at: null }));
+    saved.push({ ...saved[0], id: "different-connection", connection_id: "other" });
+    const items = aiContextMentionItems(catalog, scope, saved);
+    expect(items.filter((item) => item.kind === "view").map((item) => item.id)).toEqual(["v_users"]);
+    expect(items.filter((item) => item.kind === "saved_query").map((item) => item.id)).toEqual(["q0", "q2"]);
+    expect(JSON.stringify(items)).not.toContain("private-sql-marker");
+    expect(aiContextMentionItems(catalog, { ...scope, schema: "missing" }, []).filter((item) => item.kind === "view")).toEqual([]);
+    expect(aiContextMentionItems(catalog, null, saved)).toEqual([]);
+  });
+  it("uses the MySQL database override when filtering saved queries", () => {
+    const catalog = data();
+    catalog.capabilities = { ...catalog.capabilities!, schemas: false, sql_dialect: "mysql" };
+    const saved = ["app", "analytics"].map((database) => ({ id: database, name: database, connection_id: "connection", database, sql: "SELECT 1", created_at: null, updated_at: null }));
+    expect(aiContextMentionItems(catalog, { ...scope, schema: "analytics" }, saved).map((item) => item.id)).toEqual(["analytics"]);
+  });
+  it("keeps equal names and IDs of different kinds distinct and includes every matching kind within the menu cap", () => {
+    const items = [
+      ...Array.from({ length: 100 }, (_, i) => ({ kind: "table" as const, id: `t${i}`, label: "users" })),
+      { kind: "view" as const, id: "t0", label: "users" },
+      { kind: "saved_query" as const, id: "t0", label: "users" },
+    ];
+    const matches = filterAiMentions([...items, items[0]], "Users");
+    expect(matches).toHaveLength(30);
+    expect(matches.slice(0, 3).map((item) => item.kind)).toEqual(["table", "view", "saved_query"]);
+    expect(new Set(matches.map((item) => `${item.kind}:${item.id}`)).size).toBe(30);
+    expect(filterAiMentions(items, "missing")).toEqual([]);
   });
 });

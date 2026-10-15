@@ -1,12 +1,15 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { activeAiMention, filterAiMentionTables, removeAiMention } from "../../utils/aiContextMentions";
+import { activeAiMention, filterAiMentions, removeAiMention } from "../../utils/aiContextMentions";
+import type { AiMentionItem } from "../../types/aiContext";
+import { aiContextLabelKey } from "../../utils/aiContext";
 
-export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streaming, disabled, children, mentionTables = [], onTable, onDropTable, onFocus }: {
+export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streaming, disabled, children, mentionTables = [], onTable, onDropTable, onFocus, mentionItems, onMention }: {
   draft: string; onDraft: (text: string) => void; onSend: () => void; onStop: () => void; onEscape: () => void;
   streaming: boolean; disabled: boolean; children: ReactNode;
   mentionTables?: string[]; onTable?: (name: string, selected: boolean) => boolean;
   onDropTable?: () => void; onFocus?: () => void;
+  mentionItems?: AiMentionItem[]; onMention?: (item: AiMentionItem, selected: boolean) => boolean;
 }) {
   const { t } = useTranslation();
   const id = useId();
@@ -19,15 +22,15 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
   const [focused, setFocused] = useState(false);
   const range = caret.text === draft ? activeAiMention(draft, caret.start, caret.end) : null;
   const key = range ? `${range.start}:${range.end}:${range.search}` : "";
-  const open = focused && !!range && !!onTable && dismissed !== key && !disabled && !streaming;
-  const options = open ? filterAiMentionTables(mentionTables, range.search) : [];
+  const open = focused && !!range && !!(onMention || onTable) && dismissed !== key && !disabled && !streaming;
+  const options = open ? filterAiMentions(mentionItems ?? mentionTables.map((name) => ({ kind: "table", id: name, label: name })), range.search) : [];
   const index = highlight.key === key ? Math.min(highlight.index, Math.max(0, options.length - 1)) : 0;
   useEffect(() => {
     if (open) document.getElementById(`${listId}-${index}`)?.scrollIntoView?.({ block: "nearest" });
   }, [open, listId, index]);
-  const pick = (name: string) => {
-    if (!range || !onTable || disabled || streaming) return;
-    if (!onTable(name, true)) { setLimitReached(true); return; }
+  const pick = (item: AiMentionItem) => {
+    if (!range || !(onMention || onTable) || disabled || streaming) return;
+    if (!(onMention ? onMention(item, true) : onTable?.(item.id, true))) { setLimitReached(true); return; }
     const text = removeAiMention(draft, range);
     onDraft(text);
     setCaret({ text, start: range.start, end: range.start });
@@ -48,16 +51,18 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
     <label htmlFor={id} className="sr-only">{t("aiChat.message")}</label>
     <div className="relative">
     {open && <div className="absolute bottom-full left-0 right-0 z-10 mb-1 rounded-lg border border-strong bg-elevated p-1 shadow-lg">
-      <p className="px-2 py-1 text-xs text-muted">{t("aiChat.context.tableDetails")}</p>
-      <div id={listId} role="listbox" aria-label={t("aiChat.context.mentionTables")} className="max-h-48 overflow-y-auto">
-        {options.map((name, option) => <button key={name} id={`${listId}-${option}`} type="button" role="option" aria-selected={index === option}
-          onMouseDown={(event) => event.preventDefault()} onClick={() => pick(name)}
-          className={`block w-full truncate rounded px-2 py-1.5 text-left font-mono text-sm focus-ring ${index === option ? "bg-accent-primary text-inverse" : "text-primary hover:bg-surface-secondary"}`}>
-          {name}
+      <p className="px-2 py-1 text-xs text-muted">{t("aiChat.context.mentions")}</p>
+      <div id={listId} role="listbox" aria-label={t("aiChat.context.mentionItems")} className="max-h-48 overflow-y-auto">
+        {options.map((item, option) => <button key={`${item.kind}:${item.id}`} id={`${listId}-${option}`} type="button" role="option" aria-selected={index === option}
+          aria-label={mentionItems ? `${item.label} · ${t(aiContextLabelKey(item.kind))}` : item.label}
+          onMouseDown={(event) => event.preventDefault()} onClick={() => pick(item)}
+          className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm focus-ring ${index === option ? "bg-accent-primary text-inverse" : "text-primary hover:bg-surface-secondary"}`}>
+          <span className="min-w-0 flex-1 truncate font-mono">{item.label}</span>
+          {mentionItems && <span aria-hidden="true" className="shrink-0 text-xs">{t(aiContextLabelKey(item.kind))}</span>}
         </button>)}
       </div>
-      {options.length === 0 && <p role="status" className="px-2 py-2 text-xs text-secondary">{t("aiChat.context.noMentionTables")}</p>}
-      {limitReached && <p role="status" className="px-2 py-1 text-xs text-accent-warning">{t("aiChat.context.tableLimit")}</p>}
+      {options.length === 0 && <p role="status" className="px-2 py-2 text-xs text-secondary">{t(mentionItems ? "aiChat.context.noMentions" : "aiChat.context.noMentionTables")}</p>}
+      {limitReached && <p role="status" className="px-2 py-1 text-xs text-accent-warning">{t(mentionItems ? "aiChat.context.mentionLimit" : "aiChat.context.tableLimit")}</p>}
     </div>}
     <textarea ref={textarea} id={id} value={draft} role="combobox" aria-autocomplete="list" aria-haspopup="listbox"
       aria-expanded={open} aria-controls={open ? listId : undefined}
@@ -101,7 +106,7 @@ export function ChatComposer({ draft, onDraft, onSend, onStop, onEscape, streami
         }
       }} />
     </div>
-    {onTable && <p className="text-xs text-muted">{t("aiChat.context.mentionHint")}</p>}
+    {(onMention || onTable) && <p className="text-xs text-muted">{t("aiChat.context.mentionHint")}</p>}
     {children}
     <div className="flex items-center justify-between gap-2">
       <span className="text-xs text-muted">{t("aiChat.askMode")}</span>

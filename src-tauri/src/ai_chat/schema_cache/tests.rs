@@ -21,6 +21,7 @@ fn catalog(name: &str) -> SchemaCatalog {
         }],
         total_table_count: 1,
         truncated: false,
+        ..Default::default()
     }
 }
 
@@ -191,6 +192,9 @@ async fn detail_keys_preserve_priority_and_unavailable_metadata_is_retried() {
                 calls.fetch_add(1, Ordering::SeqCst);
                 DetailedSchemaContext {
                     tables: vec![DetailedTable {
+                        kind: Default::default(),
+                        definition: None,
+
                         name: "missing_indexes".into(),
                         comment: None,
                         columns: vec![],
@@ -235,4 +239,38 @@ async fn cache_caps_and_zero_ttl_bound_retained_scopes_and_detail_batches() {
         .await
         .unwrap();
     assert!(!Arc::ptr_eq(&first, &second));
+}
+
+#[tokio::test]
+async fn unavailable_view_catalogs_are_retried_and_typed_detail_keys_do_not_collide() {
+    let cache = SchemaCache::default();
+    let scope = cache.scope(key("one"));
+    let loads = AtomicUsize::new(0);
+    for _ in 0..2 {
+        scope
+            .catalog(|| async {
+                loads.fetch_add(1, Ordering::SeqCst);
+                Ok(SchemaCatalog {
+                    views_unavailable: true,
+                    ..Default::default()
+                })
+            })
+            .await
+            .unwrap();
+    }
+    assert_eq!(loads.load(Ordering::SeqCst), 2);
+    for kind in ["table:users", "view:users"] {
+        scope
+            .details(&[kind.into()], || async {
+                loads.fetch_add(1, Ordering::SeqCst);
+                DetailedSchemaContext::default()
+            })
+            .await;
+    }
+    assert_eq!(loads.load(Ordering::SeqCst), 4);
+    scope
+        .details(&["view:users".into()], || async {
+            panic!("typed batch should be cached")
+        })
+        .await;
 }

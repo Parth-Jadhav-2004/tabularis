@@ -2770,7 +2770,9 @@
         "error": "Error",
         "instructions": "Instrucciones",
         "gaps": "Metadatos faltantes",
-        "other": "Contexto"
+        "other": "Contexto",
+        "view": "Vista",
+        "saved_query": "Consulta guardada"
       },
       "refreshPreview": "Actualizar vista previa del contexto",
       "tableCount": "Tablas: {{count}}",
@@ -2782,9 +2784,17 @@
       "previewSize": "Vista previa: {{count}} caracteres",
       "mentionTables": "Tablas en este ámbito",
       "noMentionTables": "No hay tablas coincidentes en el esquema cargado. Actualiza el explorador.",
-      "mentionHint": "Escribe @ para añadir una tabla o arrástrala aquí desde el explorador.",
+      "mentionHint": "Escribe @ para añadir una tabla, vista o consulta guardada. Arrastra las tablas aquí desde el explorador.",
       "tableLimit": "Puedes seleccionar o excluir hasta 100 tablas por mensaje.",
-      "notInPreview": "No incluido"
+      "notInPreview": "No incluido",
+      "mentions": "Añadir contexto",
+      "mentionItems": "Tablas, vistas y consultas guardadas",
+      "noMentions": "No hay contexto coincidente en este ámbito. Actualiza el explorador o las consultas guardadas.",
+      "mentionLimit": "Selecciona hasta 100 tablas/vistas y 20 consultas guardadas por mensaje.",
+      "references": "Vistas y consultas guardadas",
+      "viewDetail": "Detalles de vista: {{name}}",
+      "savedQuery": "Consulta guardada: {{name}}",
+      "viewCount": "Vistas: {{count}}"
     }
   }
 }

@@ -18,6 +18,7 @@ export interface AiContextItemRef {
   label: string;
   chars?: number | null;
   table_count?: number | null;
+  view_count?: number | null;
   truncated?: boolean;
 }
 

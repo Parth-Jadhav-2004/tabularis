@@ -2858,7 +2858,9 @@
         "error": "Error",
         "instructions": "Mga tagubilin",
         "gaps": "Nawawalang metadata",
-        "other": "Konteksto"
+        "other": "Konteksto",
+        "view": "View",
+        "saved_query": "Naka-save na query"
       },
       "refreshPreview": "I-refresh ang preview ng konteksto",
       "tableCount": "Mga talahanayan: {{count}}",
@@ -2870,9 +2872,17 @@
       "previewSize": "Preview: {{count}} character",
       "mentionTables": "Mga talahanayan sa saklaw na ito",
       "noMentionTables": "Walang katugmang talahanayan sa na-load na schema. I-refresh ang explorer.",
-      "mentionHint": "I-type ang @ para magdagdag ng talahanayan, o i-drag ito rito mula sa explorer.",
+      "mentionHint": "I-type ang @ para magdagdag ng talahanayan, view o naka-save na query. I-drag dito ang mga talahanayan mula sa explorer.",
       "tableLimit": "Maaari kang pumili o magbukod ng hanggang 100 talahanayan bawat mensahe.",
-      "notInPreview": "Hindi kasama"
+      "notInPreview": "Hindi kasama",
+      "mentions": "Magdagdag ng konteksto",
+      "mentionItems": "Mga talahanayan, view at naka-save na query",
+      "noMentions": "Walang katugmang konteksto sa saklaw na ito. I-refresh ang explorer o mga naka-save na query.",
+      "mentionLimit": "Pumili ng hanggang 100 talahanayan/view at 20 naka-save na query bawat mensahe.",
+      "references": "Mga view at naka-save na query",
+      "viewDetail": "Mga detalye ng view: {{name}}",
+      "savedQuery": "Naka-save na query: {{name}}",
+      "viewCount": "Mga view: {{count}}"
     }
   }
 }

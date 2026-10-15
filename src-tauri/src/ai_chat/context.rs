@@ -7,6 +7,7 @@ mod types;
 pub use types::*;
 
 use crate::ai_chat::types::ChatMode;
+use crate::ai_schema_context::detailed::reference_catalog;
 use budget::{render_data, render_instructions};
 
 pub const INCOMPLETE_SCHEMA_RULE: &str = "The schema list is incomplete. If you need a table that is not listed, ask the user to mention it with @ or (in Agent mode) use list_tables / describe_table when those tools are available.";
@@ -70,9 +71,10 @@ fn layers(input: &ContextInput<'_>) -> Vec<Vec<Part>> {
     let mut detailed = Vec::new();
     let mut gaps = Vec::new();
     if let Some(catalog) = input.catalog {
+        let known = reference_catalog(catalog);
         let references = references::extract_referenced_tables(
             input.editor.query.unwrap_or_default(),
-            &catalog.tables,
+            &known,
             input.connection.and_then(|connection| connection.database),
             input.connection.and_then(|connection| connection.schema),
         );
@@ -96,8 +98,25 @@ fn layers(input: &ContextInput<'_>) -> Vec<Vec<Part>> {
         if references.truncated {
             gaps.push("Only part of the SQL was scanned for table references.".into());
         }
+        if catalog.views_unavailable {
+            gaps.push(
+                "The view catalog is unavailable. Do not infer view definitions or columns.".into(),
+            );
+        }
     }
     if let Some(context) = input.detailed {
+        for name in &context.missing_views {
+            gaps.push(format!(
+                "Selected view {} not found or unavailable in the selected catalog.",
+                json(name)
+            ));
+        }
+        for name in &context.omitted_views {
+            gaps.push(format!(
+                "Detailed metadata omitted for view {} because of the object limit.",
+                json(name)
+            ));
+        }
         for name in &context.missing_tables {
             gaps.push(format!(
                 "Selected table {} not found in the selected catalog.",
@@ -121,7 +140,7 @@ fn layers(input: &ContextInput<'_>) -> Vec<Vec<Part>> {
     }
     if let Some(context) = input.detailed {
         for table in &context.tables {
-            let mut part = Part::new("table", &table.name, &table.name, json(table));
+            let mut part = Part::new(table.kind.as_str(), &table.name, &table.name, json(table));
             part.truncated = !table.unavailable.is_empty();
             detailed.push(part);
         }
@@ -136,6 +155,8 @@ fn layers(input: &ContextInput<'_>) -> Vec<Vec<Part>> {
                 json(&serde_json::json!({
                     "total_table_count": catalog.total_table_count,
                     "tables": catalog.tables.iter().map(|table| &table.name).collect::<Vec<_>>(),
+                    "total_view_count": catalog.total_view_count,
+                    "views": catalog.views.iter().map(|view| &view.name).collect::<Vec<_>>(),
                     "truncated": catalog.truncated,
                 })),
             );
@@ -143,21 +164,41 @@ fn layers(input: &ContextInput<'_>) -> Vec<Vec<Part>> {
             vec![part]
         })
         .unwrap_or_default();
-    let editor = [
-        ("query", "Current query", input.editor.query),
-        ("selection", "Editor selection", input.editor.selection),
-        (
-            "cursor_statement",
-            "Cursor statement",
-            input.editor.cursor_statement,
-        ),
-    ]
-    .into_iter()
-    .filter_map(|(kind, label, text)| {
-        text.filter(|text| !text.is_empty())
-            .map(|text| Part::new(kind, kind, label, text.into()))
-    })
-    .collect();
+    let mut editor = Vec::new();
+    if let Some(saved) = input.saved_queries {
+        if !saved.unavailable.is_empty() {
+            editor.push(Part::new(
+                "gaps",
+                "saved_query_gaps",
+                "Unavailable saved queries",
+                format!(
+                    "Selected saved queries are unavailable in this connection/database: {}",
+                    json(&saved.unavailable)
+                ),
+            ));
+        }
+        for query in &saved.queries {
+            let mut part = Part::new("saved_query", &query.id, &query.name, json(query));
+            part.truncated = query.truncated;
+            editor.push(part);
+        }
+    }
+    editor.extend(
+        [
+            ("query", "Current query", input.editor.query),
+            ("selection", "Editor selection", input.editor.selection),
+            (
+                "cursor_statement",
+                "Cursor statement",
+                input.editor.cursor_statement,
+            ),
+        ]
+        .into_iter()
+        .filter_map(|(kind, label, text)| {
+            text.filter(|text| !text.is_empty())
+                .map(|text| Part::new(kind, kind, label, text.into()))
+        }),
+    );
     let error = input
         .last_error
         .filter(|text| !text.is_empty())
@@ -205,6 +246,9 @@ pub fn build_context(input: &ContextInput<'_>, budgets: ContextBudgets) -> Built
                     chars: rendered.chars,
                     table_count: (part.kind == "schema")
                         .then(|| input.catalog.map(|catalog| catalog.total_table_count))
+                        .flatten(),
+                    view_count: (part.kind == "schema")
+                        .then(|| input.catalog.map(|catalog| catalog.total_view_count))
                         .flatten(),
                     truncated: part_truncated,
                 });

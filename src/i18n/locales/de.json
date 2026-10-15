@@ -2836,7 +2836,9 @@
         "error": "Fehler",
         "instructions": "Anweisungen",
         "gaps": "Fehlende Metadaten",
-        "other": "Kontext"
+        "other": "Kontext",
+        "view": "Ansicht",
+        "saved_query": "Gespeicherte Abfrage"
       },
       "refreshPreview": "Kontextvorschau aktualisieren",
       "tableCount": "Tabellen: {{count}}",
@@ -2848,9 +2850,17 @@
       "previewSize": "Vorschau: {{count}} Zeichen",
       "mentionTables": "Tabellen in diesem Bereich",
       "noMentionTables": "Keine passenden Tabellen im geladenen Schema. Explorer aktualisieren.",
-      "mentionHint": "@ eingeben, um eine Tabelle hinzuzufügen, oder eine aus dem Explorer hierher ziehen.",
+      "mentionHint": "@ eingeben, um eine Tabelle, Ansicht oder gespeicherte Abfrage hinzuzufügen. Tabellen aus dem Explorer hierher ziehen.",
       "tableLimit": "Pro Nachricht können bis zu 100 Tabellen ausgewählt oder ausgeschlossen werden.",
-      "notInPreview": "Nicht enthalten"
+      "notInPreview": "Nicht enthalten",
+      "mentions": "Kontext hinzufügen",
+      "mentionItems": "Tabellen, Ansichten und gespeicherte Abfragen",
+      "noMentions": "Kein passender Kontext in diesem Bereich. Explorer oder gespeicherte Abfragen aktualisieren.",
+      "mentionLimit": "Bis zu 100 Tabellen/Ansichten und 20 gespeicherte Abfragen pro Nachricht auswählen.",
+      "references": "Ansichten und gespeicherte Abfragen",
+      "viewDetail": "Ansichtsdetails: {{name}}",
+      "savedQuery": "Gespeicherte Abfrage: {{name}}",
+      "viewCount": "Ansichten: {{count}}"
     }
   }
 }

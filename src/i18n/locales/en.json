@@ -2924,7 +2924,9 @@
         "error": "Error",
         "instructions": "Instructions",
         "gaps": "Missing metadata",
-        "other": "Context"
+        "other": "Context",
+        "view": "View",
+        "saved_query": "Saved query"
       },
       "refreshPreview": "Refresh context preview",
       "tableCount": "Tables: {{count}}",
@@ -2936,9 +2938,17 @@
       "previewSize": "Preview: {{count}} characters",
       "mentionTables": "Tables in this scope",
       "noMentionTables": "No matching tables in the loaded schema. Refresh the explorer.",
-      "mentionHint": "Type @ to add a table, or drag one here from the explorer.",
+      "mentionHint": "Type @ to add a table, view or saved query. Drag tables here from the explorer.",
       "tableLimit": "You can select or exclude up to 100 tables per message.",
-      "notInPreview": "Not included"
+      "notInPreview": "Not included",
+      "mentions": "Add context",
+      "mentionItems": "Tables, views and saved queries",
+      "noMentions": "No matching context in this scope. Refresh the explorer or saved queries.",
+      "mentionLimit": "Select up to 100 tables/views and 20 saved queries per message.",
+      "references": "Views and saved queries",
+      "viewDetail": "View details: {{name}}",
+      "savedQuery": "Saved query: {{name}}",
+      "viewCount": "Views: {{count}}"
     }
   }
 }

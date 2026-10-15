@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AiChatPanel } from "../../../src/components/ai-chat/AiChatPanel";
 import { AiChatProvider } from "../../../src/contexts/AiChatProvider";
+import { SavedQueriesContext, type SavedQueriesContextType } from "../../../src/contexts/SavedQueriesContext";
 import { AiAvailabilityContext } from "../../../src/contexts/AiAvailabilityContext";
 import { AiEditorContext } from "../../../src/contexts/AiEditorContext";
 import { RightSidebarProvider } from "../../../src/contexts/RightSidebarProvider";
@@ -19,7 +20,7 @@ vi.mock("../../../src/hooks/useSettings", () => ({
   useSettings: () => ({ settings: { ...DEFAULT_SETTINGS, aiEnabled: true, aiProvider: "openai", aiModel: "example" } }),
 }));
 
-function setup() {
+function setup(saved?: SavedQueriesContextType) {
   const listeners = new Map<string, (event: AiChatEvent) => void>();
   let clear: () => void = () => {};
   const transport = {
@@ -39,7 +40,7 @@ function setup() {
   ] };
   const tree = (visible = true, available = availability) => <MemoryRouter>
     <AiAvailabilityContext.Provider value={available}><AiEditorContext.Provider value={store}>
-      <RightSidebarProvider><AiChatProvider transport={transport}>{visible && <AiChatPanel />}</AiChatProvider></RightSidebarProvider>
+      <SavedQueriesContext.Provider value={saved}><RightSidebarProvider><AiChatProvider transport={transport}>{visible && <AiChatPanel />}</AiChatProvider></RightSidebarProvider></SavedQueriesContext.Provider>
     </AiEditorContext.Provider></AiAvailabilityContext.Provider>
   </MemoryRouter>;
   const rendered = render(tree());
@@ -58,6 +59,27 @@ async function send(text = "Write a query") {
 }
 
 describe("AI chat panel", () => {
+  it("mentions a saved query by ID, preserves it through model changes/remounts and omits cached SQL from sends", async () => {
+    const id = "ab1f316f-e0c8-4681-9bf3-e56cba339ce0";
+    const fixture = setup({ queries: [{ id, name: "Revenue", sql: "private-cached-sql-marker", connection_id: "one", database: "db", created_at: null, updated_at: null }], isLoading: false,
+      saveQuery: vi.fn(), updateQuery: vi.fn(), deleteQuery: vi.fn(), refreshQueries: vi.fn() });
+    await waitFor(() => expect(screen.getByRole("button", { name: "aiChat.context.kinds.query" })).toBeEnabled());
+    const input = screen.getByRole("combobox", { name: "aiChat.message" });
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: "@Rev" } });
+    fireEvent.click(screen.getByRole("option", { name: "Revenue · aiChat.context.kinds.saved_query" }));
+    expect(screen.getByRole("button", { name: "aiChat.context.savedQuery" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("aiChat.model"), { target: { value: JSON.stringify(["anthropic", "other"]) } });
+    fixture.rerender(fixture.tree(false));
+    fixture.rerender(fixture.tree());
+    expect(screen.getByRole("button", { name: "aiChat.context.savedQuery" })).toBeInTheDocument();
+    await send("Explain the saved query");
+    await waitFor(() => expect(fixture.transport.send).toHaveBeenCalledTimes(1));
+    const [request, , context] = fixture.transport.send.mock.calls[0];
+    expect(request.provider).toBe("anthropic");
+    expect(context).toMatchObject({ saved_queries: [id], views: [], connection_id: "one", database: "db" });
+    expect(JSON.stringify(context)).not.toContain("private-cached-sql-marker");
+  });
   it("takes a fresh editor snapshot at send and preserves removed context across panel remounts", async () => {
     const fixture = setup();
     const readContext = vi.fn(() => ({ query: "SELECT * FROM users", selection: "name", cursor_statement: "SELECT * FROM users", last_error: "private-error" }));

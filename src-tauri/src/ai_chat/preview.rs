@@ -15,6 +15,7 @@ impl From<ContextItemSummary> for ContextItemRef {
             label: item.label,
             chars: Some(item.chars),
             table_count: item.table_count,
+            view_count: item.view_count,
             truncated: item.truncated,
         }
     }

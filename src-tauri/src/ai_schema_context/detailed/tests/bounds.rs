@@ -23,6 +23,7 @@ async fn detailed_metadata_hard_cap_does_not_expand_with_a_larger_request() {
             .collect(),
         total_table_count: 101,
         truncated: false,
+        ..Default::default()
     };
     let names = catalog
         .tables
@@ -57,6 +58,8 @@ async fn real_metadata_flows_from_query_selection_to_a_bounded_prompt() {
     let detailed =
         load_detailed_from_driver(&driver, &params, None, &catalog, &references.tables, 20).await;
     let input = ContextInput {
+        saved_queries: None,
+
         mode: ChatMode::Ask,
         language: "en",
         connection: Some(ConnectionContext {

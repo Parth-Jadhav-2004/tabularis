@@ -2847,7 +2847,9 @@
         "error": "Errore",
         "instructions": "Istruzioni",
         "gaps": "Metadati mancanti",
-        "other": "Contesto"
+        "other": "Contesto",
+        "view": "Vista",
+        "saved_query": "Query salvata"
       },
       "refreshPreview": "Aggiorna anteprima contesto",
       "tableCount": "Tabelle: {{count}}",
@@ -2859,9 +2861,17 @@
       "previewSize": "Anteprima: {{count}} caratteri",
       "mentionTables": "Tabelle in questo ambito",
       "noMentionTables": "Nessuna tabella corrispondente nello schema caricato. Aggiorna l’explorer.",
-      "mentionHint": "Digita @ per aggiungere una tabella o trascinala qui dall’explorer.",
+      "mentionHint": "Digita @ per aggiungere una tabella, vista o query salvata. Trascina qui le tabelle dall’explorer.",
       "tableLimit": "Puoi selezionare o escludere fino a 100 tabelle per messaggio.",
-      "notInPreview": "Non incluso"
+      "notInPreview": "Non incluso",
+      "mentions": "Aggiungi contesto",
+      "mentionItems": "Tabelle, viste e query salvate",
+      "noMentions": "Nessun contesto corrispondente in questo ambito. Aggiorna l’explorer o le query salvate.",
+      "mentionLimit": "Seleziona fino a 100 tabelle/viste e 20 query salvate per messaggio.",
+      "references": "Viste e query salvate",
+      "viewDetail": "Dettagli vista: {{name}}",
+      "savedQuery": "Query salvata: {{name}}",
+      "viewCount": "Viste: {{count}}"
     }
   }
 }

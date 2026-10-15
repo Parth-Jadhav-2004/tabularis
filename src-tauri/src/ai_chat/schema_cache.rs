@@ -74,6 +74,9 @@ impl ScopeCache {
             return Ok(catalog);
         }
         let value = Arc::new(loader().await?);
+        if value.views_unavailable {
+            return Ok(value);
+        }
         let mut data = self.data.lock().unwrap();
         data.batches.clear();
         data.catalog = Some(Timed {
