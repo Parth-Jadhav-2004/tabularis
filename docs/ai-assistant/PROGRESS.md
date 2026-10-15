@@ -41,6 +41,12 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: M2 connection deletion hooks completed
+- Single-connection and group/subgroup deletion now remove every affected connection's encrypted chat directory after connection persistence succeeds.
+- Cleanup runs on the blocking pool and reports failures; other connections and shared blobs remain intact (orphan blobs are collected conservatively on startup).
+- GitNexus impact is LOW for both Tauri entry points. Ten conversation-store regression tests pass; reviewed the group-subtree ID capture before connections are removed.
+- Next: encrypted activity/session/approval I/O and startup migration.
+
 ### 2026-10-15: M2 encrypted blobs and GC completed
 - Added content-addressed encrypted blobs (MIME and bytes sealed together), put/get commands, SHA-256 integrity checks, deduplication and a 20 MiB limit.
 - Added debounced startup GC. Referenced image/attachment blobs are retained; uploads younger than one hour are protected; unreadable conversations abort collection without deleting anything.

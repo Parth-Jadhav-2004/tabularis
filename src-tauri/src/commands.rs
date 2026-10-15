@@ -1555,6 +1555,15 @@ pub async fn delete_connection<R: Runtime>(app: AppHandle<R>, id: String) -> Res
     // Invalidate the in-memory cache for this connection
     credential_cache::invalidate_all_for_connection(&cache, &id);
 
+    let chat_connection_id = id.clone();
+    tokio::task::spawn_blocking(move || {
+        crate::ai_chat::store::ConversationStore::new(&crate::paths::get_app_config_dir())
+            .delete_connection(&chat_connection_id)
+            .map_err(|error| error.to_string())
+    })
+    .await
+    .map_err(|_| "Could not clean up AI conversations".to_string())??;
+
     // Cascade-delete the custom icon file if the connection used one.
     {
         let app_data = crate::paths::get_app_data_dir();
@@ -6902,6 +6911,18 @@ pub async fn delete_connection_group<R: Runtime>(
     // subtree are removed as well.
     let to_delete = crate::models::collect_group_subtree(&file.groups, &id);
 
+    let chat_connection_ids: Vec<String> = file
+        .connections
+        .iter()
+        .filter(|connection| {
+            connection
+                .group_id
+                .as_ref()
+                .is_some_and(|group| to_delete.contains(group))
+        })
+        .map(|connection| connection.id.clone())
+        .collect();
+
     file.groups.retain(|g| !to_delete.contains(&g.id));
     file.connections.retain(|c| {
         !c.group_id
@@ -6910,6 +6931,19 @@ pub async fn delete_connection_group<R: Runtime>(
     });
 
     save_connections_and_invalidate(&app, &path, &file)?;
+
+    tokio::task::spawn_blocking(move || {
+        let chats =
+            crate::ai_chat::store::ConversationStore::new(&crate::paths::get_app_config_dir());
+        for connection_id in chat_connection_ids {
+            chats
+                .delete_connection(&connection_id)
+                .map_err(|error| error.to_string())?;
+        }
+        Ok::<(), String>(())
+    })
+    .await
+    .map_err(|_| "Could not clean up AI conversations".to_string())??;
 
     Ok(())
 }
