@@ -1,8 +1,10 @@
 use super::{
+    legacy::collect_legacy_response,
     message::{Block, Message},
     provider::{ChatEvent, ErrorKind, FinishReason, ProviderError},
     sse::{FrameParser, Framing},
 };
+use futures::{stream, StreamExt};
 use serde_json::json;
 
 #[test]
@@ -99,6 +101,62 @@ fn errors_are_typed_and_never_echo_upstream_bodies() {
         assert_eq!(error.kind, kind);
         assert!(!error.message.contains(body));
     }
+}
+
+#[tokio::test]
+async fn legacy_collects_streamed_text_and_keeps_code_fence_cleanup() {
+    let events = vec![
+        ChatEvent::ReasoningDelta {
+            text: "private thinking".into(),
+        },
+        ChatEvent::TextDelta {
+            text: "  ```sql\nSEL".into(),
+        },
+        ChatEvent::TextDelta {
+            text: "ECT 1;\n```  ".into(),
+        },
+        ChatEvent::Done {
+            finish: FinishReason::Stop,
+        },
+    ];
+    assert_eq!(
+        collect_legacy_response(stream::iter(events).boxed())
+            .await
+            .unwrap(),
+        "SELECT 1;"
+    );
+}
+
+#[tokio::test]
+async fn legacy_rejects_errors_and_incomplete_streams() {
+    let error = ProviderError::network();
+    assert_eq!(
+        collect_legacy_response(
+            stream::iter(vec![ChatEvent::Error {
+                error: error.clone()
+            }])
+            .boxed()
+        )
+        .await
+        .unwrap_err(),
+        error.message
+    );
+    assert!(collect_legacy_response(
+        stream::iter(vec![ChatEvent::TextDelta {
+            text: "partial".into()
+        }])
+        .boxed()
+    )
+    .await
+    .is_err());
+    assert!(collect_legacy_response(
+        stream::iter(vec![ChatEvent::Done {
+            finish: FinishReason::Cancelled
+        }])
+        .boxed()
+    )
+    .await
+    .is_err());
 }
 
 #[test]

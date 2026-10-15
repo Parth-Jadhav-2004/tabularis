@@ -46,11 +46,21 @@ fn test_minimax_endpoint_order_prefers_last_successful_region() {
 
 #[test]
 fn test_anthropic_request_body_omits_temperature() {
-    let body = anthropic_request_body("claude-sonnet-5-5", "system", "count users");
+    let req = crate::ai::provider::ChatRequest {
+        provider: "anthropic".to_string(),
+        model: "claude-sonnet-5-5".to_string(),
+        system: "system".to_string(),
+        messages: vec![crate::ai::message::Message::user("count users")],
+        tools: vec![],
+        max_output_tokens: Some(1024),
+        reasoning: None,
+        resolved_images: HashMap::new(),
+    };
+    let (body, _) = crate::ai::providers::legacy_anthropic_body(&req);
     assert!(body.get("temperature").is_none());
     assert_eq!(body["model"], "claude-sonnet-5-5");
     assert_eq!(body["system"], "system");
-    assert_eq!(body["messages"][0]["content"], "count users");
+    assert_eq!(body["messages"][0]["content"][0]["text"], "count users");
     assert_eq!(body["max_tokens"], 1024);
 }
 

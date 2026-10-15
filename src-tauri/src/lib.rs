@@ -666,6 +666,7 @@ pub fn run() {
             config::reset_tabrename_prompt,
             // AI
             ai::generate_ai_query,
+            ai::providers::get_ai_model_capabilities,
             ai::explain_ai_query,
             ai::analyze_ai_explain_plan,
             ai::generate_cell_name,

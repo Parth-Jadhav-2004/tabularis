@@ -130,13 +130,13 @@ Extend `ai_models.yaml` with optional `capabilities` per model. Live-fetched mod
 - [x] Run `impact` on `dispatch_provider`, `generate_ai_query`, `explain_ai_query`, `generate_cell_name`, `generate_tab_rename`, `suggest_table_name`, `analyze_ai_explain_plan`.
 - [x] Split `ai.rs` into `ai/` without behaviour changes (pure move, green tests).
 - [x] Add `message.rs`, `provider.rs`, the SSE/NDJSON parser.
-- [ ] Implement `stream()` for openai_compat, anthropic, ollama (text only).
-- [ ] Re-implement the legacy commands on top of `stream()` (collect into a string), keep `clean_response()`.
+- [x] Implement `stream()` for openai_compat, anthropic, ollama (text only).
+- [x] Re-implement the legacy commands on top of `stream()` (collect into a string), keep `clean_response()`.
 - [ ] Add `RunManager`, `ai_chat_send`, `ai_chat_cancel`, events.
-- [ ] Add tool definitions and tool-call parsing for each adapter.
-- [ ] Add image blocks to each adapter (used by M10).
-- [ ] Capabilities: yaml + Ollama probe + cache.
-- [ ] Typed provider errors with readable messages (auth, rate limit, context length).
+- [x] Add tool definitions and tool-call parsing for each adapter.
+- [x] Add image blocks to each adapter (used by M10).
+- [x] Capabilities: yaml + Ollama probe + cache.
+- [x] Typed provider errors with readable messages (auth, rate limit, context length).
 
 ## Tests
 

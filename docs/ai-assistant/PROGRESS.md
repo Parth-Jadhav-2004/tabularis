@@ -41,6 +41,14 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: M1 streaming adapters completed
+- Implemented OpenAI-compatible, Anthropic and Ollama streaming for text, reasoning, usage and tool calls, including fragmented tool arguments and typed/sanitized errors.
+- Legacy commands now collect streamed text and retain code-fence cleanup, proxy settings, local Ollama proxy bypass and MiniMax region failover.
+- Added cross-provider history mapping, stable provider-safe tool IDs, image serialization and explicit notices for omitted/flattened blocks. Blob resolution remains internal to Rust, ready for M2/M10.
+- Added YAML capabilities and successful-only cached Ollama `/api/show` probes; failed probes can be retried.
+- Validation: 34 focused AI tests, including local HTTP fixtures for all protocols, cancellation, errors and region failover. No live cloud requests made.
+- Next: cancellable run state and Tauri event coalescing.
+
 ### 2026-10-15: M1 messages and framing completed
 - Added provider-neutral messages, blocks, usage, requests, capabilities and typed errors.
 - Locked snake_case field names with a `type` discriminator for blocks/events; unknown block types are skipped without logging their content.

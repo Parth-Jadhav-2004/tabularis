@@ -1,7 +1,6 @@
 use crate::config;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -95,12 +94,12 @@ struct AiModelsCache {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-struct MiniMaxEndpoint {
+pub(super) struct MiniMaxEndpoint {
     region: &'static str,
-    openai_base_url: &'static str,
+    pub(super) openai_base_url: &'static str,
 }
 
-const MINIMAX_ENDPOINTS: [MiniMaxEndpoint; 2] = [
+pub(super) const MINIMAX_ENDPOINTS: [MiniMaxEndpoint; 2] = [
     MiniMaxEndpoint {
         region: "global",
         openai_base_url: "https://api.minimax.io/v1",
@@ -111,9 +110,9 @@ const MINIMAX_ENDPOINTS: [MiniMaxEndpoint; 2] = [
     },
 ];
 
-static MINIMAX_PREFERRED_ENDPOINT: AtomicUsize = AtomicUsize::new(0);
+pub(super) static MINIMAX_PREFERRED_ENDPOINT: AtomicUsize = AtomicUsize::new(0);
 
-fn minimax_endpoint_order(preferred: usize) -> [usize; 2] {
+pub(super) fn minimax_endpoint_order(preferred: usize) -> [usize; 2] {
     if preferred == 1 {
         [1, 0]
     } else {
@@ -161,7 +160,7 @@ fn save_cache(app: &AppHandle, models: &HashMap<String, Vec<String>>) {
 
 // --- Fetchers ---
 
-fn ai_client_for(provider: &str) -> Client {
+pub(super) fn ai_client_for(provider: &str) -> Client {
     crate::proxy::ai_http_client(provider).unwrap_or_else(|e| {
         log::warn!("Failed to build proxied AI client for {provider}: {e}");
         Client::new()
@@ -169,7 +168,7 @@ fn ai_client_for(provider: &str) -> Client {
 }
 
 /// Local Ollama is always on loopback — never send it through a remote proxy.
-fn ollama_http_client() -> Client {
+pub(super) fn ollama_http_client() -> Client {
     crate::proxy::direct_http_client().unwrap_or_else(|e| {
         log::warn!("Failed to build direct Ollama HTTP client: {e}");
         Client::new()
@@ -298,7 +297,7 @@ async fn fetch_openrouter_models() -> Vec<String> {
 ///
 /// This avoids hardcoding `/v1` so that providers using different
 /// version paths (e.g., Zhipu GLM's `/v4`) work correctly.
-fn build_api_url(base_url: &str, endpoint: &str) -> String {
+pub(super) fn build_api_url(base_url: &str, endpoint: &str) -> String {
     let trimmed = base_url.trim_end_matches('/');
 
     // User already provided the full path
@@ -526,7 +525,7 @@ pub async fn generate_cell_name(app: AppHandle, req: AiCellNameRequest) -> Resul
 
 // --- Shared helpers ---
 
-async fn resolve_model(
+pub(super) async fn resolve_model(
     provider: &str,
     model: &str,
     app_config: &config::AppConfig,
@@ -567,33 +566,27 @@ async fn dispatch_provider(
     system_prompt: &str,
     ollama_port: u16,
 ) -> Result<String, String> {
-    let api_key = if gen_req.provider != "ollama" {
-        config::get_ai_api_key(app, &gen_req.provider)?
-    } else {
-        String::new()
+    use super::provider::ChatProvider;
+    let mut req = super::provider::ChatRequest {
+        provider: gen_req.provider.clone(),
+        model: gen_req.model.clone(),
+        system: system_prompt.to_string(),
+        messages: vec![super::message::Message::user(&gen_req.prompt)],
+        tools: Vec::new(),
+        max_output_tokens: (gen_req.provider == "anthropic").then_some(1024),
+        reasoning: None,
+        resolved_images: HashMap::new(),
     };
-
-    let client = if gen_req.provider == "ollama" {
-        ollama_http_client()
-    } else {
-        ai_client_for(&gen_req.provider)
-    };
-    match gen_req.provider.as_str() {
-        "openai" => generate_openai(&client, &api_key, gen_req, system_prompt).await,
-        "anthropic" => generate_anthropic(&client, &api_key, gen_req, system_prompt).await,
-        "openrouter" => generate_openrouter(&client, &api_key, gen_req, system_prompt).await,
-        "ollama" => generate_ollama(&client, gen_req, system_prompt, ollama_port).await,
-        "custom-openai" => {
-            let base_url = app_config
-                .ai_custom_openai_url
-                .as_ref()
-                .filter(|u| !u.is_empty())
-                .ok_or("Custom OpenAI URL not configured.")?;
-            generate_custom_openai(&client, &api_key, gen_req, system_prompt, base_url).await
-        }
-        "minimax" => generate_minimax(&client, &api_key, gen_req, system_prompt).await,
-        _ => Err(format!("Unsupported provider: {}", gen_req.provider)),
-    }
+    let _ = (app_config, ollama_port);
+    let cancel = tokio_util::sync::CancellationToken::new();
+    let provider = super::providers::configured_provider(app, &mut req, &cancel)
+        .await
+        .map_err(|error| error.to_string())?;
+    let stream = provider
+        .stream(req, cancel)
+        .await
+        .map_err(|error| error.to_string())?;
+    collect_legacy_response(stream).await
 }
 
 // --- Logic Implementation ---
@@ -797,255 +790,27 @@ pub async fn generate_tab_rename(
     .await
 }
 
-// --- Provider Implementations ---
-
-async fn generate_openai(
-    client: &Client,
-    api_key: &str,
-    req: &AiGenerateRequest,
-    system_prompt: &str,
+/// Collect text only; reasoning and protocol metadata never reach the legacy modals.
+pub(super) async fn collect_legacy_response(
+    mut stream: futures::stream::BoxStream<'static, super::provider::ChatEvent>,
 ) -> Result<String, String> {
-    let body = json!({
-        "model": req.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.prompt}
-        ],
-        "temperature": 0.0
-    });
-
-    let res = client
-        .post("https://api.openai.com/v1/chat/completions")
-        .header("Authorization", format!("Bearer {}", api_key))
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if !res.status().is_success() {
-        let error_text = res.text().await.unwrap_or_default();
-        return Err(format!("OpenAI Error: {}", error_text));
-    }
-
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    let content = json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("Invalid response format from OpenAI")?;
-
-    Ok(clean_response(content))
-}
-
-async fn generate_custom_openai(
-    client: &Client,
-    api_key: &str,
-    req: &AiGenerateRequest,
-    system_prompt: &str,
-    base_url: &str,
-) -> Result<String, String> {
-    let body = json!({
-        "model": req.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.prompt}
-        ],
-        "temperature": 0.0
-    });
-
-    // Build the chat completions endpoint URL
-    let url = build_api_url(base_url, "/chat/completions");
-
-    let res = client
-        .post(&url)
-        .header("Authorization", format!("Bearer {}", api_key))
-        .header("Content-Type", "application/json")
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if !res.status().is_success() {
-        let error_text = res.text().await.unwrap_or_default();
-        return Err(format!("Custom OpenAI Error: {}", error_text));
-    }
-
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    let content = json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("Invalid response format from custom OpenAI-compatible provider")?;
-
-    Ok(clean_response(content))
-}
-
-async fn generate_openrouter(
-    client: &Client,
-    api_key: &str,
-    req: &AiGenerateRequest,
-    system_prompt: &str,
-) -> Result<String, String> {
-    let body = json!({
-        "model": req.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.prompt}
-        ],
-        "temperature": 0.0
-    });
-
-    let res = client
-        .post("https://openrouter.ai/api/v1/chat/completions")
-        .header("Authorization", format!("Bearer {}", api_key))
-        .header("HTTP-Referer", "https://github.com/TabularisDB/tabularis")
-        .header("X-Title", "Tabularis")
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if !res.status().is_success() {
-        let error_text = res.text().await.unwrap_or_default();
-        return Err(format!("OpenRouter Error: {}", error_text));
-    }
-
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    let content = json["choices"][0]["message"]["content"]
-        .as_str()
-        .ok_or("Invalid response format from OpenRouter")?;
-
-    Ok(clean_response(content))
-}
-
-/// Builds the Messages API body. No `temperature` is sent: newer Claude
-/// models (e.g. the 5.5 family) reject the parameter, and older ones work
-/// fine without it.
-fn anthropic_request_body(model: &str, system_prompt: &str, prompt: &str) -> serde_json::Value {
-    json!({
-        "model": model,
-        "system": system_prompt,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": 1024
-    })
-}
-
-async fn generate_anthropic(
-    client: &Client,
-    api_key: &str,
-    req: &AiGenerateRequest,
-    system_prompt: &str,
-) -> Result<String, String> {
-    let body = anthropic_request_body(&req.model, system_prompt, &req.prompt);
-
-    let res = client
-        .post("https://api.anthropic.com/v1/messages")
-        .header("x-api-key", api_key)
-        .header("anthropic-version", "2023-06-01")
-        .header("content-type", "application/json")
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if !res.status().is_success() {
-        let error_text = res.text().await.unwrap_or_default();
-        return Err(format!("Anthropic Error: {}", error_text));
-    }
-
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    let content = json["content"][0]["text"]
-        .as_str()
-        .ok_or("Invalid response format from Anthropic")?;
-
-    Ok(clean_response(content))
-}
-
-async fn generate_ollama(
-    client: &Client,
-    req: &AiGenerateRequest,
-    system_prompt: &str,
-    port: u16,
-) -> Result<String, String> {
-    let body = json!({
-        "model": req.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.prompt}
-        ],
-        "stream": false,
-        "options": {
-            "temperature": 0.0
-        }
-    });
-
-    let url = format!("http://localhost:{}/api/chat", port);
-    let res = client
-        .post(&url)
-        .json(&body)
-        .send()
-        .await
-        .map_err(|e| format!("Failed to connect to Ollama on port {}: {}", port, e))?;
-
-    if !res.status().is_success() {
-        let error_text = res.text().await.unwrap_or_default();
-        return Err(format!("Ollama Error: {}", error_text));
-    }
-
-    let json: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    let content = json["message"]["content"]
-        .as_str()
-        .ok_or("Invalid response format from Ollama")?;
-
-    Ok(clean_response(content))
-}
-
-async fn generate_minimax(
-    client: &Client,
-    api_key: &str,
-    req: &AiGenerateRequest,
-    system_prompt: &str,
-) -> Result<String, String> {
-    let body = json!({
-        "model": req.model,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": req.prompt}
-        ],
-        "temperature": 0.1
-    });
-
-    let preferred = MINIMAX_PREFERRED_ENDPOINT.load(Ordering::Relaxed);
-    let mut errors = Vec::new();
-
-    for index in minimax_endpoint_order(preferred) {
-        let endpoint = MINIMAX_ENDPOINTS[index];
-        let url = format!("{}/chat/completions", endpoint.openai_base_url);
-        match client
-            .post(url)
-            .header("Authorization", format!("Bearer {}", api_key))
-            .header("Content-Type", "application/json")
-            .json(&body)
-            .send()
-            .await
-        {
-            Ok(res) if res.status().is_success() => {
-                let json: serde_json::Value =
-                    res.json().await.map_err(|e| e.to_string())?;
-                let content = json["choices"][0]["message"]["content"]
-                    .as_str()
-                    .ok_or("Invalid response format from MiniMax")?;
-                MINIMAX_PREFERRED_ENDPOINT.store(index, Ordering::Relaxed);
-                return Ok(clean_response(content));
+    use super::provider::{ChatEvent, FinishReason};
+    use futures::StreamExt;
+    let mut text = String::new();
+    while let Some(event) = stream.next().await {
+        match event {
+            ChatEvent::TextDelta { text: delta } => text.push_str(&delta),
+            ChatEvent::Error { error } => return Err(error.to_string()),
+            ChatEvent::Done {
+                finish: FinishReason::Stop | FinishReason::Length,
+            } => return Ok(clean_response(&text)),
+            ChatEvent::Done { .. } => {
+                return Err("The AI provider could not complete the request.".to_string())
             }
-            Ok(res) => {
-                let status = res.status();
-                let error_text = res.text().await.unwrap_or_default();
-                errors.push(format!("{} ({status}): {error_text}", endpoint.region));
-            }
-            Err(error) => errors.push(format!("{}: {error}", endpoint.region)),
+            _ => {}
         }
     }
-
-    Err(format!("MiniMax Error: {}", errors.join("; ")))
+    Err("The AI provider returned an incomplete response.".to_string())
 }
 
 fn clean_response(text: &str) -> String {
