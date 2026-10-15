@@ -40,6 +40,12 @@ pub async fn configured_provider(
     };
     let key = if req.provider == "ollama" {
         String::new()
+    } else if req.provider == "custom-openai"
+        && super::super::availability::configured_keyless_url(
+            config.ai_custom_openai_url.as_deref(),
+        )
+    {
+        crate::config::get_ai_api_key(app, &req.provider).unwrap_or_default()
     } else {
         crate::config::get_ai_api_key(app, &req.provider).map_err(|_| {
             ProviderError::new(

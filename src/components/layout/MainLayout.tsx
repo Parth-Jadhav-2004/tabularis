@@ -4,6 +4,8 @@ import { LoadingState } from "../ui/LoadingState";
 
 import { CommandPaletteProvider } from "../../contexts/CommandPaletteProvider";
 import { PluginRegistryProvider } from "../../contexts/PluginRegistryProvider";
+import { AiChatProvider } from "../../contexts/AiChatProvider";
+import { AiEditorProvider } from "../../contexts/AiEditorProvider";
 import { PluginUpdateToast } from "../plugins/PluginUpdateToast";
 import { useAutoConnectFromUrl } from "../../hooks/useAutoConnectFromUrl";
 import { useConnectionLayoutContext } from "../../hooks/useConnectionLayoutContext";
@@ -72,7 +74,11 @@ export const MainLayout = () => (
   <PluginRegistryProvider>
     <PluginUpdateToast />
     <CommandPaletteProvider>
+      <AiEditorProvider>
+      <AiChatProvider>
       <MainLayoutContent />
+      </AiChatProvider>
+      </AiEditorProvider>
     </CommandPaletteProvider>
   </PluginRegistryProvider>
 );

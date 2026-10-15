@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import type { OnMount } from "@monaco-editor/react";
 import { SqlEditorWrapper } from "../ui/SqlEditorWrapper";
-import { useSettings } from "../../hooks/useSettings";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
 import { NotebookAiButtons } from "./NotebookAiButtons";
 import { CellSectionHeader } from "./CellSectionHeader";
 
@@ -27,7 +27,7 @@ export function SqlCellEditor({
   collapsed,
   onToggleCollapse,
 }: SqlCellEditorProps) {
-  const { settings } = useSettings();
+  const { available } = useAiAvailability();
   const { t } = useTranslation();
   const [editorHeight, setEditorHeight] = useState(60);
   const onMount: OnMount = useCallback((editor) => {
@@ -59,7 +59,7 @@ export function SqlCellEditor({
               scrollbar: { alwaysConsumeMouseWheel: false },
             }}
           />
-          {settings.aiEnabled && (
+          {available && (
             <NotebookAiButtons
               content={content}
               onInsert={onContentChange}

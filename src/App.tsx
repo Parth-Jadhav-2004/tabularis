@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { MainLayout } from "./components/layout/MainLayout";
 import { ConnectionLayoutProvider } from "./contexts/ConnectionLayoutProvider";
 import { RightSidebarProvider } from "./contexts/RightSidebarProvider";
+import { AiAvailabilityProvider } from "./contexts/AiAvailabilityProvider";
 import { KeybindingsProvider } from "./contexts/KeybindingsProvider";
 import { PluginSlotProvider } from "./contexts/PluginSlotProvider";
 import { PluginRuntimeWarningToasts } from "./components/plugins/PluginRuntimeWarningToasts";
@@ -114,7 +115,7 @@ export function App() {
   }, [isDebugMode]);
 
   return (
-    <>
+    <AiAvailabilityProvider>
       <AlertProvider>
         <BrowserRouter>
           <ConnectionHealthMonitor />
@@ -205,6 +206,6 @@ export function App() {
         configuredRegistry={settings.tabulariumRegistryUrl ?? null}
       />
 
-    </>
+    </AiAvailabilityProvider>
   );
 }

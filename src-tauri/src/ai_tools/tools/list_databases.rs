@@ -3,7 +3,7 @@ use crate::ai_tools::connections::resolve_db_driver;
 use crate::ai_tools::output::{tool_result, ToolOutputFormat};
 use crate::config::AppConfig;
 use crate::mcp::protocol::JsonRpcError;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 pub(crate) async fn tool_list_databases(
     args: &serde_json::Map<String, Value>,
@@ -26,15 +26,13 @@ pub(crate) async fn tool_list_databases(
         resolve_db_driver(conn_id, config.active_external_drivers.as_deref()).await?;
     audit.connection_name = Some(conn.name.clone());
 
-    let databases = driver
-        .get_databases(&db_params)
+    let databases = crate::ai_tools::database::list_databases(driver.as_ref(), &db_params)
         .await
-        .map_err(|e| JsonRpcError {
+        .map_err(|message| JsonRpcError {
             code: -32000,
-            message: e,
+            message,
             data: None,
         })?;
-
-    audit.rows = Some(databases.len());
-    tool_result(&json!(databases), format)
+    audit.rows = Some(databases.as_array().map_or(0, Vec::len));
+    tool_result(&databases, format)
 }

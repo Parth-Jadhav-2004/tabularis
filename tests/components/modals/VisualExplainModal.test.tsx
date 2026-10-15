@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VisualExplainModal } from "../../../src/components/modals/VisualExplainModal";
 import type { VisualExplainViewProps } from "../../../src/components/explain/VisualExplainView";
 
-const database = vi.hoisted(() => ({ getConnectionData: vi.fn() }));
+const database = vi.hoisted(() => ({ getConnectionData: vi.fn(), aiAvailable: true }));
 vi.mock("react-i18next", () => {
   const t = (key: string) => key;
   return { useTranslation: () => ({ t }) };
@@ -15,8 +15,8 @@ vi.mock("lucide-react", () => vi.importActual("lucide-react"));
 vi.mock("../../../src/hooks/useDatabase", () => ({
   useDatabase: () => ({ ...database, connections: [] }),
 }));
-vi.mock("../../../src/hooks/useSettings", () => ({
-  useSettings: () => ({ settings: { aiEnabled: true } }),
+vi.mock("../../../src/hooks/useAiAvailability", () => ({
+  useAiAvailability: () => ({ available: database.aiAvailable }),
 }));
 vi.mock("../../../src/hooks/useDrivers", () => ({
   useDrivers: () => ({ allDrivers: [{ id: "postgres", name: "PostgreSQL" }] }),
@@ -54,6 +54,7 @@ async function settle() {
 
 describe("VisualExplainModal legacy execution", () => {
   beforeEach(() => {
+    database.aiAvailable = true;
     mockInvoke.mockReset().mockResolvedValue({ kind: "plan", plan: makePlan() });
     database.getConnectionData.mockReset().mockReturnValue({
       driver: "postgres", connectionName: "Live connection", databaseName: "warehouse", activeSchema: "public",
@@ -66,6 +67,16 @@ describe("VisualExplainModal legacy execution", () => {
     await settle();
     expect(screen.queryByTestId("explain-view")).not.toBeInTheDocument();
     expect(mockInvoke).not.toHaveBeenCalled();
+  });
+
+  it("hides AI controls when no provider is usable while preserving normal EXPLAIN", async () => {
+    database.aiAvailable = false;
+    render(<VisualExplainModal {...defaults} />);
+    await settle();
+    expect(screen.getByTestId("ai-enabled")).toHaveTextContent("false");
+    expect(mockInvoke).toHaveBeenCalledExactlyOnceWith("explain_query_plan", {
+      connectionId: "connection-1", query: defaults.query, analyze: true, schema: null, database: null,
+    });
   });
 
   it("runs SELECT with Analyze enabled and null schema exactly once under StrictMode", async () => {

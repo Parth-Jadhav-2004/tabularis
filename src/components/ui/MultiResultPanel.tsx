@@ -39,6 +39,7 @@ import {
   getEntryDisplayLabel,
 } from "../../utils/multiResult";
 import { useSettings } from "../../hooks/useSettings";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
 import type { QueryResultEntry } from "../../types/editor";
 
 interface MultiResultPanelProps {
@@ -266,6 +267,7 @@ export function MultiResultPanel({
 }: MultiResultPanelProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { available: aiAvailable } = useAiAvailability();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -359,7 +361,7 @@ export function MultiResultPanel({
     }
   };
 
-  const aiEnabled = !!(settings.aiEnabled && settings.aiProvider);
+  const aiEnabled = aiAvailable;
 
   const viewToggle = results.length > 1 && (
     <button

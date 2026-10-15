@@ -76,6 +76,7 @@ pub async fn ai_chat_send(
     manager: State<'_, RunManager>,
     mut req: ChatRequest,
     run_id: Option<String>,
+    context: Option<super::request_context::ContextSpec>,
 ) -> Result<String, ProviderError> {
     if !crate::config::load_config_internal(&app)
         .ai_enabled
@@ -94,9 +95,25 @@ pub async fn ai_chat_send(
             let _ = app.emit(&channel, event);
         };
         let result = async {
+            let metadata = if let Some(spec) = context {
+                let built = tokio::select! {
+                    biased;
+                    _ = guard.cancel.cancelled() => return Err(ProviderError::new(ErrorKind::Other, "AI request cancelled.")),
+                    result = tokio::time::timeout(std::time::Duration::from_secs(15), super::request_context::resolve(&app, &spec)) => {
+                        result.map_err(|_| ProviderError::new(ErrorKind::Other, "Preparing the AI context timed out. Refresh the schema or reduce the context and try again."))??
+                    }
+                };
+                Some(super::request_context::apply(&mut req, built)?)
+            } else { None };
             let provider =
                 crate::ai::providers::configured_provider(&app, &mut req, &guard.cancel).await?;
-            provider.stream(req, guard.cancel.clone()).await
+            let stream = provider.stream(req, guard.cancel.clone()).await?;
+            if !guard.cancel.is_cancelled() {
+                if let Some(metadata) = metadata {
+                    let _ = app.emit(&channel, metadata);
+                }
+            }
+            Ok(stream)
         }
         .await;
         match result {

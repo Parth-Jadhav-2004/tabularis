@@ -9,6 +9,9 @@ import { useCommandPaletteState } from "./useCommandPalette";
 import { useKeybindings } from "./useKeybindings";
 import { useActiveCommandPaletteScope } from "./useCommandPaletteScope";
 import { SettingsContext } from "../contexts/SettingsContext";
+import { useAiAvailability } from "./useAiAvailability";
+import { useToggleAiChat } from "./useToggleAiChat";
+import type { PaletteItem } from "../types/palette";
 
 export function useCommandPaletteActionItems(
   onGenerateSql: (target: TableTarget) => void,
@@ -18,6 +21,8 @@ export function useCommandPaletteActionItems(
   const { shortcuts, overrides, isMac } = useKeybindings();
   const { focusContext } = useCommandPaletteState();
   const scope = useActiveCommandPaletteScope();
+  const { available: aiAvailable } = useAiAvailability();
+  const toggleAiChat = useToggleAiChat();
   // Read the settings context directly so the palette also renders outside a
   // SettingsProvider (isolated hook usage); the app always provides it.
   const settingsContext = useContext(SettingsContext);
@@ -91,7 +96,12 @@ export function useCommandPaletteActionItems(
         })
       : [];
 
-    return [...builtInItems, ...connectionItems];
+    const aiItems: PaletteItem[] = aiAvailable ? [{
+      id: "ai.toggle-chat", title: t("aiChat.toggle"), group: t("settings.shortcuts.categories.editor"),
+      icon: "generate-sql", shortcut: getShortcut("toggle_ai_chat"),
+      primaryAction: { id: "ai.toggle-chat", label: t("aiChat.toggle"), execute: toggleAiChat },
+    }] : [];
+    return [...builtInItems, ...connectionItems, ...aiItems];
   }, [
     onGenerateSql,
     onInspect,
@@ -103,5 +113,7 @@ export function useCommandPaletteActionItems(
     focusContext,
     wordWrapEnabled,
     toggleWordWrap,
+    aiAvailable,
+    toggleAiChat,
   ]);
 }

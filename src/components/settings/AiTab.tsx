@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import clsx from "clsx";
 import { useSettings } from "../../hooks/useSettings";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
 import { useAlert } from "../../hooks/useAlert";
 import type { AiProvider } from "../../contexts/SettingsContext";
 import { getProviderLabel } from "../../utils/settingsUI";
@@ -81,6 +82,7 @@ const PROVIDERS: Array<{
 export function AiTab() {
   const { t } = useTranslation();
   const { settings, updateSetting } = useSettings();
+  const { refresh: refreshAvailability } = useAiAvailability();
   const { showAlert } = useAlert();
 
   const [aiKeyStatus, setAiKeyStatus] = useState<
@@ -96,9 +98,10 @@ export function AiTab() {
   const [explainPrompt, setExplainPrompt] = useState("");
   const [cellnamePrompt, setCellnamePrompt] = useState("");
   const [tabrenamePrompt, setTabrenamePrompt] = useState("");
+  const [chattitlePrompt, setChattitlePrompt] = useState("");
   const [explainplanPrompt, setExplainplanPrompt] = useState("");
   const [promptSectionOpen, setPromptSectionOpen] = useState<
-    "system" | "explain" | "cellname" | "tabrename" | "explainplan" | null
+    "system" | "explain" | "cellname" | "tabrename" | "chattitle" | "explainplan" | null
   >(null);
 
   const loadModels = useCallback(
@@ -173,6 +176,9 @@ export function AiTab() {
     invoke<string>("get_tabrename_prompt")
       .then(setTabrenamePrompt)
       .catch(console.error);
+    invoke<string>("get_chattitle_prompt")
+      .then(setChattitlePrompt)
+      .catch(() => {});
     invoke<string>("get_explainplan_prompt")
       .then(setExplainplanPrompt)
       .catch(console.error);
@@ -182,6 +188,7 @@ export function AiTab() {
     if (!keyInput.trim()) return;
     try {
       await invoke("set_ai_key", { provider, key: keyInput });
+      refreshAvailability();
       await checkKeys();
       setKeyInput("");
       setEditingKey(false);
@@ -194,10 +201,10 @@ export function AiTab() {
     }
   };
 
-  const handleSavePrompt = async (type: "system" | "explain" | "cellname" | "tabrename" | "explainplan") => {
-    const cmdMap = { system: "save_system_prompt", explain: "save_explain_prompt", cellname: "save_cellname_prompt", tabrename: "save_tabrename_prompt", explainplan: "save_explainplan_prompt" } as const;
+  const handleSavePrompt = async (type: "system" | "explain" | "cellname" | "tabrename" | "chattitle" | "explainplan") => {
+    const cmdMap = { system: "save_system_prompt", explain: "save_explain_prompt", cellname: "save_cellname_prompt", tabrename: "save_tabrename_prompt", chattitle: "save_chattitle_prompt", explainplan: "save_explainplan_prompt" } as const;
     const cmd = cmdMap[type];
-    const promptMap = { system: systemPrompt, explain: explainPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, explainplan: explainplanPrompt };
+    const promptMap = { system: systemPrompt, explain: explainPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, chattitle: chattitlePrompt, explainplan: explainplanPrompt };
     const prompt = promptMap[type];
     try {
       await invoke(cmd, { prompt });
@@ -210,10 +217,10 @@ export function AiTab() {
     }
   };
 
-  const handleResetPrompt = async (type: "system" | "explain" | "cellname" | "tabrename" | "explainplan") => {
-    const cmdMap = { system: "reset_system_prompt", explain: "reset_explain_prompt", cellname: "reset_cellname_prompt", tabrename: "reset_tabrename_prompt", explainplan: "reset_explainplan_prompt" } as const;
+  const handleResetPrompt = async (type: "system" | "explain" | "cellname" | "tabrename" | "chattitle" | "explainplan") => {
+    const cmdMap = { system: "reset_system_prompt", explain: "reset_explain_prompt", cellname: "reset_cellname_prompt", tabrename: "reset_tabrename_prompt", chattitle: "reset_chattitle_prompt", explainplan: "reset_explainplan_prompt" } as const;
     const cmd = cmdMap[type];
-    const setterMap = { system: setSystemPrompt, explain: setExplainPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, explainplan: setExplainplanPrompt };
+    const setterMap = { system: setSystemPrompt, explain: setExplainPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, chattitle: setChattitlePrompt, explainplan: setExplainplanPrompt };
     const setter = setterMap[type];
     try {
       const defaultPrompt = await invoke<string>(cmd);
@@ -355,6 +362,7 @@ export function AiTab() {
                                   await invoke("delete_ai_key", {
                                     provider: settings.aiProvider,
                                   });
+                                  refreshAvailability();
                                   await checkKeys();
                                   showAlert(
                                     t("settings.ai.keyResetSuccess"),
@@ -643,10 +651,10 @@ export function AiTab() {
 
         {/* Prompt customization */}
         <SettingSection title={t("settings.ai.promptCustomization")}>
-          {(["system", "explain", "cellname", "tabrename", "explainplan"] as const).map((type) => {
+          {(["system", "explain", "cellname", "tabrename", "chattitle", "explainplan"] as const).map((type) => {
             const isOpen = promptSectionOpen === type;
-            const promptMap = { system: systemPrompt, explain: explainPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, explainplan: explainplanPrompt };
-            const setPromptMap = { system: setSystemPrompt, explain: setExplainPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, explainplan: setExplainplanPrompt };
+            const promptMap = { system: systemPrompt, explain: explainPrompt, cellname: cellnamePrompt, tabrename: tabrenamePrompt, chattitle: chattitlePrompt, explainplan: explainplanPrompt };
+            const setPromptMap = { system: setSystemPrompt, explain: setExplainPrompt, cellname: setCellnamePrompt, tabrename: setTabrenamePrompt, chattitle: setChattitlePrompt, explainplan: setExplainplanPrompt };
             const prompt = promptMap[type];
             const setPrompt = setPromptMap[type];
             return (
@@ -659,7 +667,8 @@ export function AiTab() {
                   onClick={() =>
                     setPromptSectionOpen(isOpen ? null : type)
                   }
-                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-base/40 transition-colors"
+                  aria-expanded={isOpen}
+                  className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-base/40 transition-colors focus-ring"
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-1.5 rounded-lg bg-surface-secondary text-muted">
@@ -685,11 +694,12 @@ export function AiTab() {
                 {isOpen && (
                   <div className="px-5 pb-5 pt-1 border-t border-default">
                     <textarea autoCorrect="off" autoCapitalize="off" autoComplete="off" spellCheck={false}
+                      aria-label={t(`settings.ai.${type}Prompt`)}
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       className="w-full h-36 bg-base border border-strong rounded-lg p-3 text-primary text-sm font-mono focus:outline-none focus:border-focus transition-colors resize-y"
                       placeholder={t(
-                        `settings.ai.enter${type === "system" ? "System" : type === "explain" ? "Explain" : type === "cellname" ? "Cellname" : "Tabrename"}Prompt`,
+                        `settings.ai.enter${type === "system" ? "System" : type === "explain" ? "Explain" : type === "cellname" ? "Cellname" : type === "chattitle" ? "Chattitle" : "Tabrename"}Prompt`,
                       )}
                     />
                     <div className="flex justify-end gap-2 mt-3">

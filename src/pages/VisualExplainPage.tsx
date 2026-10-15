@@ -12,7 +12,7 @@ import {
   parseExplainFileParam,
 } from "../utils/explainImport";
 import { parseVisualExplainDeepLink } from "../utils/aiActivity";
-import { useSettings } from "../hooks/useSettings";
+import { useAiAvailability } from "../hooks/useAiAvailability";
 import { useExplainPlan } from "../hooks/useExplainPlan";
 
 export interface VisualExplainPageProps {
@@ -28,7 +28,7 @@ export const VisualExplainPage = ({
   compactMode = false,
 }: VisualExplainPageProps = {}) => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const { available } = useAiAvailability();
   const { search } = useLocation();
   const initialParamPath = parseExplainFileParam(search);
   const deepLink = parseVisualExplainDeepLink(search);
@@ -232,7 +232,7 @@ export const VisualExplainPage = ({
             onViewModeChange={setViewMode}
             selectedNodeId={selectedNodeId}
             onSelectNode={setSelectedNodeId}
-            aiEnabled={!!settings.aiEnabled}
+            aiEnabled={available}
           />
         )}
       </div>

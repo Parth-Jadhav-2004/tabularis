@@ -103,6 +103,10 @@ pub struct ContextItemRef {
     pub kind: String,
     pub id: String,
     pub label: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chars: Option<usize>,
+    #[serde(default)]
+    pub truncated: bool,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]

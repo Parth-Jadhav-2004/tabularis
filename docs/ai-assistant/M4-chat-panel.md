@@ -8,11 +8,14 @@ A working chat in the right sidebar: send a message, stream the answer, render m
 
 ## Current state
 
-- `src/contexts/RightSidebarContext.ts`: `RightSidebarPanel = "row-editor" | null`, with `isOpen`, `isPinned`, `toggle`, `close`, `setActivePanel`, `togglePin`.
+- Frontend wire types, the shared `AiChatProvider` / `useAiChat` session, lazy sidebar panel, Markdown/SQL rendering, composer and model picker are implemented. `MainLayout` mounts the session above the sidebar; transcripts and drafts survive panel switches.
+- `src/contexts/RightSidebarContext.ts`: `RightSidebarPanel = "row-editor" | "ai-chat" | null`, with `isOpen`, `isPinned`, `toggle`, `close`, `setActivePanel`, `togglePin`.
 - `src/components/layout/RightSidebar.tsx` is mounted in `MainLayout.tsx`; width and resize in `useRightSidebarResize.ts` (localStorage).
-- `react-markdown` ^10 is a dependency (unused by the AI features today).
+- `react-markdown` renders assistant text with raw HTML and remote images omitted.
 - Command palette: `CommandPaletteProvider`; shortcuts in `src/config/shortcuts.json`.
 - AI settings: `aiEnabled`, `aiProvider`, `aiModel`, `aiCustomOpenaiModel` in `SettingsContext.ts`; the model list comes from `get_ai_models`.
+- `AiAvailabilityProvider` gates existing editor, result, notebook, import and Visual Explain AI surfaces. Configured offline Ollama instances remain in the picker with a disabled reason; the loopback probe has a two-second timeout.
+- Automated implementation checks and an in-memory browser fixture pass. Native provider/keychain and real Monaco/production-confirmation smoke checks remain pending.
 
 ## Design
 
@@ -32,8 +35,22 @@ src/components/ai-chat/
   ChatComposer.tsx         # textarea, send/stop, model picker, attachments row (M10)
   ModelPicker.tsx
 src/hooks/useAiChat.ts     # run lifecycle and event subscription
+src/contexts/AiChatContext.ts
+src/contexts/AiChatProvider.tsx  # shared session, independent of panel mounting
 src/types/aiChat.ts        # TS mirrors of Message/Block/ChatEvent
-src/utils/aiChat.ts        # pure helpers (block parsing, SQL fence detection)
+src/utils/aiChat.ts        # pure reducer and message/conversation creation
+src/utils/aiChatSession.ts # event lifecycle, cancellation and persistence
+src/utils/aiChatTransport.ts # injectable Tauri IPC/event adapter
+src/contexts/AiEditorContext.ts
+src/contexts/AiEditorProvider.tsx
+src/hooks/useAiEditor.ts   # active-scope registration/lookup, including split panes
+src/utils/aiEditor.ts      # undoable edits and normal console navigation
+src/contexts/AiAvailabilityContext.ts
+src/contexts/AiAvailabilityProvider.tsx
+src/hooks/useAiAvailability.ts
+src/hooks/useAiChatModels.ts
+src/utils/aiChatModels.ts
+src/utils/aiChatMarkdown.ts
 ```
 
 React rule: files that export components don't export helpers. Put helpers in `src/utils/aiChat.ts`.
@@ -43,31 +60,35 @@ React rule: files that export components don't export helpers. Put helpers in `s
 - `RightSidebarPanel = "row-editor" | "ai-chat" | null`.
 - Lazy-load `AiChatPanel` in `RightSidebar.tsx`.
 - Opening the row editor while the chat is open switches panel; the chat state lives in a provider (`AiChatProvider`), so switching back restores it.
-- Toggle from: a button in the editor toolbar (next to the current AI dropdown for now), the command palette ("Toggle AI assistant"), and a shortcut (for example `Mod+Shift+I`; check `shortcuts.json` for conflicts).
+- Toggle from: a button next to the current editor AI dropdown, the command palette ("Toggle AI assistant"), and the conflict-free, configurable `Mod+Shift+I` shortcut.
 - Visibility: see "AI availability" below. When AI is unavailable, the toolbar button, palette command and shortcut are not registered at all.
 
 ### `useAiChat`
 
-- State: `conversation`, `runState: idle | streaming | error`, `draft`.
+- State: `conversation`, `runState: idle | streaming | error`, `draft`, plus readiness, notices and a separate save status/result.
+- `AiChatProvider` owns a reducer-backed session through `useSyncExternalStore`; `useAiChat` reads its context. The panel can unmount without losing the transcript or draft.
 - `send(text)`:
-  1. append the user message locally
-  2. `invoke("ai_chat_send", ...)` → `runId`
-  3. `listen("ai-chat://" + runId)` and fold the events into a pending assistant message
-  4. on `Done`, persist through `ai_chat_save` and unlisten
+  1. generate a canonical UUID and append the user plus pending assistant locally
+  2. await `listen("ai-chat://" + runId)` before starting the backend run
+  3. `invoke("ai_chat_send", { req, runId })` and fold events with the reducer
+  4. on `Done`, unlisten and persist exactly once through `ai_chat_save`, including partial cancelled/failed responses
 - `stop()` → `ai_chat_cancel(runId)`.
+- Stop before subscription completes never starts a backend request. Cancellation while `invoke` is pending is repeated after acknowledgement so it cannot precede backend run registration unnoticed.
+- New turns wait for an in-flight save; a failed save keeps the transcript and exposes `retrySave()`. Model changes affect the next request while assistant messages retain their producing model.
 - Avoid a synchronous setState in effects (React rules); fold the events with a reducer.
-- Unlisten on unmount and on conversation switch.
+- Unlisten/cancel on provider unmount and conversation switch; ignore stale events and save completions. Subscribe to `ai-chat://storage-cleared` before allowing sends, and clear the session on reset/delete-all.
+- Tool events are ignored and requests advertise no tools until M9.
 
 ### SQL blocks
 
-Detect fenced `sql` blocks (and untagged blocks that parse as SQL for the active dialect, best effort). Actions:
+Detect fenced SQL/dialect blocks and conservatively recognize common SQL statements in untagged fences. Recognition is for presentation; execution still uses the normal SQL guards. Actions:
 
 - **Copy**
 - **Insert at cursor:** Monaco `executeEdits` on the active editor tab, so it is undoable. Without an active editor, open a new query tab.
-- **Replace query:** `updateActiveTab({ query })`.
-- **Run:** through the normal `runQuery` path, so production and read-only confirmations still apply. Never bypass them.
+- **Replace query:** an undoable Monaco edit of the full model, immediately synchronized through `updateTab`.
+- **Run:** open a console in the active connection/database/schema through `openEditorInScope`; its existing single/batch execution, parameter and query-guard pipeline applies production and read-only protections.
 
-You need a way to reach the active Monaco instance from outside `Editor.tsx`. Check `EditorProvider.tsx` for an existing ref or registry; otherwise add a small "active editor commands" context (insert / replace / run) that `Editor.tsx` registers.
+`Editor.tsx` registers commands in a dedicated `AiEditorProvider` store. The selected command scope identifies the active split pane without changing the shared command-palette bridge. Read-only definition tabs and non-console tabs open a fresh console instead of being modified. Actions are disabled during the current assistant response and whenever the active connection/database/schema differs from the conversation target.
 
 ### AI availability
 
@@ -76,7 +97,7 @@ Every AI surface (panel, toolbar button, palette entries, shortcut, slash comman
 1. `settings.aiEnabled` is true, **and**
 2. at least one provider is usable: a key is configured (keychain or env var, see `check_ai_key_status`), or a keyless provider is configured (Ollama with a port, custom OpenAI-compatible with a base URL).
 
-- New backend command `get_ai_available_providers() -> [{ provider, label, source: keychain | env | keyless, models_cached: bool }]`, built on `check_ai_key_status` for each provider.
+- Backend command `get_ai_available_providers() -> [{ provider, label, source: keychain | env | keyless, models_cached, usable, reason }]`, built on the shared key-status helper. Credentials stay in Rust. Ollama requires an explicit valid port and a reachable instance with models; custom OpenAI requires a valid HTTP(S) base URL and may be keyless. Configured unavailable providers carry `unreachable` or `no_models` reasons.
 - A single frontend hook `useAiAvailability()` (one context, refreshed when AI settings change or a key is saved/deleted) that every AI surface reads. No component checks `aiEnabled` on its own.
 - If the last provider becomes unusable while the panel is open, the panel shows an empty state with a link to Settings > AI instead of disappearing mid-conversation.
 
@@ -102,22 +123,26 @@ Switching provider/model happens directly in the chat, under the composer, like 
 
 ## Steps
 
-- [ ] `impact` on `RightSidebar`, `RightSidebarProvider`, `MainLayout`, `Editor.tsx` toolbar area.
-- [ ] Types in `src/types/aiChat.ts` matching M1's serde shape (snake_case vs camelCase: decide once and stick to it).
-- [ ] `AiChatProvider` + `useAiChat` with a mocked event source first (unit-testable).
-- [ ] Panel, header, transcript, message, blocks.
-- [ ] Active-editor command bridge + SQL block actions.
-- [ ] `get_ai_available_providers` + `useAiAvailability` + gate every AI surface on it.
-- [ ] Composer + provider/model picker (per conversation, mid-conversation switch with notices).
-- [ ] Toolbar button, palette command, shortcut.
-- [ ] i18n keys in every locale.
+- [x] `impact` on `RightSidebar`, `RightSidebarProvider`, `MainLayout`, `Editor.tsx` toolbar area. Re-run before editing those symbols for integration.
+- [x] Types in `src/types/aiChat.ts` matching M1's serde shape (snake_case fields/values and `type` discriminator).
+- [x] `AiChatProvider` + `useAiChat` with a mocked event source first (unit-testable).
+- [x] Panel, header, transcript, message, blocks.
+- [x] Active-editor command bridge + SQL block actions.
+- [x] `get_ai_available_providers` + `useAiAvailability` + gate every AI surface on it.
+- [x] Composer + provider/model picker (per conversation, mid-conversation switch with notices).
+- [x] Toolbar button, palette command, shortcut.
+- [x] i18n keys in every locale.
+- [ ] Native smoke: real provider streaming/cancellation and encrypted save; Monaco cursor/undo, split panes and production/read-only execution confirmations.
 
 ## Tests
 
-- `useAiChat` reducer: deltas, done, error, cancel; tool events ignored for now.
-- SQL fence extraction utilities.
-- Component test: send → streaming → done renders markdown and SQL actions.
-- Insert/Replace call the bridge with the right payload.
+- Covered: reducer deltas, reasoning signatures, usage/notices, done, error, cancel; tool events ignored for now.
+- Covered: early events, subscription/invoke failures, duplicate sends, cancellation during subscription/invoke, panel consumer remount, conversation switches, provider unmount, StrictMode replay, storage reset and save retry/isolation.
+- Covered: SQL fence recognition, Markdown rendering, HTML/remote-image omission and exact SQL action payloads after completion.
+- Covered: undoable insert/replace, no-editor fallback, guarded console-navigation delegation and active split-scope registration/cleanup.
+- Covered: model preference/defaults, provider switching with full history, credential/settings refresh isolation, disabled/offline providers, keyboard/IME handling and gated shortcuts.
+- Covered: component streaming/stop/save retry/reset, panel remount, changed targets and loss of the final provider.
+- Visual fixture: Italian UI, Light/Dark/High Contrast themes, square corners, keyboard focus and SQL insertion; transport, storage and editor actions are in-memory fixtures.
 
 ## Done when
 

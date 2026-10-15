@@ -400,6 +400,14 @@ describe("approvalConnectionLabel", () => {
       "dev / analytics",
     );
   });
+
+  it("shows the schema alongside the database for assistant approvals", () => {
+    expect(approvalConnectionLabel({ ...base, database: "analytics", schema: "reporting" })).toBe(
+      "dev / analytics / reporting",
+    );
+    expect(approvalConnectionLabel({ ...base, schema: "public" })).toBe("dev / public");
+    expect(approvalConnectionLabel({ ...base, schema: null })).toBe("dev");
+  });
 });
 
 describe("sortAiEvents", () => {

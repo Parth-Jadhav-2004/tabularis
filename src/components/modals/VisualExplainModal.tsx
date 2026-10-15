@@ -6,7 +6,7 @@ import {
   RefreshCw,
   AlertTriangle,
 } from "lucide-react";
-import { useSettings } from "../../hooks/useSettings";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
 import { useDatabase } from "../../hooks/useDatabase";
 import { useDrivers } from "../../hooks/useDrivers";
 import { useExplainPlan } from "../../hooks/useExplainPlan";
@@ -42,7 +42,7 @@ export const VisualExplainModal = ({
   viewState,
 }: VisualExplainModalProps) => {
   const { t } = useTranslation();
-  const { settings } = useSettings();
+  const { available } = useAiAvailability();
   const { getConnectionData, connections } = useDatabase();
   const { allDrivers } = useDrivers();
   const {
@@ -152,7 +152,7 @@ export const VisualExplainModal = ({
             onViewModeChange: setViewMode,
             selectedNodeId,
             onSelectNode: setSelectedNodeId,
-            aiEnabled: !!settings.aiEnabled,
+            aiEnabled: available,
           })}
         />
 

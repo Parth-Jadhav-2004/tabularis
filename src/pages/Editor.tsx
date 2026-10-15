@@ -44,6 +44,11 @@ import {
 import { AiQueryModal } from "../components/modals/AiQueryModal";
 import { AiExplainModal } from "../components/modals/AiExplainModal";
 import { AiDropdownButton } from "../components/ui/AiDropdownButton";
+import { useAiAvailability } from "../hooks/useAiAvailability";
+import { useToggleAiChat } from "../hooks/useToggleAiChat";
+import { useRegisterAiEditor } from "../hooks/useAiEditor";
+import { createAiSqlActions, readAiEditorContext } from "../utils/aiEditor";
+import type { AiEditorTarget } from "../types/aiEditor";
 import { VisualExplainModal } from "../components/modals/VisualExplainModal";
 import {
   Play,
@@ -85,6 +90,7 @@ import {
   ExternalLink,
   CheckCircle2,
   WrapText,
+  MessageSquare,
 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen, emit } from "@tauri-apps/api/event";
@@ -262,6 +268,8 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
   const { allDrivers } = useDrivers();
   const { explorerConnectionId } = useConnectionLayoutContext();
   const { settings } = useSettings();
+  const { available: aiAvailable } = useAiAvailability();
+  const toggleAiChat = useToggleAiChat();
   const { saveQuery } = useSavedQueries();
   const { addEntry: addHistoryEntry } = useQueryHistory();
   const {
@@ -1901,6 +1909,33 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
       ),
     [executeEditorNavigationIntent, t],
   );
+
+  const aiEditorTarget = useMemo<AiEditorTarget | null>(() => {
+    if (!activeConnectionId) return null;
+    const database = activeTab?.database ?? activeDatabaseName ?? null;
+    const schema = activeTab?.schema ?? activeSchema ?? null;
+    const actions = createAiSqlActions({
+      getEditor: () => activeTab?.type === "console" && !activeTab.readOnly
+        ? editorsRef.current[activeTab.id] ?? null : null,
+      replaceState: (query) => {
+        if (!activeTab) return;
+        updateTab(activeTab.id, { query, ...(activeTab.sourceFilePath
+          ? { sourceFileDirty: isSqlFileDirty(activeTab, query) } : {}) });
+      },
+      openConsole: (sql, run) => openEditorInScope({
+        kind: "console", initialQuery: sql, preventAutoRun: !run,
+        targetConnectionId: activeConnectionId,
+        ...(database ? { database } : {}), ...(schema ? { schema } : {}),
+      }),
+    });
+    return { connectionId: activeConnectionId, database, schema, dialect: activeDialect, actions,
+      hasError: activeTab?.type !== "notebook" && !!activeTab?.error,
+      readContext: () => activeTab && activeTab.type !== "notebook" && activeTab.type !== "users"
+        ? readAiEditorContext(editorsRef.current[activeTab.id] ?? null, activeTab.query, activeDialect, activeTab.error)
+        : {},
+    };
+  }, [activeConnectionId, activeDatabaseName, activeDialect, activeSchema, activeTab, openEditorInScope, updateTab]);
+  useRegisterAiEditor(commandScopeId ?? ROOT_COMMAND_SCOPE_ID, aiEditorTarget);
 
   const runResultEntryPage = useCallback(
     async (entryId: string, pageNum: number, tabIdArg?: string) => {
@@ -5056,13 +5091,19 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
                 </button>
                 )}
                 {/* AI dropdown — only if AI enabled */}
-                {settings.aiEnabled && (
+                {aiAvailable && (
+                  <>
+                  <button type="button" onClick={toggleAiChat} aria-label={t("aiChat.toggle")}
+                    className="flex items-center gap-1.5 rounded border border-default bg-elevated px-2 py-1 text-xs text-secondary hover:text-primary focus-ring">
+                    <MessageSquare size={12} />{t("aiChat.title")}
+                  </button>
                   <AiDropdownButton
                     onGenerate={() => setIsAiModalOpen(true)}
                     onExplain={() => setIsAiExplainModalOpen(true)}
                     disableAll={!activeConnectionId}
                     disableExplain={!tab.query?.trim()}
                   />
+                  </>
                 )}
               </div>
             )}
@@ -5851,7 +5892,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
         />
       )}
       <AiQueryModal
-        isOpen={isAiModalOpen}
+        isOpen={isAiModalOpen && aiAvailable}
         onClose={() => setIsAiModalOpen(false)}
         connectionId={activeConnectionId ?? undefined}
         schema={activeTab?.schema ?? activeSchema ?? undefined}
@@ -5863,7 +5904,7 @@ export const Editor = ({ commandScopeId }: EditorProps) => {
         }}
       />
       <AiExplainModal
-        isOpen={isAiExplainModalOpen}
+        isOpen={isAiExplainModalOpen && aiAvailable}
         onClose={() => setIsAiExplainModalOpen(false)}
         query={activeTab.query}
       />

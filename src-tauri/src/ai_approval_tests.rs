@@ -19,6 +19,7 @@ mod tests {
             connection_id: "conn-1".to_string(),
             connection_name: "local".to_string(),
             database: None,
+            schema: None,
             query: "UPDATE orders SET status = 'x'".to_string(),
             query_kind: "write".to_string(),
             client_hint: Some("claude-desktop".to_string()),

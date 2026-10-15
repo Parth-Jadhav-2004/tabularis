@@ -42,6 +42,29 @@ fn all_caps() -> Capabilities {
     }
 }
 
+#[test]
+fn persisted_context_summaries_are_omitted_from_every_provider_protocol() {
+    let mut req = request("fixture");
+    req.messages[0].blocks.push(Block::Context {
+        items: vec![crate::ai::message::ContextItemRef {
+            kind: "table".into(),
+            id: "private-context-marker".into(),
+            label: "private-context-marker".into(),
+            chars: Some(123),
+            truncated: true,
+        }],
+    });
+    for body in [
+        openai_compat::request(&req, all_caps()).0,
+        anthropic::request(&req, all_caps()).0,
+        ollama::request(&req, all_caps()).0,
+    ] {
+        let serialized = serde_json::to_string(&body).unwrap();
+        assert!(serialized.contains("count users"));
+        assert!(!serialized.contains("private-context-marker"));
+    }
+}
+
 fn recorded_history() -> ChatRequest {
     let mut req = request("anthropic");
     req.messages[0].blocks.push(Block::Image {

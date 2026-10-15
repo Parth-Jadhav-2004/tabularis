@@ -7,15 +7,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VisualExplainPage, type VisualExplainPageProps } from "../../src/pages/VisualExplainPage";
 import type { VisualExplainViewProps } from "../../src/components/explain/VisualExplainView";
 
-const mocks = vi.hoisted(() => ({ search: "" }));
+const mocks = vi.hoisted(() => ({ search: "", aiAvailable: true }));
 
 vi.mock("react-router-dom", () => ({ useLocation: () => ({ search: mocks.search }) }));
 vi.mock("react-i18next", () => {
   const t = (key: string) => key;
   return { useTranslation: () => ({ t }) };
 });
-vi.mock("../../src/hooks/useSettings", () => ({
-  useSettings: () => ({ settings: { aiEnabled: true } }),
+vi.mock("../../src/hooks/useAiAvailability", () => ({
+  useAiAvailability: () => ({ available: mocks.aiAvailable }),
 }));
 vi.mock("lucide-react", () => ({
   FileJson: () => null, FolderOpen: () => null, Loader2: () => null, RefreshCw: () => null,
@@ -60,6 +60,7 @@ function pickFile() {
 describe("VisualExplainPage", () => {
   beforeEach(() => {
     mocks.search = "";
+    mocks.aiAvailable = true;
     vi.mocked(invoke).mockReset();
     vi.mocked(openDialog).mockReset();
     vi.mocked(invoke).mockResolvedValue(null);

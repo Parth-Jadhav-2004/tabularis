@@ -5,7 +5,7 @@ use crate::ai_tools::connections::{
 use crate::ai_tools::output::{tool_result, ToolOutputFormat};
 use crate::config::AppConfig;
 use crate::mcp::protocol::JsonRpcError;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 pub(crate) async fn tool_list_tables(
     args: &serde_json::Map<String, Value>,
@@ -31,16 +31,14 @@ pub(crate) async fn tool_list_tables(
     apply_database_override(&mut db_params, database_arg(args));
 
     let effective_schema = resolve_default_schema(&driver, schema);
-    let tables = driver
-        .get_tables(&db_params, effective_schema)
-        .await
-        .map_err(|e| JsonRpcError {
-            code: -32000,
-            message: e,
-            data: None,
-        })?;
-
-    let names: Vec<&str> = tables.iter().map(|t| t.name.as_str()).collect();
-    audit.rows = Some(names.len());
-    tool_result(&json!(names), format)
+    let tables =
+        crate::ai_tools::database::list_tables(driver.as_ref(), &db_params, effective_schema)
+            .await
+            .map_err(|message| JsonRpcError {
+                code: -32000,
+                message,
+                data: None,
+            })?;
+    audit.rows = Some(tables.as_array().map_or(0, Vec::len));
+    tool_result(&tables, format)
 }

@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import type { NotebookCell } from "../../types/notebook";
 import { extractOutline, getUnnamedCellsWithContent } from "../../utils/notebookOutline";
 import { useSettings } from "../../hooks/useSettings";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
 
 interface NotebookOutlineProps {
   cells: NotebookCell[];
@@ -21,10 +22,11 @@ function OutlineAiButton({
 }) {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { available } = useAiAvailability();
   const [isGenerating, setIsGenerating] = useState(false);
 
   const unnamed = getUnnamedCellsWithContent(cells);
-  if (!settings.aiEnabled || !settings.aiProvider || unnamed.length === 0) return null;
+  if (!available || !settings.aiProvider || unnamed.length === 0) return null;
 
   const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();

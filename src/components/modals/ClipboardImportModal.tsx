@@ -22,6 +22,7 @@ import { Modal } from '../ui/Modal';
 import { Select } from '../ui/Select';
 import { useDatabase } from '../../hooks/useDatabase';
 import { useSettings } from '../../hooks/useSettings';
+import { useAiAvailability } from '../../hooks/useAiAvailability';
 import { SchemaEditor, type SchemaColumn } from './ClipboardImport/SchemaEditor';
 import { DataPreview } from './ClipboardImport/DataPreview';
 import { TableNameInput } from './ClipboardImport/TableNameInput';
@@ -68,6 +69,7 @@ export function ClipboardImportModal({ isOpen, onClose, onSuccess, schema }: Cli
   const { activeConnectionId, activeDriver, activeSchema } = useDatabase();
   const targetSchema = resolveCreateTableSchema(schema, activeSchema);
   const { settings } = useSettings();
+  const { available: aiAvailable } = useAiAvailability();
   const { dataTypes } = useDataTypes(activeDriver ?? undefined);
 
   const [rawText, setRawText] = useState<string>('');
@@ -531,7 +533,7 @@ export function ClipboardImportModal({ isOpen, onClose, onSuccess, schema }: Cli
                           value={tableName}
                           onChange={setTableName}
                           tableExists={tableExists}
-                          aiEnabled={!!settings.aiProvider}
+                          aiEnabled={aiAvailable}
                           aiLoading={isAiLoading}
                           onAiSuggest={handleAiSuggest}
                         />

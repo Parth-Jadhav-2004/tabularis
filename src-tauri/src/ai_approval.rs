@@ -29,6 +29,9 @@ pub struct PendingApproval {
     /// the connection's default, so the approver sees where a write lands.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub database: Option<String>,
+    /// Explicit schema used by a connection-scoped assistant tool call.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schema: Option<String>,
     pub query: String,
     pub query_kind: String,
     pub client_hint: Option<String>,

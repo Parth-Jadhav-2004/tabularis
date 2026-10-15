@@ -5,7 +5,7 @@ use crate::ai_tools::connections::{
 use crate::ai_tools::output::{tool_result, ToolOutputFormat};
 use crate::config::AppConfig;
 use crate::mcp::protocol::JsonRpcError;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 pub(crate) async fn tool_describe_table(
     args: &serde_json::Map<String, Value>,
@@ -39,21 +39,17 @@ pub(crate) async fn tool_describe_table(
     apply_database_override(&mut db_params, database_arg(args));
 
     let effective_schema = resolve_default_schema(&driver, schema);
-    // Run the three metadata fetches concurrently so a slow driver costs one
-    // round-trip's worth of latency, not three (and at most one call timeout
-    // rather than three sequential ones blocking the MCP request loop).
-    let (columns, foreign_keys, indexes) = tokio::join!(
-        driver.get_columns(&db_params, table_name, effective_schema),
-        driver.get_foreign_keys(&db_params, table_name, effective_schema),
-        driver.get_indexes(&db_params, table_name, effective_schema),
-    );
-
-    let result = json!({
-        "table": table_name,
-        "columns": columns.map_err(|e| JsonRpcError { code: -32000, message: e, data: None })?,
-        "foreign_keys": foreign_keys.map_err(|e| JsonRpcError { code: -32000, message: e, data: None })?,
-        "indexes": indexes.map_err(|e| JsonRpcError { code: -32000, message: e, data: None })?
-    });
-
+    let result = crate::ai_tools::database::describe_table(
+        driver.as_ref(),
+        &db_params,
+        table_name,
+        effective_schema,
+    )
+    .await
+    .map_err(|message| JsonRpcError {
+        code: -32000,
+        message,
+        data: None,
+    })?;
     tool_result(&result, format)
 }

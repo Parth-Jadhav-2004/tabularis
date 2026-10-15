@@ -10,10 +10,10 @@ Keep detailed security reviews and audit findings outside the repository. This l
 |---|---|---|---|
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
 | M2 Secure store | in review | `feat/ai-assistant-provider-layer` | Implementation and automated checks complete. Native keychain/platform validation remains pending. |
-| M3 Tool registry | in progress | `feat/ai-assistant-provider-layer` | Five tools extracted; shared SQL classification and safety policy verified. Typed registry, approval gate and result caps next. |
-| M4 Chat panel | not started | | |
-| M5 Conversations | not started | | |
-| M6 Context | not started | | |
+| M3 Tool registry | in review | `feat/ai-assistant-provider-layer` | Typed registry, shared approval transport, eight chat tools and bounded results implemented. Automated checks pass; native MCP smoke check pending. |
+| M4 Chat panel | in review | `feat/ai-assistant-provider-layer` | Sidebar, Markdown/SQL actions, active-editor bridge, shared availability, model picker and entry points implemented. Automated and in-memory visual checks pass; native/provider smoke validation pending. |
+| M5 Conversations | in review | `feat/ai-assistant-provider-layer` | History lifecycle, generated titles, prompt editor and Markdown/notebook exports implemented. Automated and in-memory visual checks pass; native persistence/provider/export smoke validation pending. |
+| M6 Context | in progress | `feat/ai-assistant-provider-layer` | Schema cache, Rust-resolved sends, fresh editor snapshots, layer chips and encrypted context summaries implemented. Table previews/chips, mentions and connection instructions pending. |
 | M7 Editor integration | not started | | |
 | M8 Notebooks | not started | | |
 | M9 Agent mode | not started | | |
@@ -22,7 +22,7 @@ Keep detailed security reviews and audit findings outside the repository. This l
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** M3 shared tools, typed registry and safety policy. M2 native validation remains pending; M1 live-provider smoke checks remain pending in [M1-provider-layer.md](./M1-provider-layer.md).
+**Current focus:** M6 context is wired through chat sends and encrypted history. Next: schema/table preview counts and individual table chips, table/view/saved-query mentions, explorer drag and drop and per-connection instructions. M6 native/live-provider context checks, M5 native restart/history/title/export checks, M4 native/provider/editor smoke validation, M3 native MCP smoke validation, M2 native keychain/platform validation and M1 live-provider smoke checks remain pending.
 
 ## Open questions
 
@@ -30,7 +30,7 @@ Status values: `not started` · `in progress` · `in review` · `done` · `block
 - [ ] Message body search (needs decrypting all files, or an encrypted index).
 - [ ] Does the `--mcp` subprocess trigger a keychain prompt when it reads the AI store key on macOS? (M2)
 - [x] Wire format: snake_case fields, snake_case enum values and a `type` discriminator. (M1/M4)
-- [ ] Shortcut for toggling the AI panel (check `src/config/shortcuts.json`). (M4)
+- [x] Shortcut for toggling the AI panel: configurable `Mod+Shift+I`, no existing conflict. (M4)
 
 ## Good first issues
 
@@ -42,6 +42,68 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M6 schema cache, chat context and layer controls connected
+- Added a 30-second scoped schema cache with bounded scope/batch counts, shared concurrent loads and retry of unavailable metadata. Schema refresh and successful connection-file saves detach old entries; cancelled or stale loads cannot repopulate refreshed scopes.
+- Wired `ContextSpec` into `ai_chat_send`. Rust resolves the connection, scope, credentials/tunnels, capabilities and read-only state, builds the bounded prompt and keeps Ask/tools policy fixed. Preparation supports cancellation and a 15-second timeout. Once the provider opens, metadata is attached to the producing user message and saved through M2; all provider serializers omit context-summary blocks.
+- Added fresh editor snapshots and removable layer controls, with errors opt-in. Choices survive sidebar remounts and connection-session switches, then reset for the next message. Encrypted history shows collapsed context names/sizes/truncation; old blocks without sizes remain compatible. Translated controls and summaries in all 11 locales.
+- Validation: 16 new Rust regressions and 11 new frontend regressions pass. Complete Cargo suite: 1,885 passed / 221 ignored, run serially; complete Vitest suite: 6,209 passed (397 files). Production cargo check/build, application/scoped test typechecks, repository ESLint with local worktrees/cache excluded, theme-token checks and scoped formatting pass.
+- Visually checked Italian controls, removal/restoration state, visible focus and stored summaries in Light, Dark and High Contrast (including square corners), using an in-memory browser fixture. Removed the fixture/server. No real provider, database, conversation history or OS keychain was used for UI verification; backend fixtures use disposable SQLite databases and in-memory keychains.
+- GitNexus pre-edit scope is LOW for send/reducer/editor/panel targets. Shared connection invalidation is HIGH (20 direct callers / four reported process groups); its change only clears the AI metadata cache after a successful save. The state initializer is CRITICAL (three direct callers, no indexed flows); its change only adds per-turn context choices. Refreshed the index with PDG retained. Final staged `detect_changes`: 154 files, 777 symbols and 29 flows across the combined M3–M6 work (CRITICAL); the nine new flows start at the context resolver, alongside the previous 20 tools/startup flows.
+- M6 remains in progress. Next: schema/table preview counts and individual table chips, mentions/drag and drop, per-connection instructions and native/live-provider context validation.
+
+### 2026-10-15: M6 backend context foundation implemented
+- Added a separate bounded schema catalog and selected-table detail loader, including table/column comments, indexes and explicit missing/omitted/unavailable metadata. Loads retain selection priority and use bounded concurrency. Legacy schema types, provider/plugin wire formats and commands remain unchanged.
+- Added a pure layered prompt builder with fixed mode rules, scoped connection metadata, connection preferences, detailed tables, overview, editor state and relevant errors. Unicode character budgets include escaping/envelopes and pass unused space forward. Context summaries contain names and actual sizes; incomplete schemas add the missing-schema rule. Untrusted content cannot close its data envelope.
+- Added bounded SQL reference discovery for joins, comma lists, nested queries, quoted/qualified identifiers and recursive/nonrecursive CTEs. Unknown, ambiguous and cross-scope names are explicit gaps; the scanner is separate from execution policy.
+- Validation: 23 new Rust regressions pass, including real metadata-to-prompt integration against a disposable SQLite database, budget boundaries, truncation, scope/CTE handling and data-envelope escaping. Complete Cargo suite: 1,869 passed / 221 ignored, run serially. Production cargo check, `pnpm typecheck`, theme-token checks, scoped rustfmt and diff checks pass.
+- Pre-edit GitNexus impact is LOW for the three legacy schema targets (0–2 direct callers, no indexed flows). Parser refinements are HIGH through the new builder and its tests, with no indexed application flow. Rebuilt the index with PDG retained after an incremental FTS error. Final `detect_changes` includes new source/tests through a disposable index: 137 files, 650 symbols and the same 20 affected flows across the combined M3–M6 work (CRITICAL). The real staging area is unchanged.
+- The context foundation is not wired into chat sends yet. Next: cache/refresh invalidation, `ContextSpec` resolution and persisted summaries, then chips, mentions/drag and drop, connection instructions and i18n. M6 remains in progress.
+
+### 2026-10-15: M5 generated titles and conversation exports completed — ready for review
+- Added background title generation after the first successful reply is saved, using that reply's provider/model and bounded text from the first exchange. Titles are limited to six words / 80 Unicode code points; failures and a 30-second timeout silently retain the first-message title. Added `prompt_chattitle.txt` load/save/reset and its Settings editor, with translations in all 11 locales.
+- Generated titles use a conditional update under the encrypted store lock. Manual renames and stored generated titles survive stale saves; late title results cannot recreate deleted/replaced history. Frontend reset/unmount guards and connection-cache updates preserve current messages, drafts and streaming state.
+- Added Markdown and notebook export to history rows, using the native save dialog with an explicit unencrypted-file notice. Markdown retains SQL fences and collapsed tools/reasoning; images/attachments are filename references only. Notebook export reuses the existing export types/naming, converts explicitly tagged SQL fences to SQL cells, preserves prose order and the database override, and embeds no results. Export filenames are bounded in Unicode code points and UTF-8 bytes.
+- Validation: full Vitest suite 6,198 passed (393 files), including 16 new frontend regressions; complete Cargo suite 1,846 passed / 221 ignored, run serially, including seven new Rust regressions. Application/scoped test typechecks, production build, production cargo check, scoped rustfmt, theme-token checks and repository ESLint with local worktrees/cache excluded pass.
+- Visually checked the Italian export controls and prompt editor in Light, Dark and High Contrast, including square corners, focus and export cancellation, using an in-memory browser fixture. Removed the temporary fixture/server. No real provider, database, conversation history or OS keychain was used for that check.
+- Pre-edit GitNexus impact is LOW for session/reducer/history/Settings/command registration. The shared store save is CRITICAL (three direct callers and two reported process groups); its change only preserves title precedence. Refreshed the index with PDG retained. Final `detect_changes` includes new source/tests through a disposable index: 125 files, 498 symbols and the same 20 affected flows across the combined M3–M5 work (CRITICAL). The real staging area is unchanged.
+- M5 remains pending native restart/history, live title generation and file save/import smoke validation. Next implementation: M6 schema context, layered budgets and referenced-table extraction, then chips and mentions.
+
+### 2026-10-15: M5 history browsing and conversation lifecycle completed
+- Added header history navigation, title-only search, local-calendar date buckets, relative times and connection/All filters grouped by connection name. Added inline rename, explicit delete confirmation, loading/empty/error states and links to the existing Settings recovery controls. Translated history controls in all 11 locales.
+- Reused M2's encrypted list/load/rename/delete commands. New app sessions restore the most recent conversation per connection; running sessions retain each connection's selected transcript and draft in memory, including failed saves for retry. No transcript/title is written to browser storage.
+- Connection switching waits for streaming and saving to settle. Versioned loads/lists ignore stale connection/filter responses and reset/unmount completions. Resume preserves scope/target/mode, falls back from unavailable models with a notice, and leaves the producing models on past messages intact. Initial titles now use 50 Unicode code points.
+- Validation: full Vitest suite 6,182 passed (389 files), with 23 new history regressions; 12 existing Rust conversation-store tests passed serially. Application/scoped test typechecks, production build, source ESLint and theme-token checks pass. Repository ESLint passes with local worktrees/cache excluded; unfiltered `pnpm lint` fails on 517 errors in pre-existing `.claude/worktrees` checkouts.
+- Visually checked the Italian history UI at sidebar width in Light, Dark and High Contrast, including square corners, All grouping, focus and inline rename, using an in-memory fixture. No real provider, database, conversation history or OS keychain was used for that check. Temporary fixture/server removed.
+- Pre-edit GitNexus impact is LOW for panel/header/provider/session targets. The state initializer is CRITICAL (two direct callers, 13 reachable symbols, no indexed flows); its change only adds history state. Existing streaming/cancellation/save regressions pass. Next: generated titles and prompt customization, Markdown/notebook exports, then native restart/history smoke validation. M5 remains in progress.
+- Rebuilt the GitNexus index with PDG retained after an incremental-index error. Final `detect_changes` includes untracked source/tests through a disposable Git index: 111 files, 435 symbols and 20 affected flows across the combined M3–M5 work (CRITICAL). The real staging area is unchanged.
+
+### 2026-10-15: M4 sidebar, SQL actions and provider selection completed — ready for review
+- Mounted the shared chat session above a lazy sidebar panel. Added Markdown/SQL blocks, collapsed reasoning, send/stop, model attribution, conversion notices and encrypted-save status/retry. Raw HTML and remote images are omitted.
+- Added a dedicated active-editor command registry following the selected split-pane scope. Insert/replace use undoable Monaco edits and immediate tab synchronization; non-editable targets open a console. Run delegates to the existing console-navigation/query-guard pipeline. A changed connection/database/schema disables sends and SQL actions until a new chat is started.
+- Added Rust-resolved provider availability and a shared frontend gate for editor, result, notebook, import and Visual Explain AI controls. Keychain/env credentials stay in Rust; custom HTTP(S) OpenAI endpoints may be keyless. Ollama availability uses a bounded loopback probe and reports offline/no-model reasons.
+- Added grouped/searchable model selection, capability badges and a separate last-chat-model preference. Global model settings are unchanged by chat selection. Added toolbar/palette entry points, configurable `Mod+Shift+I` and translations in all 11 locales.
+- Validation: complete Vitest suite 6,159 passed (385 files); complete Cargo suite 1,839 passed / 221 ignored, run serially. Application/test typechecks, source ESLint, production build, theme-token checks and scoped rustfmt pass. Six new Rust availability regressions use disposable loopback fixtures; 29 additional frontend regressions cover the panel, model choices, availability, split-pane registry and gated shortcuts.
+- Visually verified the Italian panel in Light, Dark and High Contrast with an in-memory browser fixture, including square corners, visible focus and SQL insertion. Removed the temporary fixture/server. No real provider, database, conversation store or OS keychain was used for UI verification.
+- GitNexus pre-edit scope is LOW for sidebar/layout/editor and the new availability/model modules. The existing palette bridge was HIGH and left unchanged; Visual Explain was CRITICAL, with changes limited to AI-control availability. Native/provider smoke checks remain pending. Next: M5 history and resume.
+- Refreshed the GitNexus index with PDG retained. Final `detect_changes` includes new files through a disposable index: 104 files, 361 symbols, 20 affected flows (CRITICAL across the combined M3/M4 work). All reported flow anchors are the existing `tool_run_query` or Tauri startup `run`; the latter only adds command registration. The real staging area is unchanged.
+
+### 2026-10-15: M4 chat state and event lifecycle completed
+- Added snake_case TypeScript mirrors of M1 messages/blocks/events/requests/capabilities and M2 conversations/summaries/save results.
+- Added a reducer-backed `AiChatProvider` / `useAiChat` session with an injectable Tauri transport. Transcripts and drafts survive panel consumer remounts; messages retain their producing provider/model while the next turn can use another model with the full history.
+- Subscribe before invoking with a frontend UUID. Duplicate sends are blocked, cancellation handles pending subscriptions/invokes, terminal events save once through the encrypted M2 command and stale callbacks cannot affect another conversation. Tool events are ignored and no tools are advertised until M9.
+- Separate save status/result and retry preserve the transcript on storage errors. Reset/delete-all notifications clear the session and cancel active work; subscriptions are released on switch/unmount, including StrictMode replay.
+- Validation: 40 new frontend regressions pass; complete Vitest suite 6,130 passed (379 files). Application/test TypeScript checks, scoped ESLint and theme-token checks pass. Pre-integration GitNexus impact is LOW for all four sidebar/layout/editor targets (0–1 direct callers each, one indexed editor flow).
+- Refreshed the GitNexus index with PDG retained. `detect_changes --scope all` includes new files through a disposable Git index: 39 files, 216 symbols, 11 affected flows (HIGH, including the existing M3 changes; no additional affected flows). The real staging area is unchanged.
+- The provider is not mounted in the app yet. Next: sidebar rendering, SQL actions/command bridge, shared AI availability, provider/model picker, toolbar/palette/shortcut and translations. Native/provider smoke checks from M1–M3 remain pending.
+
+### 2026-10-15: M3 typed tool registry completed — ready for review
+- Added the `Tool` trait, Rust-resolved connection context, typed errors/output and M1-compatible tool definitions. Ask/read-only contexts omit write tools; model arguments cannot override the connection/database/schema.
+- MCP and chat now share driver operations and `FileQueueGate`. MCP retains its five tools, JSON/TOON formats, schemas, approval settings and row defaults. The typed registry adds `sample_rows`, non-ANALYZE `explain_query` and approval-only `run_statement`; no chat execution command is exposed yet.
+- Added Unicode-safe result caps: 12k characters, 200-character cells, 50 rows by default and a 1000-row hard cap. Head/tail row previews remain valid bounded JSON; omitted driver data is reported as truncated.
+- Chat writes use fresh request IDs and revalidate approved edits. Approval targets carry an optional schema, displayed by the existing modal without changing legacy MCP payloads. Inline `InAppGate` and the agent loop remain M9 work.
+- Validation: 24 new Rust regressions pass; full Cargo command passes serially (1,833 passed / 221 ignored). The parallel run encountered the known theme-operation contention; that test passes alone and in the serial suite. Frontend approval utilities: 55 passed. Production cargo check, typecheck, scoped ESLint, theme-token lint, scoped rustfmt and diff checks pass.
+- GitNexus `detect_changes --scope all` includes the new files and confirms the expected tools/approval scope (28 files, 145 indexed symbols, 11 affected flows; HIGH). Tests use disposable databases and directory-scoped in-memory keychains. Native MCP/GUI approval smoke validation remains pending. Next: M4 chat state, sidebar and provider/model selection.
 
 ### 2026-10-15: documentation privacy policy
 - Keep detailed review material outside version control; public milestone logs contain implementation progress and validation only.

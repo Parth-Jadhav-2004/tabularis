@@ -5,6 +5,8 @@ import { useCommandPaletteDispatch } from "./useCommandPalette";
 import { useConnectionManager } from "./useConnectionManager";
 import { useKeybindings } from "./useKeybindings";
 import { isTextCompositionKeyEvent } from "../utils/keyboardEvents";
+import { useAiAvailability } from "./useAiAvailability";
+import { useToggleAiChat } from "./useToggleAiChat";
 
 /** Shortcuts that must still fire while the user is typing in a field. */
 const TYPING_SAFE_SHORTCUTS = [
@@ -16,6 +18,7 @@ const TYPING_SAFE_SHORTCUTS = [
   "close_tab",
   "toggle_sidebar",
   "toggle_right_sidebar",
+  "toggle_ai_chat",
   "open_connections",
   "new_connection",
 ];
@@ -38,6 +41,8 @@ export function useGlobalShortcuts() {
   const { matchesShortcut, isMac } = useKeybindings();
   const { openConnections, handleSwitch } = useConnectionManager();
   const { togglePalette } = useCommandPaletteDispatch();
+  const { available: aiAvailable } = useAiAvailability();
+  const toggleAiChat = useToggleAiChat();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -70,6 +75,12 @@ export function useGlobalShortcuts() {
         window.dispatchEvent(
           new CustomEvent("tabularis:toggle-sidebar"),
         );
+        return;
+      }
+
+      if (aiAvailable && matchesShortcut(e, "toggle_ai_chat")) {
+        e.preventDefault();
+        toggleAiChat();
         return;
       }
 
@@ -174,5 +185,7 @@ export function useGlobalShortcuts() {
     openConnections,
     handleSwitch,
     togglePalette,
+    aiAvailable,
+    toggleAiChat,
   ]);
 }

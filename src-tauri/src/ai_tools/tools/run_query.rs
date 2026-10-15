@@ -12,7 +12,7 @@ use crate::heartbeat;
 use crate::mcp::protocol::JsonRpcError;
 use serde_json::Value;
 
-const APPROVAL_POLL_INTERVAL_MS: u64 = 500;
+use crate::ai_tools::approval::{ApprovalGate, FileQueueGate};
 
 pub(crate) async fn tool_run_query(
     args: &serde_json::Map<String, Value>,
@@ -113,6 +113,7 @@ pub(crate) async fn tool_run_query(
             connection_id: conn.id.clone(),
             connection_name: conn.name.clone(),
             database: database.map(str::to_string),
+            schema: None,
             query: query.to_string(),
             query_kind: kind.to_string(),
             client_hint: ai_activity::get_client_hint(),
@@ -120,24 +121,9 @@ pub(crate) async fn tool_run_query(
             explain_error,
         };
 
-        if let Err(e) = ai_approval::write_pending(&pending) {
-            audit.status = "error".to_string();
-            let msg = format!("Failed to enqueue approval request: {}", e);
-            audit.error = Some(msg.clone());
-            return Err(JsonRpcError {
-                code: -32000,
-                message: msg,
-                data: None,
-            });
-        }
-
-        match ai_approval::poll_decision_with_liveness(
-            &approval_id,
-            timeout_secs,
-            APPROVAL_POLL_INTERVAL_MS,
-            heartbeat::is_alive,
-        )
-        .await
+        match FileQueueGate::default()
+            .request(&pending, timeout_secs)
+            .await
         {
             Ok(PollOutcome::Decided(decision)) => {
                 if decision.decision == "approve" {
@@ -215,10 +201,10 @@ pub(crate) async fn tool_run_query(
             }
             Err(e) => {
                 audit.status = "error".to_string();
-                audit.error = Some(e.clone());
+                audit.error = Some(e.to_string());
                 return Err(JsonRpcError {
                     code: -32000,
-                    message: e,
+                    message: e.to_string(),
                     data: None,
                 });
             }
@@ -231,15 +217,15 @@ pub(crate) async fn tool_run_query(
     // does, so have the database refuse writes too.
     let run_read_only = config::is_connection_readonly(config, &conn.id)
         || (approval_mode != "off" && !needs_approval);
-    let result = if run_read_only {
-        driver
-            .execute_read_only_query(&db_params, &effective_query, Some(max_rows), 1, None)
-            .await
-    } else {
-        driver
-            .execute_query(&db_params, &effective_query, Some(max_rows), 1, None)
-            .await
-    }
+    let result = crate::ai_tools::database::execute(
+        driver.as_ref(),
+        &db_params,
+        &effective_query,
+        max_rows,
+        None,
+        run_read_only,
+    )
+    .await
     .map_err(|e| JsonRpcError {
         code: -32000,
         message: e,

@@ -5,6 +5,7 @@ import { useRightSidebarResize } from "../../hooks/useRightSidebarResize";
 import { LoadingState } from "../ui/LoadingState";
 
 const RowEditorPanel = lazy(() => import("../ui/RowEditorPanel").then((m) => ({ default: m.RowEditorPanel })));
+const AiChatPanel = lazy(() => import("../ai-chat/AiChatPanel").then((m) => ({ default: m.AiChatPanel })));
 
 export const RightSidebar = () => {
 	const { t } = useTranslation();
@@ -44,6 +45,7 @@ export const RightSidebar = () => {
 			</button>
 
 			{/* Panel content */}
+			{activePanel === "ai-chat" && <Suspense fallback={<LoadingState />}><AiChatPanel /></Suspense>}
 			{activePanel === "row-editor" && rowEditorData && (
 				<Suspense fallback={<LoadingState />}><RowEditorPanel
 					rowData={rowEditorData.rowData}

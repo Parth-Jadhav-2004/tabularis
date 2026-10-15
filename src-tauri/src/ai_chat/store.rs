@@ -87,9 +87,16 @@ impl ConversationStore {
         if path.exists() {
             store_index::supports_mutation(&self.base, &chat.connection_id, &chat.id, store)?;
             // Refuse to overwrite unreadable/newer history; preserve its creation date.
-            chat.created_at =
-                store_index::load_locked(&self.base, &chat.connection_id, &chat.id, store)?
-                    .created_at;
+            let saved = store_index::load_locked(&self.base, &chat.connection_id, &chat.id, store)?;
+            chat.created_at = saved.created_at;
+            // Background titles and manual renames must survive an older transcript save.
+            if saved.title_source == TitleSource::User && chat.title_source != TitleSource::User
+                || saved.title_source == TitleSource::Generated
+                    && chat.title_source == TitleSource::FirstMessage
+            {
+                chat.title = saved.title;
+                chat.title_source = saved.title_source;
+            }
         }
         chat.updated_at = chrono::Utc::now().timestamp_millis();
         let bytes = serde_json::to_vec(&chat).map_err(|_| StoreError::InvalidInput)?;
@@ -117,6 +124,28 @@ impl ConversationStore {
             chat.title = title;
             chat.title_source = TitleSource::User;
             self.save_locked(chat, store).map(|_| ())
+        })
+    }
+
+    pub(super) fn apply_generated_title(
+        &self,
+        snapshot: &Conversation,
+        title: String,
+    ) -> Result<Option<ConversationSummary>, StoreError> {
+        with_store_in(&self.base, false, |store| {
+            let mut chat =
+                store_index::load_locked(&self.base, &snapshot.connection_id, &snapshot.id, store)?;
+            if chat.title_source != TitleSource::FirstMessage
+                || chat.created_at != snapshot.created_at
+                || chat.messages.get(..2) != snapshot.messages.get(..2)
+                || snapshot.messages.len() < 2
+            {
+                return Ok(None);
+            }
+            chat.title = title;
+            chat.title_source = TitleSource::Generated;
+            self.save_locked(chat.clone(), store)?;
+            Ok(Some(ConversationSummary::from(&chat)))
         })
     }
 

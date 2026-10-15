@@ -64,6 +64,8 @@ export interface PendingApproval {
   connectionName: string;
   /** Database picked by the MCP caller, when not the connection's default. */
   database?: string | null;
+  /** Explicit schema targeted by a connection-scoped assistant tool call. */
+  schema?: string | null;
   query: string;
   queryKind: AiQueryKind;
   clientHint: string | null;

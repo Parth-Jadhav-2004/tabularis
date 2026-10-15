@@ -358,5 +358,15 @@
     "winMatch": { "ctrlKey": true, "key": "0" },
     "i18nKey": "settings.shortcuts.editorZoomReset",
     "overridable": true
+  },
+  {
+    "id": "toggle_ai_chat",
+    "category": "editor",
+    "defaultMac": "⌘+Shift+I",
+    "defaultWin": "Ctrl+Shift+I",
+    "macMatch": { "metaKey": true, "shiftKey": true, "key": "i", "code": "KeyI" },
+    "winMatch": { "ctrlKey": true, "shiftKey": true, "key": "i", "code": "KeyI" },
+    "i18nKey": "settings.shortcuts.toggleAiChat",
+    "overridable": true
   }
 ]

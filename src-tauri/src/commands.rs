@@ -1014,6 +1014,7 @@ pub(crate) fn save_connections_and_invalidate<R: Runtime>(
     persistence::save_connections_file(path, file)?;
     app.state::<std::sync::Arc<crate::connection_cache::ConnectionCache>>()
         .invalidate();
+    crate::ai_chat::schema_cache::shared().invalidate_all();
     Ok(())
 }
 
@@ -4434,6 +4435,7 @@ pub async fn get_tables<R: Runtime>(
     database: Option<String>,
 ) -> Result<Vec<TableInfo>, String> {
     log::info!("Fetching tables for connection: {}", connection_id);
+    crate::ai_chat::schema_cache::shared().invalidate_connection(&connection_id);
 
     let saved_conn = find_connection_by_id(&app, &connection_id)?;
     let expanded_params = expand_ssh_connection_params(&app, &saved_conn.params).await?;

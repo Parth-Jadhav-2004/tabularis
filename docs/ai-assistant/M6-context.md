@@ -56,14 +56,25 @@ Send the model the right context with a predictable budget, show the user exactl
 
 ## Steps
 
-- [ ] `impact` on `load_from_driver`, `format_for_prompt`, `get_ai_schema_context`.
-- [ ] Extend the schema context with indexes, comments and a `truncated` flag (keep the old signature for the legacy commands).
-- [ ] `context.rs` with layers, budget allocation and the referenced-table extraction.
-- [ ] `ContextSpec` in `ai_chat_send`; store a `Context` block on the user message.
-- [ ] Chips UI.
+- [x] `impact` on `load_from_driver`, `format_for_prompt`, `get_ai_schema_context`.
+- [x] Extend the schema context with indexes, comments and a `truncated` flag (keep the old signature for the legacy commands).
+- [x] `context.rs` with layers, budget allocation and the referenced-table extraction.
+- [x] Backend schema cache with a short TTL per connection/database/schema and invalidation on schema refresh.
+- [x] `ContextSpec` in `ai_chat_send`; store a `Context` block on the user message.
+- [ ] Chips UI (layer controls and persisted summaries complete; table previews/counts and individual table chips pending).
 - [ ] `@` mention popover + explorer drag and drop.
 - [ ] Connection `ai_instructions` field + modal UI.
 - [ ] i18n.
+
+## Implementation notes
+
+- Chat metadata lives in `src-tauri/src/ai_schema_context/detailed.rs`. The existing `AiSchemaContext` / `TableSchema`, provider/plugin wire formats and legacy loader/formatter/command remain unchanged. The new catalog retains at most 10,000 sorted table names; selected details preserve priority order, deduplicate names and have a 100-table hard cap. Table loads run with bounded concurrency and fetch columns, foreign keys and indexes together. Missing tables, omitted details and failed metadata categories are explicit; raw driver errors are not included in the context.
+- `src-tauri/src/ai_chat/context.rs` is a pure builder for the first seven layers. Unused character budgets carry forward; envelopes, escaping and truncation markers count toward the budget. The result includes names and actual rendered sizes for future persisted context blocks. User-written instructions have their own escaped envelope and a 2,000-character content cap; schema/editor/error data use `untrusted_data` envelopes. An incomplete schema always adds the corresponding base rule.
+- `context/references.rs` performs bounded context discovery on FROM/JOIN/UPDATE/INTO, including comma lists, nested queries, aliases, quoted/qualified identifiers and recursive/nonrecursive CTEs. It skips comments, literals and table-valued functions, checks the selected database/schema and reports unknown or ambiguous names. Limits are 256 KiB of SQL, 32,768 tokens and 128 WITH scopes; incomplete scans are reported. This is not an execution or authorization parser.
+- `schema_cache.rs` retains metadata for 30 seconds, with at most 16 scopes and eight selected-table batches per scope. Keys include connection/database/schema/driver, with no credentials or query text. Concurrent loads share a scope gate; failed metadata is retried. Refresh through the existing `get_tables` command detaches every cached scope for that connection; successful connection-file saves clear the cache. Expiry and invalidation detach old in-flight entries so they cannot repopulate a fresh scope.
+- `ai_chat_send` now accepts an optional snake_case `ContextSpec`; the sidebar always supplies one. Rust resolves the saved connection, credentials/tunnels, effective scope, driver capabilities and read-only status, with cancellation and a 15-second preparation timeout. Mode stays Ask and advertised tools stay empty until M9. After the provider opens successfully, an event attaches names, actual sizes and truncation flags to the latest user message; M2 stores this block encrypted. Provider serializers omit these metadata blocks. Older summaries without size fields still load.
+- The active-editor bridge reads fresh Monaco query/selection/cursor state at send time, before debounced tab updates. Layer chips control connection, schema, query, selection and cursor statement; query errors are opt-in. Choices survive sidebar remounts and connection-session switches, and reset for the next turn. Stored summaries render in collapsed message details, with translations in all 11 locales. Reading an error indicator does not rescan the editor during streaming.
+- Next: schema/table preview counts and individual table chips, table/view/saved-query mentions, explorer drag and drop, per-connection instructions and their translations. Attachments and notebook context remain M10/M8 work. Native/live-provider context smoke validation remains pending.
 
 ## Tests
 

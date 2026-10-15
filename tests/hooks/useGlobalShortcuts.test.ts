@@ -5,6 +5,8 @@ import { useGlobalShortcuts } from "../../src/hooks/useGlobalShortcuts";
 
 const navigateMock = vi.fn();
 const togglePaletteMock = vi.fn();
+const toggleAiChatMock = vi.fn();
+let aiAvailable = false;
 const handleSwitchMock = vi.fn();
 let activeShortcutId = "command_palette_actions";
 let locationMock = { pathname: "/editor", key: "abc123" };
@@ -37,14 +39,33 @@ vi.mock("../../src/hooks/useCommandPalette", () => ({
   }),
 }));
 
+vi.mock("../../src/hooks/useAiAvailability", () => ({
+  useAiAvailability: () => ({ available: aiAvailable }),
+}));
+vi.mock("../../src/hooks/useToggleAiChat", () => ({
+  useToggleAiChat: () => toggleAiChatMock,
+}));
+
 describe("useGlobalShortcuts", () => {
   beforeEach(() => {
     navigateMock.mockClear();
     handleSwitchMock.mockClear();
     togglePaletteMock.mockClear();
+    toggleAiChatMock.mockClear();
+    aiAvailable = false;
     matchesShortcutMock.mockClear();
     activeShortcutId = "command_palette_actions";
     locationMock = { pathname: "/editor", key: "abc123" };
+  });
+
+  it.each([false, true])("only handles the assistant shortcut when AI is usable: %s", (available) => {
+    aiAvailable = available;
+    activeShortcutId = "toggle_ai_chat";
+    renderHook(() => useGlobalShortcuts());
+    const event = new KeyboardEvent("keydown", { key: "i", code: "KeyI", metaKey: true, shiftKey: true, bubbles: true, cancelable: true });
+    document.body.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(available);
+    expect(toggleAiChatMock).toHaveBeenCalledTimes(available ? 1 : 0);
   });
 
   describe.each(["Monaco textarea", "plain input"])("with focus in %s", (targetKind) => {

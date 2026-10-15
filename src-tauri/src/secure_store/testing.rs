@@ -99,6 +99,7 @@ pub(crate) fn pending(id: &str) -> crate::ai_approval::PendingApproval {
         connection_id: "c".into(),
         connection_name: "test".into(),
         database: None,
+        schema: None,
         query: "private-artifact-marker".into(),
         query_kind: "write".into(),
         client_hint: None,

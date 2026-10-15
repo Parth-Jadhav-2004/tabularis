@@ -3,6 +3,8 @@ use futures::future::join_all;
 use crate::drivers::driver_trait::DatabaseDriver;
 use crate::models::{AiSchemaContext, ConnectionParams, TableSchema};
 
+pub mod detailed;
+
 pub const DEFAULT_MAX_TABLES: usize = 20;
 const MAX_ALLOWED_TABLES: usize = 100;
 

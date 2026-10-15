@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Sparkles, Loader2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useSettings } from "../../hooks/useSettings";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
 
 interface CellNameAiButtonProps {
   content: string;
@@ -15,9 +16,10 @@ export function CellNameAiButton({
 }: CellNameAiButtonProps) {
   const { t } = useTranslation();
   const { settings } = useSettings();
+  const { available } = useAiAvailability();
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!settings.aiEnabled || !settings.aiProvider) return null;
+  if (!available || !settings.aiProvider) return null;
 
   const handleGenerate = async () => {
     if (!content.trim() || isLoading) return;

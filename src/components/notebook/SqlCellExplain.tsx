@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw, Maximize2, AlertTriangle } from "lucide-react";
 import { useDatabase } from "../../hooks/useDatabase";
-import { useSettings } from "../../hooks/useSettings";
+import { useAiAvailability } from "../../hooks/useAiAvailability";
 import { useExplainPlan } from "../../hooks/useExplainPlan";
 import { useExplainAnalyze } from "../../hooks/useExplainAnalyze";
 import { supportsExplain } from "../../utils/driverCapabilities";
@@ -31,7 +31,7 @@ export function SqlCellExplain({
   const { t } = useTranslation();
   const { getConnectionData } = useDatabase();
   const canExplain = supportsExplain(getConnectionData(connectionId)?.capabilities);
-  const { settings } = useSettings();
+  const { available } = useAiAvailability();
   const {
     plan,
     isLoading,
@@ -83,7 +83,7 @@ export function SqlCellExplain({
     onViewModeChange: setViewMode,
     selectedNodeId: isCurrent ? selectedNodeId : null,
     onSelectNode: setSelectedNodeId,
-    aiEnabled: !!settings.aiEnabled,
+    aiEnabled: available,
   };
 
   return (

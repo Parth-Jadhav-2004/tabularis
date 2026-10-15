@@ -20,7 +20,11 @@ One implementation of the database tools and their safety rules, used by both th
 
 ```
 src-tauri/src/ai_tools/
-  mod.rs          # registry, Tool trait, ToolContext
+  mod.rs          # public exports and MCP compatibility entry points
+  types.rs        # Tool trait, resolved ToolContext, output and errors
+  registry.rs     # scoped definitions, validation, dispatch and audit
+  database.rs     # driver operations shared with MCP adapters
+  approval.rs     # ApprovalGate trait and FileQueueGate
   safety.rs       # statement classification, multi-statement check, read-only enforcement
   truncate.rs     # result size caps
   tools/
@@ -38,13 +42,8 @@ src-tauri/src/ai_tools/
 ```rust
 pub enum ToolMode { Read, Write }
 
-pub struct ToolContext {
-    pub connection_id: String,
-    pub database: Option<String>,
-    pub schema: Option<String>,
-    pub origin: ToolOrigin,          // Mcp { session_id } | Chat { conversation_id, run_id }
-    pub approval: Arc<dyn ApprovalGate>,
-}
+// ToolContext::resolve fixes the connection, database, schema and access mode
+// in Rust. Model arguments cannot override them; credentials are never exposed.
 
 #[async_trait]
 pub trait Tool: Send + Sync {
@@ -58,40 +57,47 @@ pub trait Tool: Send + Sync {
 pub struct ToolOutput { pub content: String, pub truncated: bool, pub rows: Option<RowsPreview> }
 ```
 
-- **`ApprovalGate` trait** with two implementations:
+- **`ApprovalGate` transport boundary:**
   - `FileQueueGate`: today's behaviour, for the MCP process
-  - `InAppGate`: the GUI process emits an event and awaits a oneshot channel (used by M9)
+  - `InAppGate`: planned for M9; the GUI process emits an event and awaits a oneshot channel
 
-  Both apply the same policy and both write to `ai_activity`.
+  The gate transports approval requests; tool orchestration enforces SQL/mode policy before execution and records calls in encrypted `ai_activity`. MCP keeps its configured approval mode; chat writes always require a fresh approval. Approved edits are revalidated. The approval target includes the database and, when explicit, the schema.
 - **Policy** (`safety.rs`):
   - classify statements as read / write / DDL / transaction
   - reject multi-statement payloads
   - write tools are never listed for read-only connections
   - `run_query` refuses anything that isn't read
-- **Truncation:** default cap 12k chars per result (head + tail + row sample), cells cut at 200 chars, row limit default 50, hard cap 1000. Always report `truncated`.
+- **Truncation:** chat results are capped at 12k Unicode characters, cells at 200 characters, with a default row limit of 50 and a hard cap of 1000. Text keeps head and tail; structured row previews keep a head/tail sample and remain valid JSON within the same cap. Driver truncation and omitted data always set `truncated`.
 - **`sample_rows`:** `SELECT * ... LIMIT n` through the driver, with no free SQL.
 - **`explain_query`:** reuse the existing EXPLAIN plumbing (Visual Explain / `mcp/preflight.rs`).
+- **Scope and compatibility:** `ToolRegistry.tools_for(mode, &context)` produces M1 `ToolDef`s, with write tools omitted for Ask/read-only contexts and EXPLAIN omitted when unsupported. Chat `list_connections` describes only the bound connection. MCP still advertises its five existing tools, with unchanged JSON/TOON formats, argument schemas and row defaults; the chat caps apply only to the typed registry.
 - **No driver-specific branching in the frontend.** Tools go through the driver trait, so plugin drivers work through `RpcDriver`.
 
 ## Steps
 
 - [x] `impact` on the MCP tool handlers, `preflight`, the approval functions and `ai_activity` writers.
 - [x] Extract the 5 existing tools and connection/output/audit helpers into `ai_tools` (pure move, MCP tests green).
-- [ ] Add the `Tool` trait, typed context and registry on top of the extracted implementations.
+- [x] Add the `Tool` trait, typed context and registry on top of the extracted implementations.
 - [x] Extract `safety.rs` from the current read-only / approval checks, preserving legacy APIs and adding strict chat-tool policy tests.
-- [ ] `ApprovalGate` trait + `FileQueueGate`; the MCP server uses it.
-- [ ] Add `sample_rows`, `explain_query`, `run_statement` (not exposed to MCP unless policy allows it; keep MCP behaviour identical).
-- [ ] `truncate.rs` + tests.
-- [ ] `registry.tools_for(mode, connection)` returning `ToolDef`s for M1's `ChatRequest`.
+- [x] `ApprovalGate` trait + `FileQueueGate`; the MCP server uses it.
+- [x] Add `sample_rows`, `explain_query`, `run_statement` (not exposed to MCP unless policy allows it; keep MCP behaviour identical).
+- [x] `truncate.rs` + tests.
+- [x] `registry.tools_for(mode, &context)` returning `ToolDef`s for M1's `ChatRequest`.
 
 ## Tests
 
 - Each tool against SQLite fixtures (list, describe, sample, run_query, explain).
 - `run_query` rejects `DELETE`, `UPDATE`, `DROP`, a multi-statement payload, and a `WITH ... DELETE`.
 - Read-only connection: `tools_for(Agent, ro_conn)` contains no write tool.
-- Truncation keeps head and tail and sets `truncated`.
+- Truncation keeps head and tail, respects Unicode/cell/serialized preview limits, and reports driver-side omissions.
+- Approve, deny, timeout, mismatched IDs, transport errors and edited SQL against disposable SQLite fixtures.
+- File-queue round trips use an isolated encrypted store with an in-memory keychain; optional schema fields preserve legacy serialization.
 
 ## Done when
 
 - The MCP server runs entirely on `ai_tools`, with no behaviour change for external clients.
 - The registry can produce tool definitions for a chat request.
+
+## Validation status
+
+Implementation and automated validation are complete; see [PROGRESS.md](./PROGRESS.md) for the session checks. Native MCP/GUI approval smoke validation remains pending. Chat execution, cancellation-aware inline approvals and the agent loop are wired in M9; M4 can consume the registry definitions when the chat orchestration is ready.

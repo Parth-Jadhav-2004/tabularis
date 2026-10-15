@@ -1,6 +1,6 @@
 import { createContext, type MutableRefObject } from "react";
 
-export type RightSidebarPanel = "row-editor" | null;
+export type RightSidebarPanel = "row-editor" | "ai-chat" | null;
 
 export interface RowEditorPanelData {
 	rowData: Record<string, unknown>;
