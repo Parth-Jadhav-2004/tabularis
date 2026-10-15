@@ -124,11 +124,7 @@ fn minimax_endpoint_order(preferred: usize) -> [usize; 2] {
 // --- Helper Functions ---
 
 fn load_default_models() -> HashMap<String, Vec<String>> {
-    let yaml_content = include_str!("../ai_models.yaml");
-    serde_yaml::from_str(yaml_content).unwrap_or_else(|e| {
-        eprintln!("Failed to parse models.yaml: {}", e);
-        HashMap::new() // Fallback to empty map on critical error (should be caught by tests)
-    })
+    super::catalog::default_models()
 }
 
 fn get_cache_path(_app: &AppHandle) -> Option<std::path::PathBuf> {

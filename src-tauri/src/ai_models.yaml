@@ -1,12 +1,15 @@
 openai:
-  - gpt-5.5
+  - id: gpt-5.5
+    capabilities: { tools: true, images: true, reasoning: true }
   - gpt-5.4
   - gpt-5.4-mini
   - gpt-5.4-nano
   - gpt-4o
   - gpt-4o-mini
-  - gpt-oss-120B
-  - gpt-oss-20B
+  - id: gpt-oss-120B
+    capabilities: { tools: true, images: false, reasoning: true }
+  - id: gpt-oss-20B
+    capabilities: { tools: true, images: false, reasoning: true }
 
 anthropic:
   - claude-fable-5

@@ -27,7 +27,7 @@ Status values: `not started` · `in progress` · `in review` · `done` · `block
 - [ ] Key loss: accept unrecoverable history, or add a password-protected backup via `export_crypto`?
 - [ ] Message body search (needs decrypting all files, or an encrypted index).
 - [ ] Does the `--mcp` subprocess trigger a keychain prompt when it reads the AI store key on macOS? (M2)
-- [ ] Wire format casing between Rust and TS for `Message`/`Block` (snake_case vs camelCase). (M1/M4)
+- [x] Wire format: snake_case fields, snake_case enum values and a `type` discriminator. (M1/M4)
 - [ ] Shortcut for toggling the AI panel (check `src/config/shortcuts.json`). (M4)
 
 ## Good first issues
@@ -40,6 +40,13 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M1 messages and framing completed
+- Added provider-neutral messages, blocks, usage, requests, capabilities and typed errors.
+- Locked snake_case field names with a `type` discriminator for blocks/events; unknown block types are skipped without logging their content.
+- Added bounded SSE/NDJSON framing that preserves UTF-8 across arbitrary chunk boundaries and handles CR/LF, comments and multiline data.
+- Added optional YAML model capabilities while preserving the model-list API, and the cancellation-token dependency.
+- Focused protocol/type tests and legacy tests pass; next: streaming adapters and legacy collection.
 
 ### 2026-10-15: M1 resumed — module split verified
 - Continued the existing work on `feat/ai-assistant-provider-layer`; preserved unrelated local changes.

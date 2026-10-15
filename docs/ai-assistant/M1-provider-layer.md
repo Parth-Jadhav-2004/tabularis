@@ -129,7 +129,7 @@ Extend `ai_models.yaml` with optional `capabilities` per model. Live-fetched mod
 
 - [x] Run `impact` on `dispatch_provider`, `generate_ai_query`, `explain_ai_query`, `generate_cell_name`, `generate_tab_rename`, `suggest_table_name`, `analyze_ai_explain_plan`.
 - [x] Split `ai.rs` into `ai/` without behaviour changes (pure move, green tests).
-- [ ] Add `message.rs`, `provider.rs`, the SSE/NDJSON parser.
+- [x] Add `message.rs`, `provider.rs`, the SSE/NDJSON parser.
 - [ ] Implement `stream()` for openai_compat, anthropic, ollama (text only).
 - [ ] Re-implement the legacy commands on top of `stream()` (collect into a string), keep `clean_response()`.
 - [ ] Add `RunManager`, `ai_chat_send`, `ai_chat_cancel`, events.
