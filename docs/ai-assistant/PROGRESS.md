@@ -7,7 +7,7 @@ How to resume: read [README.md](./README.md) (decisions + milestone order), find
 | Milestone | Status | Branch / PR | Notes |
 |---|---|---|---|
 | M1 Provider layer | in review | `feat/ai-assistant-provider-layer` | Implementation complete; automated checks pass. Live-provider/native smoke checks pending. |
-| M2 Secure store | not started | | |
+| M2 Secure store | in progress | `feat/ai-assistant-secure-store` | Encryption primitives verified; key lifecycle and shared storage next. |
 | M3 Tool registry | not started | | |
 | M4 Chat panel | not started | | |
 | M5 Conversations | not started | | |
@@ -20,7 +20,7 @@ How to resume: read [README.md](./README.md) (decisions + milestone order), find
 
 Status values: `not started` · `in progress` · `in review` · `done` · `blocked`.
 
-**Current focus:** Review M1 with live providers using the smoke checklist in [M1-provider-layer.md](./M1-provider-layer.md). The next implementation milestone is M2 (secure store).
+**Current focus:** M2, secure storage. M1 live-provider smoke checks remain pending in [M1-provider-layer.md](./M1-provider-layer.md).
 
 ## Open questions
 
@@ -40,6 +40,13 @@ Candidates are listed in README.md. Track opened ones here:
 ## Session log
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
+
+### 2026-10-15: M2 encryption primitives completed
+- Started `feat/ai-assistant-secure-store` on top of M1; unrelated local files remain untouched.
+- Added AES-256-GCM envelopes with fresh 96-bit nonces and authenticated caller context, ciphertext-only atomic file replacement (0600 on Unix), line encoding and zeroized key buffers.
+- The envelope adds a SHA-256 `ctx` digest of AAD (never the context itself) so misplaced files produce `WrongContext`; AES-GCM still authenticates the complete AAD. Tampering with the digest cannot bypass authentication.
+- Nine focused tests pass: binary/Unicode/empty round trips, nonce uniqueness, wrong AAD/key, tampering, malformed/versioned envelopes, line encoding, permissions and failed atomic replacement.
+- Next: keychain lifecycle, cross-process locking, missing-key tests and the public storage API. No user data or real keychain entries were changed.
 
 ### 2026-10-15: M1 cancellable runs completed — ready for review
 - Registered `RunManager`, `ai_chat_send`, `ai_chat_cancel` and model-capability lookup in Tauri. Runs clean up on completion/drop, have independent cancellation tokens and emit exactly one terminal event.

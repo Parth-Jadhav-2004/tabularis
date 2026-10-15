@@ -30,7 +30,7 @@ secure_store/
 ```
 
 - **Master key:** 32 random bytes (`OsRng`), base64 in the keychain under `SERVICE_NAME`, account `ai_store_key`. Generated on first use. Cached in memory (`OnceLock` / the same cache pattern as other credentials). Zeroize on drop if practical.
-- **Envelope:** `{ "v": 1, "alg": "A256GCM", "nonce": "<b64 12 bytes>", "ct": "<b64>" }`. A fresh random nonce per seal.
+- **Envelope:** `{ "v": 1, "alg": "A256GCM", "ctx": "<b64 SHA-256 of AAD>", "nonce": "<b64 12 bytes>", "ct": "<b64>" }`. A fresh random nonce per seal. The context digest distinguishes misplaced files from ciphertext/key authentication failures; the full AAD is still authenticated by AES-GCM.
 - **AAD:** a caller-supplied context string, for example `chat:<connectionId>:<conversationId>`, `index:<connectionId>`, `blob:<sha256>`, `activity`, `approval:<id>`. A file copied into another slot fails to open.
 - **API:**
   ```rust
