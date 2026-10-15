@@ -41,6 +41,15 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: M2 existing AI artifact I/O encrypted
+- Activity entries are individually sealed; session state and pending/decision payloads use authenticated atomic files. Filenames and watcher/polling protocol are preserved.
+- Approval AAD binds both request ID and pending/decision phase; ID/decision validation and corruption tests prevent copied or tampered files from authorizing a request.
+- Activity reads skip/count corrupted lines without logging their contents. Rotation and clear operations share the cross-process lock with reset/migration.
+- Removed complete MCP request/response logging and content-bearing JSON parse errors from stderr.
+- Validation: 133 existing AI-related tests and six new artifact/security tests pass; the additional activity/rotation regression run passes 76 tests.
+- Ran GitNexus PDG security explain on encryption, key lifecycle, approvals and storage paths: no findings reported; this does not prove safety (callback/property flows are not modeled). Manual source review continues.
+- Next: verified, idempotent startup migration before GUI/MCP consumers, followed by Settings controls and final security review.
+
 ### 2026-10-15: M2 connection deletion hooks completed
 - Single-connection and group/subgroup deletion now remove every affected connection's encrypted chat directory after connection persistence succeeds.
 - Cleanup runs on the blocking pool and reports failures; other connections and shared blobs remain intact (orphan blobs are collected conservatively on startup).

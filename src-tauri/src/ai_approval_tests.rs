@@ -8,7 +8,7 @@ mod tests {
     use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::Arc;
     use std::path::Path;
-    use tempfile::TempDir;
+    use crate::secure_store::testing::TestDirectory as TempDir;
     use tokio::time::Duration;
 
     fn make_pending(id: &str) -> PendingApproval {

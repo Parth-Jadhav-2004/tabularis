@@ -5,7 +5,7 @@
 //! both processes touch the same files.
 //!
 //! Storage layout under the application config directory:
-//!   - `ai_activity.jsonl` — active log (append-only, one event per line)
+//!   - `ai_activity.jsonl` — active log (append-only, one encrypted event per line)
 //!   - `ai_activity.{1..5}.jsonl` — rotated archives (1 = most recent)
 //!   - `.mcp_session_state.json` — current session id + last activity timestamp
 
@@ -101,14 +101,26 @@ fn ensure_dir(dir: &Path) -> Result<(), String> {
 
 pub fn append_event_in(dir: &Path, event: &AiActivityEvent) -> Result<(), String> {
     ensure_dir(dir)?;
-    let path = activity_path_in(dir);
-    let line = serde_json::to_string(event).map_err(|e| e.to_string())?;
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-        .map_err(|e| e.to_string())?;
-    writeln!(file, "{}", line).map_err(|e| e.to_string())
+    crate::secure_store::with_store_in(dir, true, |store| {
+        let payload =
+            serde_json::to_vec(event).map_err(|_| crate::secure_store::StoreError::InvalidInput)?;
+        let line = store.seal_line(&payload, "activity")?;
+        let mut options = OpenOptions::new();
+        options.create(true).append(true);
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
+            options.mode(0o600);
+            let path = activity_path_in(dir);
+            if path.exists() {
+                fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
+            }
+        }
+        let mut file = options.open(activity_path_in(dir))?;
+        writeln!(file, "{}", line)?;
+        Ok(())
+    })
+    .map_err(|error| error.to_string())
 }
 
 fn count_lines(path: &Path) -> Result<usize, String> {
@@ -121,6 +133,13 @@ fn count_lines(path: &Path) -> Result<usize, String> {
 }
 
 pub fn rotate_if_needed_in(dir: &Path, max_entries: usize) -> Result<bool, String> {
+    crate::secure_store::exclusive_in(dir, || {
+        rotate_locked_in(dir, max_entries).map_err(|_| crate::secure_store::StoreError::Io)
+    })
+    .map_err(|error| error.to_string())
+}
+
+fn rotate_locked_in(dir: &Path, max_entries: usize) -> Result<bool, String> {
     if max_entries == 0 {
         return Ok(false);
     }
@@ -178,28 +197,44 @@ fn read_all_events_in(dir: &Path) -> Result<Vec<AiActivityEvent>, String> {
         paths.push(active);
     }
 
-    let mut events: Vec<AiActivityEvent> = Vec::new();
-    for p in paths {
-        let file = fs::File::open(&p).map_err(|e| e.to_string())?;
-        let reader = BufReader::new(file);
-        for line in reader.lines() {
-            let line = match line {
-                Ok(l) => l,
-                Err(_) => continue,
-            };
-            let trimmed = line.trim();
-            if trimmed.is_empty() {
-                continue;
-            }
-            match serde_json::from_str::<AiActivityEvent>(trimmed) {
-                Ok(ev) => events.push(ev),
-                Err(_) => {
-                    log::warn!("Skipping unparsable ai_activity entry");
+    if paths.is_empty() {
+        return Ok(Vec::new());
+    }
+    crate::secure_store::with_store_in(dir, false, |store| {
+        let mut events = Vec::new();
+        let mut skipped = 0usize;
+        for path in paths {
+            let reader = BufReader::new(fs::File::open(path)?);
+            for line in reader.lines() {
+                let line = match line {
+                    Ok(line) => line,
+                    Err(_) => {
+                        skipped += 1;
+                        continue;
+                    }
+                };
+                if line.trim().is_empty() {
+                    continue;
+                }
+                let event = store.open_line(line.trim(), "activity").and_then(|bytes| {
+                    serde_json::from_slice::<AiActivityEvent>(&bytes)
+                        .map_err(|_| crate::secure_store::StoreError::Corrupted)
+                });
+                match event {
+                    Ok(event) => events.push(event),
+                    Err(_) => skipped += 1,
                 }
             }
         }
-    }
-    Ok(events)
+        if skipped > 0 {
+            log::warn!(
+                "Skipped {} unreadable encrypted AI activity entries",
+                skipped
+            );
+        }
+        Ok(events)
+    })
+    .map_err(|error| error.to_string())
 }
 
 pub fn read_events_in(dir: &Path, filter: &EventFilter) -> Result<Vec<AiActivityEvent>, String> {
@@ -235,6 +270,13 @@ pub fn read_sessions_in(dir: &Path) -> Result<Vec<SessionSummary>, String> {
 }
 
 pub fn clear_in(dir: &Path) -> Result<(), String> {
+    crate::secure_store::exclusive_in(dir, || {
+        clear_locked_in(dir).map_err(|_| crate::secure_store::StoreError::Io)
+    })
+    .map_err(|error| error.to_string())
+}
+
+fn clear_locked_in(dir: &Path) -> Result<(), String> {
     let active = activity_path_in(dir);
     if active.exists() {
         fs::remove_file(&active).map_err(|e| e.to_string())?;
@@ -379,9 +421,7 @@ pub fn classify_query_kind(sql: &str) -> &'static str {
     // as one. We strip under both interpretations and fail closed if EITHER
     // reveals a trailing statement, so a payload cannot hide an injected
     // separator by exploiting whichever dialect we happen not to assume.
-    if has_trailing_statements(&stripped)
-        || has_trailing_statements(&strip_impl(sql, true))
-    {
+    if has_trailing_statements(&stripped) || has_trailing_statements(&strip_impl(sql, true)) {
         return "unknown";
     }
     // Peel any leading `(` (and surrounding whitespace) before reading the
@@ -478,8 +518,7 @@ fn has_complete_end_before_terminal_statement(upper_sql: &str) -> bool {
             continue;
         }
         cursor += 1;
-        while cursor < bytes.len()
-            && (bytes[cursor].is_ascii_whitespace() || bytes[cursor] == b';')
+        while cursor < bytes.len() && (bytes[cursor].is_ascii_whitespace() || bytes[cursor] == b';')
         {
             cursor += 1;
         }
@@ -1014,9 +1053,7 @@ fn has_quoted_function_call(sql: &str) -> bool {
             while i < bytes.len() && bytes[i] == IDENT_MARK {
                 i += 1;
             }
-            let next = bytes[i..]
-                .iter()
-                .find(|b| !b.is_ascii_whitespace());
+            let next = bytes[i..].iter().find(|b| !b.is_ascii_whitespace());
             if next == Some(&b'(') {
                 return true;
             }
@@ -1036,15 +1073,21 @@ pub fn load_session_state_in(dir: &Path) -> Option<SessionState> {
     if !path.exists() {
         return None;
     }
-    let content = fs::read_to_string(&path).ok()?;
-    serde_json::from_str(&content).ok()
+    crate::secure_store::with_store_in(dir, false, |store| {
+        let bytes = store.read_sealed(&path, "mcp_session")?;
+        serde_json::from_slice(&bytes).map_err(|_| crate::secure_store::StoreError::Corrupted)
+    })
+    .ok()
 }
 
 pub fn save_session_state_in(dir: &Path, state: &SessionState) -> Result<(), String> {
     ensure_dir(dir)?;
-    let path = session_state_path_in(dir);
-    let content = serde_json::to_string_pretty(state).map_err(|e| e.to_string())?;
-    fs::write(&path, content).map_err(|e| e.to_string())
+    crate::secure_store::with_store_in(dir, true, |store| {
+        let content =
+            serde_json::to_vec(state).map_err(|_| crate::secure_store::StoreError::InvalidInput)?;
+        store.write_sealed(&session_state_path_in(dir), &content, "mcp_session")
+    })
+    .map_err(|error| error.to_string())
 }
 
 /// Returns the active MCP session id, generating a new one if none exists or

@@ -71,3 +71,64 @@ impl Drop for TestDirectory {
         super::key::invalidate(self.dir.path());
     }
 }
+
+pub(crate) fn activity_event(id: &str) -> crate::ai_activity::AiActivityEvent {
+    crate::ai_activity::AiActivityEvent {
+        id: id.into(),
+        session_id: "session".into(),
+        timestamp: "2026-10-15T12:00:00Z".into(),
+        tool: "run_query".into(),
+        connection_id: Some("c".into()),
+        connection_name: Some("test".into()),
+        query: Some("private-artifact-marker".into()),
+        query_kind: Some("select".into()),
+        duration_ms: 1,
+        status: "ok".into(),
+        rows: Some(1),
+        error: None,
+        client_hint: None,
+        approval_id: None,
+    }
+}
+
+pub(crate) fn pending(id: &str) -> crate::ai_approval::PendingApproval {
+    crate::ai_approval::PendingApproval {
+        id: id.into(),
+        created_at: "2026-10-15T12:00:00Z".into(),
+        session_id: "session".into(),
+        connection_id: "c".into(),
+        connection_name: "test".into(),
+        database: None,
+        query: "private-artifact-marker".into(),
+        query_kind: "write".into(),
+        client_hint: None,
+        explain_plan: None,
+        explain_error: None,
+    }
+}
+
+pub(crate) fn decision(id: &str) -> crate::ai_approval::ApprovalDecision {
+    crate::ai_approval::ApprovalDecision {
+        approval_id: id.into(),
+        decided_at: "2026-10-15T12:00:01Z".into(),
+        decision: "approve".into(),
+        reason: Some("private-artifact-marker".into()),
+        edited_query: None,
+    }
+}
+
+pub(crate) fn assert_no_plaintext(dir: &Path, marker: &[u8]) {
+    for entry in std::fs::read_dir(dir).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_dir() {
+            assert_no_plaintext(&entry.path(), marker);
+        } else {
+            let bytes = std::fs::read(entry.path()).unwrap();
+            assert!(
+                !bytes.windows(marker.len()).any(|part| part == marker),
+                "Plaintext in {:?}",
+                entry.file_name()
+            );
+        }
+    }
+}

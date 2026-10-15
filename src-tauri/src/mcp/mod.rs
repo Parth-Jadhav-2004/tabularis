@@ -471,8 +471,6 @@ pub async fn run_mcp_server() {
                     continue;
                 }
 
-                // Log input to stderr for debugging
-                eprintln!("[MCP] Received: {}", line);
 
                 match serde_json::from_str::<JsonRpcRequest>(&line) {
                     Ok(request) => {
@@ -480,8 +478,6 @@ pub async fn run_mcp_server() {
                         if let Some(resp) = response {
                             let json = serde_json::to_string(&resp)
                                 .expect("serializing a JsonRpcResponse cannot fail");
-                            // Log output to stderr
-                            eprintln!("[MCP] Sending: {}", json);
                             // Stop cleanly if the client has gone away (BrokenPipe)
                             // rather than panicking the whole server.
                             if let Err(e) = stdout
@@ -494,8 +490,8 @@ pub async fn run_mcp_server() {
                             }
                         }
                     }
-                    Err(e) => {
-                        eprintln!("[MCP] Error parsing JSON: {}", e);
+                    Err(_) => {
+                        eprintln!("[MCP] Received invalid JSON-RPC");
                     }
                 }
             }

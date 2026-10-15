@@ -161,3 +161,7 @@ impl CipherStore {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/artifacts.rs"]
+mod artifact_tests;

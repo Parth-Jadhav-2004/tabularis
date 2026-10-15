@@ -83,26 +83,38 @@ fn decision_file(base: &Path, id: &str) -> PathBuf {
 }
 
 // ---------------------------------------------------------------------------
-// Writers / readers
+// Writers / readers (authenticated encrypted files)
 // ---------------------------------------------------------------------------
 
 pub fn write_pending_in(base: &Path, req: &PendingApproval) -> Result<PathBuf, String> {
+    validate_approval_id(&req.id)?;
     let dir = ensure_dir(base)?;
     let path = dir.join(format!("{}.pending.json", req.id));
-    let content = serde_json::to_string_pretty(req).map_err(|e| e.to_string())?;
-    fs::write(&path, content).map_err(|e| e.to_string())?;
+    crate::secure_store::with_store_in(base, true, |store| {
+        let content =
+            serde_json::to_vec(req).map_err(|_| crate::secure_store::StoreError::InvalidInput)?;
+        store.write_sealed(&path, &content, &format!("approval:{}:pending", req.id))
+    })
+    .map_err(|error| error.to_string())?;
     Ok(path)
 }
 
 pub fn read_pending_in(base: &Path, id: &str) -> Result<Option<PendingApproval>, String> {
+    validate_approval_id(id)?;
     let path = pending_file(base, id);
     if !path.exists() {
         return Ok(None);
     }
-    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    serde_json::from_str(&content)
-        .map(Some)
-        .map_err(|e| e.to_string())
+    crate::secure_store::with_store_in(base, false, |store| {
+        let content = store.read_sealed(&path, &format!("approval:{id}:pending"))?;
+        let req: PendingApproval = serde_json::from_slice(&content)
+            .map_err(|_| crate::secure_store::StoreError::Corrupted)?;
+        if req.id != id {
+            return Err(crate::secure_store::StoreError::WrongContext);
+        }
+        Ok(Some(req))
+    })
+    .map_err(|error| error.to_string())
 }
 
 pub fn list_pending_in(base: &Path) -> Result<Vec<PendingApproval>, String> {
@@ -110,48 +122,72 @@ pub fn list_pending_in(base: &Path) -> Result<Vec<PendingApproval>, String> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
-    let mut out: Vec<PendingApproval> = Vec::new();
-    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
-        let entry = entry.map_err(|e| e.to_string())?;
-        let path = entry.path();
-        let name = match path.file_name().and_then(|s| s.to_str()) {
-            Some(n) => n.to_string(),
-            None => continue,
-        };
-        if !name.ends_with(".pending.json") {
-            continue;
-        }
-        // Skip if already decided.
-        let id = name.trim_end_matches(".pending.json").to_string();
-        if decision_file(base, &id).exists() {
-            continue;
-        }
-        if let Ok(content) = fs::read_to_string(&path) {
-            if let Ok(p) = serde_json::from_str::<PendingApproval>(&content) {
-                out.push(p);
+    crate::secure_store::with_store_in(base, false, |store| {
+        let mut out = Vec::new();
+        for entry in fs::read_dir(&dir)? {
+            let entry = entry?;
+            let name = entry.file_name();
+            let Some(id) = name
+                .to_str()
+                .and_then(|name| name.strip_suffix(".pending.json"))
+            else {
+                continue;
+            };
+            if validate_approval_id(id).is_err() || decision_file(base, id).exists() {
+                continue;
+            }
+            let pending = store
+                .read_sealed(&entry.path(), &format!("approval:{id}:pending"))
+                .and_then(|bytes| {
+                    serde_json::from_slice::<PendingApproval>(&bytes)
+                        .map_err(|_| crate::secure_store::StoreError::Corrupted)
+                });
+            if let Ok(pending) = pending {
+                if pending.id == id {
+                    out.push(pending);
+                }
             }
         }
-    }
-    out.sort_by(|a, b| a.created_at.cmp(&b.created_at));
-    Ok(out)
+        out.sort_by(|a, b| a.created_at.cmp(&b.created_at));
+        Ok(out)
+    })
+    .map_err(|error| error.to_string())
 }
 
 pub fn write_decision_in(base: &Path, decision: &ApprovalDecision) -> Result<(), String> {
+    validate_approval_id(&decision.approval_id)?;
+    if !matches!(decision.decision.as_str(), "approve" | "deny") {
+        return Err("Invalid approval decision".into());
+    }
     ensure_dir(base)?;
-    let path = decision_file(base, &decision.approval_id);
-    let content = serde_json::to_string_pretty(decision).map_err(|e| e.to_string())?;
-    fs::write(&path, content).map_err(|e| e.to_string())
+    crate::secure_store::with_store_in(base, true, |store| {
+        let content = serde_json::to_vec(decision)
+            .map_err(|_| crate::secure_store::StoreError::InvalidInput)?;
+        store.write_sealed(
+            &decision_file(base, &decision.approval_id),
+            &content,
+            &format!("approval:{}:decision", decision.approval_id),
+        )
+    })
+    .map_err(|error| error.to_string())
 }
 
 pub fn read_decision_in(base: &Path, id: &str) -> Result<Option<ApprovalDecision>, String> {
+    validate_approval_id(id)?;
     let path = decision_file(base, id);
     if !path.exists() {
         return Ok(None);
     }
-    let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
-    serde_json::from_str(&content)
-        .map(Some)
-        .map_err(|e| e.to_string())
+    crate::secure_store::with_store_in(base, false, |store| {
+        let content = store.read_sealed(&path, &format!("approval:{id}:decision"))?;
+        let decision: ApprovalDecision = serde_json::from_slice(&content)
+            .map_err(|_| crate::secure_store::StoreError::Corrupted)?;
+        if decision.approval_id != id || !matches!(decision.decision.as_str(), "approve" | "deny") {
+            return Err(crate::secure_store::StoreError::Corrupted);
+        }
+        Ok(Some(decision))
+    })
+    .map_err(|error| error.to_string())
 }
 
 /// Async polling helper. Returns `Ok(Some(decision))` once a decision file
@@ -165,10 +201,8 @@ pub async fn poll_decision_in(
     timeout_secs: u64,
     poll_interval_ms: u64,
 ) -> Result<Option<ApprovalDecision>, String> {
-    match poll_decision_with_liveness_in(base, approval_id, timeout_secs, poll_interval_ms, || {
-        true
-    })
-    .await?
+    match poll_decision_with_liveness_in(base, approval_id, timeout_secs, poll_interval_ms, || true)
+        .await?
     {
         PollOutcome::Decided(d) => Ok(Some(d)),
         PollOutcome::TimedOut => Ok(None),
@@ -307,4 +341,16 @@ pub fn approvals_dir_path() -> PathBuf {
 
 pub fn new_approval_id() -> String {
     uuid::Uuid::new_v4().to_string()
+}
+
+fn validate_approval_id(id: &str) -> Result<(), String> {
+    if id.is_empty()
+        || id.len() > 128
+        || !id
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+    {
+        return Err("Invalid approval ID".into());
+    }
+    Ok(())
 }

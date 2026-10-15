@@ -7,7 +7,7 @@ mod tests {
         strip_strings_and_comments, to_local_rfc3339, AiActivityEvent, EventFilter, SessionState,
     };
     use std::path::Path;
-    use tempfile::TempDir;
+    use crate::secure_store::testing::TestDirectory as TempDir;
 
     fn make_event(id: &str, session_id: &str, tool: &str, ts: &str) -> AiActivityEvent {
         AiActivityEvent {

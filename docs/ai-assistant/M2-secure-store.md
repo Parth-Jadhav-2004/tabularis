@@ -84,7 +84,7 @@ pub struct Conversation {
 
 - **`ai_activity.jsonl`:** each line becomes `seal_line(json, "activity")`. Appending and rotation keep the line-based logic. A line that fails to open is skipped and counted, not fatal.
 - **`.mcp_session_state.json`:** `write_sealed` / `read_sealed` with AAD `mcp_session`.
-- **`pending_approvals/*`:** keep the filenames (the watcher depends on them) and seal the contents with AAD `approval:<id>`. Both the GUI and the MCP process read and write through `secure_store`.
+- **`pending_approvals/*`:** keep the filenames (the watcher depends on them) and seal the contents with AAD `approval:<id>:pending` / `approval:<id>:decision`. Both the GUI and the MCP process read and write through `secure_store`.
 - **One-time migration** at startup: for each known plaintext file, if it parses as plaintext JSON, seal it, verify it can be read back, then replace the original. Idempotent: sealed files are recognized by the envelope.
 - **MCP subprocess:** it must load the same key. Check on macOS that the `--mcp` process doesn't trigger a keychain prompt (the binary is the same, so the item ACL should match; verify signed and unsigned dev builds). If it does prompt, document it, or have the GUI create the key before the MCP process is ever started.
 
@@ -95,7 +95,7 @@ pub struct Conversation {
 - [x] `ai_chat/store.rs` + commands + tests (write, list, load, rename, delete, index rebuild).
 - [x] Blob store + GC.
 - [x] Delete-connection hook.
-- [ ] `impact` on `append_event_in`, `read_events_in`, `read_sessions_in`, `save_session_state_in`, `load_session_state_in` and the approval read/write functions, then switch them to `secure_store`.
+- [x] `impact` on `append_event_in`, `read_events_in`, `read_sessions_in`, `save_session_state_in`, `load_session_state_in` and the approval read/write functions, then switch them to `secure_store`.
 - [ ] Startup migration of plaintext files.
 - [ ] Verify the MCP subprocess on macOS (signed + dev build), Windows, Linux (Secret Service).
 - [ ] Settings > AI: "Delete all conversations" and "Reset encryption key" (danger zone).

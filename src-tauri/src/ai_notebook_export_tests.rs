@@ -3,7 +3,7 @@ mod tests {
     use crate::ai_activity::{append_event_in, AiActivityEvent};
     use crate::ai_notebook_export::{derive_cell_name, export_session_in};
     use std::path::Path;
-    use tempfile::TempDir;
+    use crate::secure_store::testing::TestDirectory as TempDir;
 
     fn ev(
         id: &str,
