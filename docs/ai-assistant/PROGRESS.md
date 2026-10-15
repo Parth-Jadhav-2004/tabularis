@@ -41,6 +41,13 @@ Candidates are listed in README.md. Track opened ones here:
 
 Newest first. Keep each entry short: what was done, what is next, anything surprising.
 
+### 2026-10-15: M2 startup migration completed
+- GUI migration runs on the blocking pool before starting approval consumers/GC; standalone MCP migrates and verifies key availability before handling requests.
+- Legacy activity/rotated logs, session state and approvals are converted in place, with encrypted staging files read back and verified before replacing originals. Mixed logs preserve existing sealed lines; malformed legacy lines are retained encrypted and skipped by readers.
+- Sealed JSON files are recognized and verified; repeated migration makes no changes. Denied keys, malformed JSON and symlinks fail without replacing those original files.
+- Five migration tests pass, including idempotence, no plaintext markers, mixed logs, keychain denial and symlink rejection. No real user configuration was migrated during development.
+- Next: confirmed Settings actions, then a final security/concurrency review and full validation. Native signed/dev, Windows and Linux keychain/ACL checks remain pending.
+
 ### 2026-10-15: M2 existing AI artifact I/O encrypted
 - Activity entries are individually sealed; session state and pending/decision payloads use authenticated atomic files. Filenames and watcher/polling protocol are preserved.
 - Approval AAD binds both request ID and pending/decision phase; ID/decision validation and corruption tests prevent copied or tampered files from authorizing a request.

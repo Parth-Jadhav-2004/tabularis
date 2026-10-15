@@ -3,11 +3,16 @@
 mod envelope;
 mod io;
 mod key;
+pub mod migration;
 
 #[cfg(test)]
 pub(crate) mod testing;
 
 pub(crate) use key::{exclusive_in, with_store_in};
+
+pub fn ensure_available() -> Result<(), StoreError> {
+    with_store_in(&crate::paths::get_app_config_dir(), true, |_| Ok(()))
+}
 
 pub fn seal(plaintext: &[u8], aad: &str) -> Result<Vec<u8>, StoreError> {
     with_store_in(&crate::paths::get_app_config_dir(), true, |store| {

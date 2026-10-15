@@ -436,8 +436,18 @@ pub fn run() {
             }
 
             // Watch for pending MCP approval requests and run periodic cleanup.
-            ai_approval_watcher::spawn(app.handle().clone());
-            ai_chat::blobs::spawn_startup_gc();
+            let ai_storage_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                let migration = tokio::task::spawn_blocking(|| {
+                    secure_store::migration::migrate_in(&crate::paths::get_app_config_dir())
+                })
+                .await;
+                if !matches!(migration, Ok(Ok(_))) {
+                    log::warn!("AI storage migration is unavailable; encrypted AI operations may require recovery in Settings");
+                }
+                ai_approval_watcher::spawn(ai_storage_handle);
+                ai_chat::blobs::spawn_startup_gc();
+            });
 
             // Periodic encrypted backup of the connections, when enabled.
             backup::spawn_scheduler(app.handle().clone());

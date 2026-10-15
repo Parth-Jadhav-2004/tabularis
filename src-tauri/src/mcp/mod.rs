@@ -458,6 +458,15 @@ fn resolve_default_schema<'a>(
 pub async fn run_mcp_server() {
     eprintln!("[MCP] Starting Tabularis MCP Server...");
 
+    let storage = tokio::task::spawn_blocking(|| {
+        crate::secure_store::migration::migrate_in(&paths::get_app_config_dir())?;
+        crate::secure_store::ensure_available()
+    }).await;
+    if !matches!(storage, Ok(Ok(()))) {
+        eprintln!("[MCP] AI storage is unavailable. Unlock the keychain or recover AI storage in Settings.");
+        return;
+    }
+
     register_drivers_for_mcp().await;
 
     let stdin = io::stdin();

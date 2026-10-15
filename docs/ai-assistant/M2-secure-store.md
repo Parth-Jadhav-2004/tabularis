@@ -96,7 +96,7 @@ pub struct Conversation {
 - [x] Blob store + GC.
 - [x] Delete-connection hook.
 - [x] `impact` on `append_event_in`, `read_events_in`, `read_sessions_in`, `save_session_state_in`, `load_session_state_in` and the approval read/write functions, then switch them to `secure_store`.
-- [ ] Startup migration of plaintext files.
+- [x] Startup migration of plaintext files.
 - [ ] Verify the MCP subprocess on macOS (signed + dev build), Windows, Linux (Secret Service).
 - [ ] Settings > AI: "Delete all conversations" and "Reset encryption key" (danger zone).
 
