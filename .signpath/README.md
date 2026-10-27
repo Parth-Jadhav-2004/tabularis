@@ -29,7 +29,10 @@ and the project's `GitHub.com` trusted build system is linked.
 `test-certificate.pem` is the **public** test certificate downloaded from
 SignPath. Its DER SHA-256 fingerprint is
 `B5211DE719485064179CCA58EE452E59FF1404BCC9902C3D295B0AD77FCB7B0F`.
-It is trusted temporarily only on the disposable Windows runner, then removed.
+It is trusted temporarily in `LocalMachine\Root` only on the disposable Windows
+runner, then removed. `certutil -f -addstore` avoids the interactive Security
+Warning that a `CurrentUser\Root` import can show in a headless session. The
+import has a two-minute timeout and checks that the certificate was installed.
 Every signed executable and installer must pass Windows Authenticode
 verification with this exact signer and have a timestamp.
 

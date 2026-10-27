@@ -68,15 +68,24 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Trust the pinned test certificate on this disposable runner
+        timeout-minutes: 2
         run: |
           $pem = (Get-Content .signpath/test-certificate.pem -Raw) -replace '-----[^-]+-----|\s', ''
           $certificate = [Security.Cryptography.X509Certificates.X509Certificate2]::new([Convert]::FromBase64String($pem))
           $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($certificate.RawData))
           if ($hash -cne $env:EXPECTED_SIGNER_SHA256) { throw 'Test certificate fingerprint mismatch' }
-          $certificate.Export([Security.Cryptography.X509Certificates.X509ContentType]::Cert) |
-            Set-Content "$env:RUNNER_TEMP/signpath-test.cer" -AsByteStream
-          Import-Certificate -FilePath "$env:RUNNER_TEMP/signpath-test.cer" -CertStoreLocation Cert:\CurrentUser\Root | Out-Null
           "TEST_CERT_THUMBPRINT=$($certificate.Thumbprint)" >> $env:GITHUB_ENV
+          [IO.File]::WriteAllBytes("$env:RUNNER_TEMP/signpath-test.cer", $certificate.RawData)
+          # CurrentUser\Root imports can open a Security Warning dialog and hang
+          # a headless runner. The hosted runner is elevated: use the machine
+          # store through certutil in force/non-interactive mode instead.
+          Write-Output "Installing pinned test certificate $hash in LocalMachine\Root"
+          certutil.exe -f -addstore Root "$env:RUNNER_TEMP/signpath-test.cer"
+          if ($LASTEXITCODE -ne 0) { throw 'Test certificate installation failed' }
+          if (-not (Test-Path "Cert:\LocalMachine\Root\$($certificate.Thumbprint)")) {
+            throw 'Test certificate is missing from the machine root store'
+          }
+          Write-Output 'Pinned test certificate installed'
 
       - name: Build Windows application without bundles
         # CLI 2.11.4 patches binaries during bundling and invalidates prior signatures.
@@ -151,6 +160,7 @@ jobs:
           output-artifact-directory: signed-installers
 
       - name: Verify installer signatures and embedded applications
+        timeout-minutes: 10
         run: ./scripts/signpath/verify-test-installers.ps1 -SignedDirectory signed-installers -ExpectedSignerSha256 $env:EXPECTED_SIGNER_SHA256
 
       - name: Sign final updater files and verify portable archive
@@ -172,4 +182,5 @@ jobs:
 
       - name: Remove temporary certificate trust
         if: always() && env.TEST_CERT_THUMBPRINT != ''
-        run: Remove-Item "Cert:\CurrentUser\Root\$env:TEST_CERT_THUMBPRINT" -ErrorAction SilentlyContinue
+        timeout-minutes: 2
+        run: Remove-Item "Cert:\LocalMachine\Root\$env:TEST_CERT_THUMBPRINT" -ErrorAction SilentlyContinue
