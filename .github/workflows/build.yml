@@ -270,6 +270,7 @@ jobs:
           TAURI_BUNDLER_NEW_APPIMAGE_FORMAT: ${{ inputs.experimental_appimage && 'true' || '' }}
           # Source maps only for prerelease (nightly) builds; stable stays lean.
           TABULARIS_SOURCEMAP: ${{ inputs.prerelease && 'true' || '' }}
+          NODE_OPTIONS: --max-old-space-size=4096
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           # macOS code signing (Developer ID Application certificate)
@@ -301,6 +302,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_BUNDLER_NEW_APPIMAGE_FORMAT: ${{ inputs.experimental_appimage && 'true' || '' }}
           TABULARIS_SOURCEMAP: ${{ inputs.prerelease && 'true' || '' }}
+          NODE_OPTIONS: --max-old-space-size=4096
         with:
           # No tagName: tauri-action only builds, it never touches releases.
           tauriScript: ${{ inputs.experimental_appimage && matrix.platform == 'ubuntu-24.04' && 'cargo tauri' || 'pnpm tauri' }}
